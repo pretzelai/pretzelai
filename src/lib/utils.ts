@@ -86,47 +86,37 @@ export const query = async (db: any, modifiedPrql: string) => {
     const opts = new CompileOptions()
     opts.signature_comment = false
     modifiedPrql = modifiedPrql.trim()
-    // console.log("Modified PRQL: ", modifiedPrql)
-    // Split the modified PRQL into chunks based on pivot blocks
-    let prqlChunks = modifiedPrql.split(/PIVOT\s*{[^}]*}/) || []
-    if (
-      prqlChunks.length > 0 &&
-      prqlChunks[prqlChunks.length - 1].length === 0
-    ) {
-      prqlChunks.pop()
-    }
-    const pivotBlocks = modifiedPrql.match(/PIVOT\s*{[^}]*}/g) || []
-    if (
-      pivotBlocks.length > 0 &&
-      pivotBlocks[pivotBlocks.length - 1].length === 0
-    ) {
-      pivotBlocks.pop()
-    }
+    // Split the modified PRQL into chunks based on pivot and AIGENSQL blocks, preserving the blocks
+    let allChunks = modifiedPrql.split(/(PIVOT\s*{[^}]*}|AIGENSQL\s*{[^}]*})/).filter(chunk => chunk !== '')
 
     let finalSql: string | undefined = ""
 
-    if (pivotBlocks.length === 0) {
+    if (allChunks.length === 1 && !allChunks[0].startsWith('PIVOT') && !allChunks[0].startsWith('AIGENSQL')) {
+      // If there's only one chunk and it's not a special block, compile it directly
       finalSql = compile(modifiedPrql, opts)
     } else {
       const chunkObjects: Array<{ type: string; chunk: string }> = []
 
-      prqlChunks.forEach((prqlChunk, index) => {
-        // Add the PRQL chunk first
-        chunkObjects.push({ type: "PRQL", chunk: prqlChunk })
-
-        // Now, check if there is a corresponding pivot block.
-        // If there is, add it to the combined array.
-        if (index < pivotBlocks.length) {
-          chunkObjects.push({ type: "PIVOT", chunk: pivotBlocks[index] })
+      allChunks.forEach((chunk) => {
+        // add code to skip empty chunks
+        if (chunk.trim() === "") {
+          return
         }
-      })
+        else if (chunk.startsWith('PIVOT')) {
+          chunkObjects.push({ type: "PIVOT", chunk });
+        } else if (chunk.startsWith('AIGENSQL')) {
+          chunkObjects.push({ type: "AIGENSQL", chunk });
+        } else {
+          chunkObjects.push({ type: "PRQL", chunk });
+        }
+      });
 
       const ctes: string[] = []
       let currentTable = ""
-      for (let i = 0; i < chunkObjects.length; i++) {
-        const { type, chunk } = chunkObjects[i]
+      chunkObjects.forEach((chunkObject, i) => {
+        const { type, chunk } = chunkObject
+        let chunkWithTable = chunk
         if (type === "PRQL") {
-          let chunkWithTable = chunk
           if (i > 0) {
             chunkWithTable = `from ${currentTable}\n${chunk}`
           }
@@ -137,18 +127,23 @@ export const query = async (db: any, modifiedPrql: string) => {
           const pivotSql = chunk
             .replace(/PIVOT\s*{/, `PIVOT ${currentTable} `)
             .replace(/}\s*$/, "")
-
           currentTable = `table${i + 1}`
           ctes.push(`${currentTable} as (${pivotSql})`)
+        } else if (type === "AIGENSQL") {
+          const aigensqlSql = chunk
+            .replace(/AIGENSQL\s*{/, "")
+            .replace(/}\s*$/, "")
+            .replace(/`AI_Table`/g, currentTable) // handle case with backticks
+            .replace("AI_Table", currentTable)
+          currentTable = `table${i + 1}`
+          ctes.push(`${currentTable} as (${aigensqlSql})`)
         }
-      }
+      });
       finalSql = `with ${ctes.join(", ")}\nSELECT * FROM ${currentTable}`
     }
-    // console.log("Final SQL: ", finalSql)
 
     const c = await db.connect()
     result = await c.query(finalSql)
-    // console.log("duckdb error")
     await c.close()
   } catch (e) {
     console.error(e)
