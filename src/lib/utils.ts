@@ -24,6 +24,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export const debounce = (f: Function, ms = 300) => {
+  let timeout: ReturnType<typeof setTimeout>
+  return function (this: any, ...args: any[]) {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => f.apply(this, args), ms)
+  }
+}
+
 export const uploadQueryBuilder = (table: string) => {
   // SQL
   // return `select * from '${table}'`
@@ -87,11 +95,17 @@ export const query = async (db: any, modifiedPrql: string) => {
     opts.signature_comment = false
     modifiedPrql = modifiedPrql.trim()
     // Split the modified PRQL into chunks based on pivot and AIGENSQL blocks, preserving the blocks
-    let allChunks = modifiedPrql.split(/(PIVOT\s*{[^}]*}|AIGENSQL\s*{[^}]*})/).filter(chunk => chunk !== '')
+    let allChunks = modifiedPrql
+      .split(/(PIVOT\s*{[^}]*}|AIGENSQL\s*{[^}]*})/)
+      .filter((chunk) => chunk !== "")
 
     let finalSql: string | undefined = ""
 
-    if (allChunks.length === 1 && !allChunks[0].startsWith('PIVOT') && !allChunks[0].startsWith('AIGENSQL')) {
+    if (
+      allChunks.length === 1 &&
+      !allChunks[0].startsWith("PIVOT") &&
+      !allChunks[0].startsWith("AIGENSQL")
+    ) {
       // If there's only one chunk and it's not a special block, compile it directly
       finalSql = compile(modifiedPrql, opts)
     } else {
@@ -101,15 +115,14 @@ export const query = async (db: any, modifiedPrql: string) => {
         // add code to skip empty chunks
         if (chunk.trim() === "") {
           return
-        }
-        else if (chunk.startsWith('PIVOT')) {
-          chunkObjects.push({ type: "PIVOT", chunk });
-        } else if (chunk.startsWith('AIGENSQL')) {
-          chunkObjects.push({ type: "AIGENSQL", chunk });
+        } else if (chunk.startsWith("PIVOT")) {
+          chunkObjects.push({ type: "PIVOT", chunk })
+        } else if (chunk.startsWith("AIGENSQL")) {
+          chunkObjects.push({ type: "AIGENSQL", chunk })
         } else {
-          chunkObjects.push({ type: "PRQL", chunk });
+          chunkObjects.push({ type: "PRQL", chunk })
         }
-      });
+      })
 
       const ctes: string[] = []
       let currentTable = ""
@@ -138,7 +151,7 @@ export const query = async (db: any, modifiedPrql: string) => {
           currentTable = `table${i + 1}`
           ctes.push(`${currentTable} as (${aigensqlSql})`)
         }
-      });
+      })
       finalSql = `with ${ctes.join(", ")}\nSELECT * FROM ${currentTable}`
     }
 

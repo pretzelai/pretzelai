@@ -1,7 +1,12 @@
 import Block from "./ui/Block"
 import { useState, useEffect } from "react"
 import { AsyncDuckDB } from "../lib/duckdb"
-import { query, mergeQueries, getFieldsQueryBuilder } from "../lib/utils"
+import {
+  query,
+  mergeQueries,
+  getFieldsQueryBuilder,
+  debounce,
+} from "../lib/utils"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { loading } from "./ui/loading"
@@ -11,6 +16,38 @@ import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
 import { AI_ENDPOINT } from "../lib/config"
 import { PRQLPromptFormatter, SQLPromptFormatter } from "../lib/prompts"
 import { SettingsIcon } from "./ui/settings-icon"
+
+const aiDbQuery = (
+  aiQuery: string | null,
+  usePrql: boolean,
+  prevQuery: string,
+  updateQuery: (q: string) => void,
+  db: AsyncDuckDB | null,
+  setIsPrqlError: (isError: boolean) => void,
+  setIsSqlError: (isError: boolean) => void
+) => {
+  let wrappedAiQuery = ""
+  if (aiQuery) {
+    wrappedAiQuery = usePrql ? aiQuery : `AIGENSQL {${aiQuery}}`
+  }
+  const q = mergeQueries(prevQuery, wrappedAiQuery || "")
+  updateQuery(q)
+  const fetch = async () => {
+    let rowsJson
+    rowsJson = (await query(db, mergeQueries(prevQuery, wrappedAiQuery || "")))
+      .rowsJson
+    if (rowsJson) {
+      setIsPrqlError(false)
+      setIsSqlError(false)
+    } else {
+      setIsPrqlError(true)
+      setIsSqlError(true)
+    }
+  }
+  fetch()
+}
+
+const debouncedAiDbQuery = debounce(aiDbQuery, 1000)
 
 export default function AI({
   db,
@@ -55,6 +92,7 @@ export default function AI({
   const ai = async (instruction: string) => {
     if (instruction.length === 0) return
     setIsLoading(true)
+    setIsEdit(false)
     let gen
     try {
       if (isApiKeyChecked) {
@@ -134,30 +172,30 @@ export default function AI({
   }, [db, prevQuery])
 
   useEffect(() => {
-    if (db && !isEdit) {
-      let wrappedAiQuery = ""
-      if (aiQuery) {
-        wrappedAiQuery = usePrql ? aiQuery : `AIGENSQL {${aiQuery}}`
+    if (db) {
+      if (isEdit) {
+        debouncedAiDbQuery(
+          aiQuery,
+          usePrql,
+          prevQuery,
+          updateQuery,
+          db,
+          setIsPrqlError,
+          setIsSqlError
+        )
+      } else {
+        aiDbQuery(
+          aiQuery,
+          usePrql,
+          prevQuery,
+          updateQuery,
+          db,
+          setIsPrqlError,
+          setIsSqlError
+        )
       }
-      const q = mergeQueries(prevQuery, wrappedAiQuery || "")
-      updateQuery(q)
-      const fetch = async () => {
-        let rowsJson
-        rowsJson = (
-          await query(db, mergeQueries(prevQuery, wrappedAiQuery || ""))
-        ).rowsJson
-        if (rowsJson) {
-          setIsPrqlError(false)
-          setIsSqlError(false)
-        } else {
-          setIsPrqlError(true)
-          setIsSqlError(true)
-        }
-      }
-      fetch()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, aiQuery, isEdit])
+  }, [db, aiQuery])
 
   return (
     <Block className="mb-4 w-3/4" title="AI Query">
@@ -252,22 +290,16 @@ export default function AI({
                   <div className="flex flex-col w-full">
                     <Textarea
                       className={isPrqlError ? "border-2 border-red-300" : ""}
-                      readOnly={!isEdit}
                       value={aiQuery}
-                      onChange={(e) => isEdit && setAiQuery(e.target.value)}
+                      onChange={(e) => {
+                        setIsEdit(true)
+                        setAiQuery(e.target.value)
+                      }}
                     />
                     {isPrqlError && (
                       <Label className="text-red-300">Invalid PRQL</Label>
                     )}
                   </div>
-                  <Button
-                    className="w-min h-10"
-                    onClick={() => {
-                      setIsEdit(!isEdit)
-                    }}
-                  >
-                    {isEdit ? "Save" : "Edit"}
-                  </Button>
                 </div>
               </>
             ) : (
@@ -277,9 +309,11 @@ export default function AI({
                   <div className="flex flex-col w-full">
                     <Textarea
                       className={isSqlError ? "border-2 border-red-300" : ""}
-                      readOnly={!isEdit}
                       value={aiQuery}
-                      onChange={(e) => isEdit && setAiQuery(e.target.value)}
+                      onChange={(e) => {
+                        setIsEdit(true)
+                        setAiQuery(e.target.value)
+                      }}
                     />
                     {isSqlError && (
                       <Label className="text-red-300">
@@ -287,14 +321,6 @@ export default function AI({
                       </Label>
                     )}
                   </div>
-                  <Button
-                    className="w-min h-10"
-                    onClick={() => {
-                      setIsEdit(!isEdit)
-                    }}
-                  >
-                    {isEdit ? "Save" : "Edit"}
-                  </Button>
                 </div>
               </>
             ))}
