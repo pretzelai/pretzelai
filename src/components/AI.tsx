@@ -41,13 +41,7 @@ export default function AI({
   const [aiQuery, setAiQuery] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [apiKey, setApiKey] = useState<string>(() => {
-    const savedApiKey = localStorage.getItem("apiKey")
-    if (!savedApiKey) {
-      setIsSettingsOpen(true)
-    }
-    return savedApiKey ? savedApiKey : ""
-  })
+  const [apiKey, setApiKey] = useState<string | null>(null)
   const [instruction, setInstruction] = useState("")
   const [isEdit, setIsEdit] = useState(false)
   const [isPrqlError, setIsPrqlError] = useState(false)
@@ -61,13 +55,13 @@ export default function AI({
     const apiKey = localStorage.getItem("apiKey")
     setApiKey(apiKey || "")
     const isApiKey = !!localStorage.getItem("isApiKey")
-    const isServer = !!localStorage.getItem("isServer")
-    if (!isApiKey && !isServer) {
+    const isServer = !!localStorage.getItem("isServer") && AI_ENDPOINT
+    if ((!isApiKey && !isServer) || (isApiKey && !apiKey)) {
       setIsSettingsOpen(true)
     } else {
       setIsSettingsOpen(false)
     }
-    if (isApiKey && !isServer) {
+    if (!AI_ENDPOINT || (isApiKey && !isServer)) {
       setIsApiKeyChecked(true)
     } else {
       setIsServerChecked(true)
@@ -103,15 +97,17 @@ export default function AI({
         const data = await response.json()
         gen = data.choices[0].message.content
       } else {
-        const response = await fetch(AI_ENDPOINT, {
-          method: "POST",
-          body: JSON.stringify({
-            instruction,
-            fields: fields?.join(", "),
-          }),
-        })
-        const { message } = await response.json()
-        gen = message
+        if (AI_ENDPOINT) {
+          const response = await fetch(AI_ENDPOINT, {
+            method: "POST",
+            body: JSON.stringify({
+              instruction,
+              fields: fields?.join(", "),
+            }),
+          })
+          const { message } = await response.json()
+          gen = message
+        }
       }
       if (usePrql) {
         setAiQuery(gen.replace("select *", ""))
@@ -185,35 +181,37 @@ export default function AI({
         <div>
           <div className="w-full flex flex-col">
             <div className="flex items-center space-x-2 mb-4">
-              <ToggleGroup
-                className="w-full"
-                type="single"
-                defaultValue={isApiKeyChecked ? "api_key" : "server"}
-                onValueChange={(value) => {
-                  if (value === "server") {
-                    setIsServerChecked(true)
-                    setIsApiKeyChecked(false)
-                  } else if (value === "api_key") {
-                    setIsServerChecked(false)
-                    setIsApiKeyChecked(true)
-                  }
-                }}
-              >
-                <ToggleGroupItem
-                  className="w-1/2"
-                  value="server"
-                  aria-label="Use our AI Server"
+              {AI_ENDPOINT && (
+                <ToggleGroup
+                  className="w-full"
+                  type="single"
+                  defaultValue={isApiKeyChecked ? "api_key" : "server"}
+                  onValueChange={(value) => {
+                    if (value === "server") {
+                      setIsServerChecked(true)
+                      setIsApiKeyChecked(false)
+                    } else if (value === "api_key") {
+                      setIsServerChecked(false)
+                      setIsApiKeyChecked(true)
+                    }
+                  }}
                 >
-                  <div>Use our AI Server</div>
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  className="w-1/2"
-                  value="api_key"
-                  aria-label="Use your API Key (local & secure)"
-                >
-                  <div>Use your API Key (local & secure)</div>
-                </ToggleGroupItem>
-              </ToggleGroup>
+                  <ToggleGroupItem
+                    className="w-1/2"
+                    value="server"
+                    aria-label="Use our AI Server"
+                  >
+                    <div>Use our AI Server</div>
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    className="w-1/2"
+                    value="api_key"
+                    aria-label="Use your API Key (local & secure)"
+                  >
+                    <div>Use your API Key (local & secure)</div>
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              )}
             </div>
             {isApiKeyChecked && (
               <div className="flex mb-2">
