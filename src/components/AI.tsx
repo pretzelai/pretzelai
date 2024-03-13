@@ -124,7 +124,8 @@ export default function AI({
             method: "POST",
             body: JSON.stringify({
               instruction,
-              fields: fields?.join(", "),
+              fields,
+              language: usePrql ? "PRQL" : "SQL",
             }),
           })
           const { message } = await response.json()
