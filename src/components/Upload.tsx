@@ -5,7 +5,7 @@ import * as XLSX from "xlsx"
 import Papa from "papaparse"
 import { Cell } from "../lib/utils"
 import { uploadQueryBuilder, INPUT_TABLE } from "../lib/utils"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { loading } from "./ui/loading"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -29,10 +29,24 @@ export default function Upload({
   const [csvUrl, setCsvUrl] = useState("")
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isResetCells, setIsResetCells] = useState(true)
+  const [job, setJob] = useState<{
+    csvContent: string
+    sourceName: string
+  } | null>(null)
+
+  useEffect(() => {
+    if (job) {
+      processCsvContent(job.csvContent, job.sourceName)
+      setJob(null)
+    }
+  }, [db])
 
   const processCsvContent = async (csvContent: string, sourceName: string) => {
     if (!db) {
-      console.error("Database not initialized.")
+      setJob({
+        csvContent,
+        sourceName,
+      })
       return
     }
     try {
