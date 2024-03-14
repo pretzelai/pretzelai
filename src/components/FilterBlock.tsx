@@ -90,7 +90,7 @@ const Filter: React.FC<FilterProps> = ({
     if (filter.operator === "notNull") {
       onFilterChange({ ...filter, value: "notNull" }) // Execute immediately when notNull is selected
     }
-  }, [filter.operator, onFilterChange])
+  }, [filter.operator])
 
   return (
     <FilterSection>
