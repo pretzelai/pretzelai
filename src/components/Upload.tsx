@@ -1,8 +1,6 @@
 import { AsyncDuckDB } from "../lib/duckdb"
 import * as arrow from "apache-arrow"
 import Block from "./ui/Block"
-import * as XLSX from "xlsx"
-import Papa from "papaparse"
 import { Cell } from "../lib/utils"
 import { uploadQueryBuilder, INPUT_TABLE } from "../lib/utils"
 import { useEffect, useState } from "react"
@@ -11,6 +9,8 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import axios from "axios"
+import { inferSchema, initParser } from "udsv"
+import XLSX from "xlsx"
 
 const DEMO_CSV_URL = "https://pretzelai.github.io/seed_investment_data.csv"
 
@@ -41,6 +41,82 @@ export default function Upload({
     }
   }, [db])
 
+  function determineDtype(arr: any[]) {
+    const sampleSize = Math.min(arr.length, 100)
+    const sampleIndices = new Set()
+
+    while (sampleIndices.size < sampleSize) {
+      const randomIndex = Math.floor(Math.random() * arr.length)
+      sampleIndices.add(randomIndex)
+    }
+
+    let isFloat = false
+
+    for (const index of Array.from(sampleIndices)) {
+      const num = arr[index as number]
+      if (num && !Number.isInteger(num)) {
+        isFloat = true
+        break
+      }
+    }
+
+    return isFloat
+  }
+
+  function parseCsvContentFirstPass(csvContent: string): {
+    columnTypes: { [key: string]: any }
+    csvString: string
+    delimiter: string
+  } {
+    let schema = inferSchema(csvContent)
+    let parser = initParser(schema)
+    let typedArrs = parser.typedArrs(csvContent)
+    let typedCols = parser.typedCols(csvContent) // [ [1, 4], [2, 5], [3, 6] ]
+
+    let columnTypes: { [key: string]: any } = {}
+    let csvString = ""
+    const delimiter = "\t" // Tab delimiter
+
+    schema.cols.forEach((col, index) => {
+      const name = col.name
+      let arrowType
+      switch (col.type) {
+        case "s":
+          arrowType = new arrow.Utf8()
+          break
+        case "d":
+          arrowType = new arrow.Utf8()
+          break
+        case "n":
+          let isFloat = determineDtype(typedCols[index])
+          arrowType = isFloat ? new arrow.Float64() : new arrow.Int64()
+          break
+        case "j":
+          arrowType = new arrow.Utf8()
+          break
+        default:
+          arrowType = new arrow.Utf8()
+      }
+      columnTypes[name] = arrowType
+      // Add column name to the first row of CSV string
+      // only run this if index is not the last element
+      csvString += name + (index < schema.cols.length - 1 ? delimiter : "\n")
+    })
+
+    // Construct the data rows of the CSV string
+    typedArrs.forEach((row) => {
+      row.forEach((cell, cellIndex) => {
+        const cellIsNan = Number.isNaN(cell)
+        csvString +=
+          cell !== null && cell !== undefined && !cellIsNan ? cell : ""
+        csvString += cellIndex < row.length - 1 ? delimiter : ""
+      })
+      csvString += "\n" // New line at the end of each row
+    })
+
+    return { columnTypes, csvString, delimiter }
+  }
+
   const processCsvContent = async (csvContent: string, sourceName: string) => {
     if (!db) {
       setJob({
@@ -51,61 +127,8 @@ export default function Upload({
     }
     try {
       const c = await db.connect()
-      const parseResults = Papa.parse(csvContent, {
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
-      })
-
-      let columnTypes: { [key: string]: any } = {}
-      const dataSample =
-        parseResults.data.length > 1000
-          ? parseResults.data.slice(
-              0,
-              Math.ceil(parseResults.data.length * 0.1)
-            )
-          : parseResults.data
-
-      // Iterate over each column
-      for (const columnName in dataSample[0] as any) {
-        let isBoolean = false
-        let isInteger = false
-        let isFloat = false
-        let isBigInt = false
-        let isString = false
-        for (const row of dataSample as Array<{ [key: string]: any }>) {
-          const value = row[columnName]
-          if (value !== null && value !== undefined) {
-            const valueType = typeof value
-            if (valueType === "boolean") isBoolean = true
-            if (valueType === "string") isString = true
-            if (valueType === "bigint") isBigInt = true
-            if (valueType === "number") {
-              if (Number.isInteger(value)) isInteger = true
-              else isFloat = true
-            }
-          }
-        }
-
-        if (isString) {
-          columnTypes[columnName] = new arrow.Utf8()
-        } else if (isFloat) {
-          columnTypes[columnName] = new arrow.Float64()
-        } else if (isBigInt) {
-          columnTypes[columnName] = new arrow.Int64()
-        } else if (isInteger) {
-          columnTypes[columnName] = new arrow.Int32()
-        } else if (isBoolean) {
-          columnTypes[columnName] = new arrow.Bool()
-        } else {
-          columnTypes[columnName] = new arrow.Utf8()
-        }
-      }
-
-      const csvString = Papa.unparse(parseResults.data, {
-        header: true,
-        skipEmptyLines: true,
-      })
+      const { columnTypes, csvString, delimiter } =
+        parseCsvContentFirstPass(csvContent)
 
       await db.registerFileText(sourceName, csvString)
       if (cell.query) {
@@ -114,8 +137,10 @@ export default function Upload({
       await c.insertCSVFromPath(sourceName, {
         schema: "main",
         name: INPUT_TABLE,
+        delimiter: delimiter,
         columns: columnTypes,
-        detect: true,
+        detect: false,
+        header: true,
       })
       await c.close()
       const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
@@ -125,7 +150,37 @@ export default function Upload({
         updateQuery(uploadQuery)
       }
     } catch (error) {
-      console.error(`Error processing CSV content from ${sourceName}:`, error)
+      console.error(
+        `Error processing CSV, first pass content from ${sourceName}:`,
+        error
+      )
+      try {
+        // Second pass
+        const c = await db.connect()
+        let sheet = XLSX.read(csvContent, {
+          raw: false,
+          dense: true,
+          type: "string",
+        }).Sheets["Sheet1"]
+        let jsonRows = XLSX.utils.sheet_to_json(sheet)
+
+        await db.registerFileText(sourceName, JSON.stringify(jsonRows))
+
+        await c.insertJSONFromPath(sourceName, { name: INPUT_TABLE })
+
+        await c.close()
+        const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
+        if (isResetCells) {
+          setCells([{ type: "upload", query: uploadQuery }])
+        } else {
+          updateQuery(uploadQuery)
+        }
+      } catch (error) {
+        console.error(
+          `Error processing CSV, second pass content from ${sourceName}:`,
+          error
+        )
+      }
     }
   }
 

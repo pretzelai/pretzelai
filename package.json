@@ -31,7 +31,6 @@
     "file-saver": "^2.0.5",
     "lodash": "^4.17.21",
     "marked": "^12.0.1",
-    "papaparse": "^5.4.1",
     "posthog-js": "^1.112.0",
     "prql-js": "^0.11.3",
     "react": "^18.2.0",
@@ -43,8 +42,9 @@
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^4.9.5",
+    "udsv": "^0.5.3",
     "uuid": "^9.0.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz"
   },
   "scripts": {
     "start": "craco start",
