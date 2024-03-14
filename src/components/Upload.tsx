@@ -12,7 +12,8 @@ import axios from "axios"
 import { inferSchema, initParser } from "udsv"
 import XLSX from "xlsx"
 
-const DEMO_CSV_URL = "https://pretzelai.github.io/seed_investment_data.csv"
+const DEMO_CSV_URL =
+  "https://pretzelai.github.io/github_public_code_editors.csv"
 
 export default function Upload({
   db,
