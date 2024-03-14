@@ -58,7 +58,7 @@ export default function TableView({
 
   return (
     <div className="h-screen overflow-auto">
-      <Table2 numRows={rows.length}>
+      <Table2 numRows={rows.length} cellRendererDependencies={rows}>
         {columns.map((col, index) => (
           <Column key={index} name={col} cellRenderer={renderCell} />
         ))}
