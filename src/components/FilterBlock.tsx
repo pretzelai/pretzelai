@@ -409,7 +409,10 @@ const constructSQL = (filterGroup: FilterGroup): string => {
       }
     } else {
       // It's a filter group
-      sqlParts.push(constructSQL(child as FilterGroup))
+      const groupSql = constructSQL(child as FilterGroup)
+      if (groupSql) {
+        sqlParts.push(`(${groupSql})`)
+      }
     }
     // Append the boolean operator except for the last child
     if (index < filterGroup.children.length - 1) {
