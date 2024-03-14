@@ -14,6 +14,7 @@ export type CellType =
   | "chart"
   | "download"
   | "AI"
+  | "sort"
 
 export type Cell = {
   type: CellType
