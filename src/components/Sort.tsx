@@ -51,15 +51,13 @@ export default function SortBlock({ db, updateQuery, prevQuery }: SortProps) {
           .map((col) => `${col.order === "asc" ? "+" : "-"}\`${col.column}\``)
         let sortQuery =
           sortParts.length > 0 ? `sort {${sortParts.join(", ")}}` : ""
-        if (sortQuery) {
-          const q = mergeQueries(prevQuery, sortQuery)
-          updateQuery(q)
-        }
+        const q = mergeQueries(prevQuery, sortQuery)
+        updateQuery(q)
       }
     }
     updateSortQuery()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, sortColumns])
+  }, [db, sortColumns, prevQuery])
 
   const handleColumnChange = (index: number, column: string | null) => {
     const updatedSortColumns = [...sortColumns]
