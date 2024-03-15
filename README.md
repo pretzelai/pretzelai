@@ -1,13 +1,13 @@
-# Pretzel AI
+# Pretzel
 
 [![License](https://img.shields.io/github/license/pretzelai/pretzelai)](https://github.com/pretzelai/pretzelai/blob/main/LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/pretzelai/pretzelai?style=social)](https://github.com/pretzelai/pretzelai)
 
 Live deployed build: [https://pretzelai.github.io](https://pretzelai.github.io)
 
-![Demo GIF](demo.gif)
+Pretzel is an open-source, offline browser-based tool for fast and intuitive data exploration and visualization. It can handle large data files, runs locally in your browser, and requires no backend setup. You can easily manipulate data without the limitations of traditional spreadsheet software.
 
-Pretzel AI is an open-source, browser-based tool for fast and intuitive data exploration and visualization. It can handle large data files, runs locally in your browser, and requires no backend setup. With Pretzel AI, you can easily manipulate data without the limitations of traditional spreadsheet software.
+![Demo GIF](demo.gif)
 
 ## Features
 
@@ -19,7 +19,25 @@ Pretzel AI is an open-source, browser-based tool for fast and intuitive data exp
 
 ## Getting Started
 
-To run Pretzel AI locally, follow these steps:
+### Easiest
+
+The easiest way to use Pretzel is to visit [https://pretzelai.github.io](https://pretzelai.github.io)
+
+### Offline standalone app
+
+Since Pretzel doesn't have a backend you can easily install it as a Chrome app and it will work even without internet (for those long flights!)
+
+1. Visit [https://pretzelai.github.io](https://pretzelai.github.io) in Chrome
+
+2. Click the install app icon
+
+3. Now you can launch Pretzel as a standalone app. It will also work offline, it may error if you try to use some internet feature (like the AI Block), just close it and open it again to fix it.
+
+### Developers
+
+#### Run locally
+
+To run Pretzel locally, follow these steps:
 
 1. Clone the repository:
 
@@ -42,11 +60,16 @@ To run Pretzel AI locally, follow these steps:
 
 4. Open your browser and navigate to `http://localhost:3000`
 
-To host Pretzel AI, follow these steps (it's just a static website!):
+#### Host Pretzel
+
+To host Pretzel, follow these steps (it's just a static website!):
+
 1. Build the app
+
 ```
 npm run build
 ```
+
 2. Upload the contents of the `build` folder to your hosting. This is what you can find live at [https://pretzelai.github.io](https://pretzelai.github.io)
 
 ## Optional configuration
@@ -55,10 +78,12 @@ npm run build
 - AI Endpoint: Deploy a cloud function to provide an AI endpoint for users without an OpenAI API key. Check the `cloud` folder for instructions.
 
 ## Implemented transformation blocks
+
 - **Upload:** accepts CSV / Excel
 - **Filter**: string/number filtering and filter grouping
 - **Ask AI**: connects to OpenAI to transform user command to SQL
 - **Pivot**: to create a pivot table
+- **Sort**: sorts ascending or descending
 - **Chart**: support line/bar/scatter
 - **Create column**: make a new column with basic math
 - **Remove columns**: easily add/remove columns with visual toggles
