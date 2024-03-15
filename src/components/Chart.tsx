@@ -87,6 +87,17 @@ export default function Chart({
 
   useEffect(() => {
     if (chartData && chartData.data.length) {
+      if (typeof chartData.data[0][xAxisColumn] === "number") {
+        const isSorted = chartData.data.every(
+          (val, i, arr) => !i || arr[i - 1][xAxisColumn] <= val[xAxisColumn]
+        )
+        if (!isSorted) {
+          const sortedChartData = [...chartData.data].sort(
+            (a, b) => Number(a[xAxisColumn]) - Number(b[xAxisColumn])
+          )
+          setChartData({ ...chartData, data: sortedChartData })
+        }
+      }
       registerTheme("infographic", eChartsTheme)
       const opt: EChartOption = {
         title: {
@@ -108,6 +119,12 @@ export default function Chart({
         xAxis: {
           name: xAxisLabel || xAxisColumn, // Modified to use xAxisLabel state or default to xAxisColumn if empty
           data: chartData.data.map((item) => item[xAxisColumn]),
+          type:
+            chartType === "bar" ||
+            typeof chartData.data[0][xAxisColumn] !== "number"
+              ? "category"
+              : "value",
+          scale: true,
           axisLabel: {
             rotate: 45,
             interval: (index: number, value: string) => {
@@ -128,7 +145,7 @@ export default function Chart({
               } else if (totalLabels > 300 && totalLabels <= 500) {
                 return index % 40 === 0
               } else if (totalLabels > 500) {
-                return index % 50 === 0
+                return index % (Math.floor(totalLabels / 100) * 10) === 0
               }
               return true
             },
@@ -153,13 +170,15 @@ export default function Chart({
       }
       if (chartType === "line" || chartType === "scatter") {
         yAxisColumns.forEach((yAxisColumn) => {
-          const seriesData = chartData.data.map((item) =>
-            parseFloat(item[yAxisColumn])
-          )
+          const seriesData = chartData.data.map((item) => {
+            return typeof chartData.data[0][xAxisColumn] !== "number"
+              ? parseFloat(item[yAxisColumn])
+              : [item[xAxisColumn], parseFloat(item[yAxisColumn])]
+          })
           const seriesOption: {
             name: string
             type: "line" | "scatter"
-            data: number[]
+            data: any
             showSymbol?: boolean // Add this line
           } = {
             name: yAxisColumn,
