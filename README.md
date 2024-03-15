@@ -33,7 +33,7 @@ Pretzel is an open-source, offline browser-based tool for fast and intuitive dat
 
 ## Demo video
 
-[![Demo Video](https://img.youtube.com/vi/73wNEun_L7w/0.jpg)](https://youtu.be/73wNEun_L7w)
+https://github.com/pretzelai/pretzelai/assets/161899563/cb5b0f00-4add-40e8-b0c8-f59a0186e3ff
 
 ## Getting Started
 
