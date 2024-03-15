@@ -15,7 +15,7 @@ Pretzel is an open-source, offline browser-based tool for fast and intuitive dat
 - 🔍 Intuitive data exploration with a visual, top-down pipeline of data transformations and visualizations
 - 🧠 AI-powered transformation block to help with fast data manipulation
 - 🔒 Privacy-first design: run Pretzel AI locally or host it yourself for full control over your data
-- 📊 Upcoming features: Local LLM support, API calls, in-browser Python support with [Pyodided](https://github.com/pyodide/pyodide), save and share workflows securely and canvas based table rendering
+- 📊 Upcoming features: Local LLM support, API calls, in-browser Python support with [Pyodide](https://github.com/pyodide/pyodide), save and share workflows securely and canvas based table rendering
 
 
 ## Table of Contents

@@ -184,8 +184,13 @@ export function formatDataForTable(rowsJson: any, fields: any[]) {
       }
       else if (fieldType === "Utf8") {
         formattedRow[key] = value; // Strings are left unchanged
-      } else if (fieldType.includes("Int")) {
+      } else if (fieldType === "Int32") {
         formattedRow[key] = value
+      } else if (fieldType === "Int64") {
+        if(parseInt(value).toString() !== value.toString()) // it's an actual bigInt
+          formattedRow[key] = parseFloat(value)
+        else
+          formattedRow[key] = parseInt(value)
       } else if (fieldType.includes("Float")) {
         formattedRow[key] = typeof value === "number" ? Math.round(value * 100) / 100 : value;
       } else if (fieldType === "Timestamp<MICROSECOND>") {
