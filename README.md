@@ -1,11 +1,11 @@
-# Pretzel
+# 🥨 Pretzel
 
 [![License](https://img.shields.io/github/license/pretzelai/pretzelai)](https://github.com/pretzelai/pretzelai/blob/main/LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/pretzelai/pretzelai?style=social)](https://github.com/pretzelai/pretzelai)
 
 Live deployed build: [https://pretzelai.github.io](https://pretzelai.github.io)
 
-Pretzel is an open-source, offline browser-based tool for fast and intuitive data exploration and visualization. It can handle large data files, runs locally in your browser, and requires no backend setup. You can easily manipulate data without the limitations of traditional spreadsheet software.
+Pretzel is an open-source, offline browser-based tool for fast and intuitive data exploration and visualization. It can handle large data files, runs locally in your browser, and requires no backend setup. Pretzel makes it easy to manipulate data via visual chained data transform blocks. It's also reactive - chaging an tranform block in the chain automatically updates all transform blocks and charts that follow.
 
 ![demo.gif](https://github.com/pretzelai/pretzelai/assets/121360087/e7f20a16-b19c-4a29-b468-88d42eaa9b43)
 
@@ -13,22 +13,23 @@ Pretzel is an open-source, offline browser-based tool for fast and intuitive dat
 
 - 🚀 Blazing-fast performance with WebAssembly-based [DuckDB](https://duckdb.org/) and [PRQL](https://prql-lang.org/)
 - 🔍 Intuitive data exploration with a visual, top-down pipeline of data transformations and visualizations
-- 🧠 AI-powered transformation block to simplify data manipulation
+- 🧠 AI-powered transformation block to help with fast data manipulation
 - 🔒 Privacy-first design: run Pretzel AI locally or host it yourself for full control over your data
-- 📊 Upcoming features: save workflows as PRQL files and share privacy-first URLs without leaking data
+- 📊 Upcoming features: Local LLM support, API calls, in-browser Python support with [Pyodided](https://github.com/pyodide/pyodide), save and share workflows securely and canvas based table rendering
 
 
 ## Table of Contents
 
 - [Demo video](#demo-video)
 - [Getting started](#getting-started)
-  - [Website (Easiest way)](#website-easiest-way)
+  - [Website (Easiest)](#website-easiest)
   - [Offline standalone app](#offline-standalone-app)
   - [Developers](#developers)
     - [Run locally](#run-locally)
     - [Host Pretzel](#host-pretzel)
 - [Optional Configuration](#optional-configuration)
 - [Implemented Transformation Blocks](#implemented-transformation-blocks)
+- [Known Bugs](#known-bugs)
 - [Contact](#contact)
 
 ## Demo video
@@ -37,7 +38,7 @@ https://github.com/pretzelai/pretzelai/assets/161899563/cb5b0f00-4add-40e8-b0c8-
 
 ## Getting Started
 
-### Website (Easiest way)
+### Website (Easiest)
 
 The easiest way to use Pretzel is to visit [https://pretzelai.github.io](https://pretzelai.github.io)
 
@@ -95,24 +96,32 @@ npm run build
 
 ## Optional configuration
 
-- PostHog: Update `/src/lib/config.ts` with your PostHog configuration
+- Bug report box: Update `/src/lib/config.ts` with your PostHog config to let users report bugs directly on the website
 - AI Endpoint: Deploy a cloud function to provide an AI endpoint for users without an OpenAI API key. Check the `cloud` folder for instructions.
 
 ## Implemented transformation blocks
 
-- **Upload:** accepts CSV / Excel
-- **Filter**: string/number filtering and filter grouping
+- **Upload:** accepts CSV / Excel (XLSX) files
+- **Filter**: string/number/date filtering including nested filters
 - **Ask AI**: connects to OpenAI to transform user command to SQL
-- **Pivot**: to create a pivot table
-- **Sort**: sorts ascending or descending
-- **Chart**: support line/bar/scatter
-- **Create column**: make a new column with basic math
+- **Pivot**: to create a pivot table (you can also go group-by using this - only use the `Rows` and `Values` fields)
+- **Sort**: sorts ascending or descending on multiple columns
+- **Chart**: supports line (including multi-line) charts, bar charts (grouped and stacked) and scatter plot
+- **Create column**: make a new column with basic math or use [PRQL functions](https://prql-lang.org/book/reference/declarations/functions.html)
 - **Remove columns**: easily add/remove columns with visual toggles
 - **Table**: add a table in the middle of your workflow to visualize data in a intermediate step
 - **Download**: export your transformed data in CSV
 
+## Known Bugs
+
+- Dates are sometimes parsed incorrectly - existing GH issue [here](https://github.com/pretzelai/pretzelai/issues/23)
+- Table panel is slow for large datasets. We're planning on moving to a canvas based table
+- [Rare] Charts axes can sometimes not be ordered correctly
+
+Please report any bugs you find in [GitHub issues](https://github.com/pretzelai/pretzelai). 
+
 ## Contact
 
-You can email us at founders@withpretzel.com
+You can email us at founders [at] withpretzel [dot] com.
 
-We read all the feedback and bugs you report at the top left of [https://pretzelai.github.io](https://pretzelai.github.io)
+We also read all the feedback and bugs you report at the top left of [https://pretzelai.github.io](https://pretzelai.github.io)
