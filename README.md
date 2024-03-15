@@ -17,6 +17,14 @@ Pretzel is an open-source, offline browser-based tool for fast and intuitive dat
 - 🔒 Privacy-first design: run Pretzel AI locally or host it yourself for full control over your data
 - 📊 Upcoming features: save workflows as PRQL files and share privacy-first URLs without leaking data
 
+
+## Table of Contents
+
+- [Getting started](#getting-started)
+  -  [Easiest](#easiest)
+- [Optional Configuration](#optional-configuration)
+- [Implemented Transformation Blocks](#implemented-transformation-blocks)
+
 ## Getting Started
 
 ### Easiest
