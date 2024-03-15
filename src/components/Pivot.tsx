@@ -80,9 +80,12 @@ export default function PivotTable({
 
         const q = mergeQueries(prevQuery, pivotQuery)
         updateQuery(q)
-        const { rowsJson } = await query(db, q)
+        const { rowsJson, result } = await query(db, q)
         if (rowsJson?.length > 0) {
-          const formattedData = formatDataForTable(rowsJson)
+          const formattedData = formatDataForTable(
+            rowsJson,
+            result.schema.fields
+          )
           setGridData(formattedData)
           setGridColumns(Object.keys(rowsJson[0] || {}))
         }
