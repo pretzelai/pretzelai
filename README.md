@@ -21,13 +21,17 @@ Pretzel is an open-source, offline browser-based tool for fast and intuitive dat
 ## Table of Contents
 
 - [Getting started](#getting-started)
-  -  [Easiest](#easiest)
+  - [Easiest way](#easiest-way)
+  - [Offline standalone app](#offline-standalone-app)
+  - [Developers](#developers)
+    - [Run locally](#run-locally)
+    - [Host Pretzel](#host-pretzel)
 - [Optional Configuration](#optional-configuration)
 - [Implemented Transformation Blocks](#implemented-transformation-blocks)
 
 ## Getting Started
 
-### Easiest
+### Easiest way
 
 The easiest way to use Pretzel is to visit [https://pretzelai.github.io](https://pretzelai.github.io)
 
