@@ -179,12 +179,15 @@ export function formatDataForTable(rowsJson: any, fields: any[]) {
     Object.keys(row).forEach((key) => {
       const value = row[key];
       const fieldType = fieldTypeMap[key];
-      if (fieldType === "Utf8") {
+      if (value === null || value === undefined || Number.isNaN(value)) {
+        formattedRow[key] = "";
+      }
+      else if (fieldType === "Utf8") {
         formattedRow[key] = value; // Strings are left unchanged
       } else if (fieldType.includes("Int")) {
-        formattedRow[key] = Number.isInteger(value) ? value : parseInt(value, 10);
+        formattedRow[key] = value
       } else if (fieldType.includes("Float")) {
-        formattedRow[key] = typeof value === "number" ? Math.round(value * 100) / 100 : parseFloat(value);
+        formattedRow[key] = typeof value === "number" ? Math.round(value * 100) / 100 : value;
       } else if (fieldType === "Timestamp<MICROSECOND>") {
         formattedRow[key] = value instanceof Date ? value.toISOString() : new Date(value).toISOString();
       } else if (fieldType === "Uint32Array") {

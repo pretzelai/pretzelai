@@ -118,7 +118,9 @@ export default function Upload({
           }
         }
         csvString +=
-          cell !== null && cell !== undefined && !cellIsNan ? cell : ""
+          cell !== null && cell !== "null" && cell !== undefined && !cellIsNan
+            ? cell
+            : ""
         csvString += cellIndex < row.length - 1 ? delimiter : ""
       })
       csvString += rowIndex < typedArrs.length - 1 ? "\n" : "" // New line at the end of each row
