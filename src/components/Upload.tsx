@@ -202,7 +202,13 @@ export default function Upload({
       const csvContent = response.data
       await processCsvContent(csvContent, "url_file")
     } catch (error) {
-      console.error("Error downloading demo CSV:", error)
+      try {
+        const response = await axios.get(url)
+        const csvContent = response.data
+        await processCsvContent(csvContent, "direct_url_file")
+      } catch (directError) {
+        console.error("Error downloading demo CSV:", directError)
+      }
     } finally {
       setIsLoading(false)
     }
