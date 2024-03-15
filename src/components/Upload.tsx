@@ -86,7 +86,7 @@ export default function Upload({
           arrowType = new arrow.Utf8()
           break
         case "d":
-          arrowType = new arrow.Utf8()
+          arrowType = new arrow.Timestamp(arrow.TimeUnit.MICROSECOND)
           break
         case "n":
           let isFloat = determineDtype(typedCols[index])
@@ -105,16 +105,24 @@ export default function Upload({
     })
 
     // Construct the data rows of the CSV string
-    typedArrs.forEach((row) => {
-      row.forEach((cell, cellIndex) => {
+    typedArrs.forEach((row, rowIndex) => {
+      row.forEach((cell: any, cellIndex) => {
         const cellIsNan = Number.isNaN(cell)
+        if (schema.cols[cellIndex].type === "d") {
+          if (isNaN(cell)) cell = ""
+          try {
+            cell = (cell as Date).toISOString()
+          } catch (error) {
+            console.log("Error converting cell to ISO string: ", cell)
+            cell = cell.toString()
+          }
+        }
         csvString +=
           cell !== null && cell !== undefined && !cellIsNan ? cell : ""
         csvString += cellIndex < row.length - 1 ? delimiter : ""
       })
-      csvString += "\n" // New line at the end of each row
+      csvString += rowIndex < typedArrs.length - 1 ? "\n" : "" // New line at the end of each row
     })
-
     return { columnTypes, csvString, delimiter }
   }
 

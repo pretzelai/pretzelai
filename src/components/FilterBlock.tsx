@@ -47,7 +47,7 @@ interface FilterProps {
 }
 
 const isNumeric = (filter: Filter) => {
-  const num_types_substr = ["Int", "Float", "Datetime"]
+  const num_types_substr = ["Int", "Float", "Timestamp"]
   return num_types_substr.some((substr) =>
     filter.fieldTypes.get(filter.column!)?.includes(substr)
   )
@@ -385,7 +385,9 @@ const constructSQL = (filterGroup: FilterGroup): string => {
       } else {
         // It's a numeric operator
         // Remove quotation marks
-        valueStr = child.value
+        if (child.fieldTypes?.get(child.column!)?.includes("Timestamp"))
+          valueStr = `@${child.value}`
+        else valueStr = child.value
       }
       if (child.operator === "notNull") {
         sqlParts.push(`(\`${child.column}\` != null)`)

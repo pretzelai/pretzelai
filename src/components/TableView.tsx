@@ -29,11 +29,14 @@ export default function TableView({
     if (db && prevQuery) {
       const fetch = async () => {
         const q = mergeQueries(prevQuery, tableViewQueryBuilder(rowAmount))
-        const { rowsJson } = await query(db, q)
+        const { rowsJson, result } = await query(db, q)
         if (rowsJson?.length > 0) {
           const columnNames: string[] = Object.keys(rowsJson[0])
           setColumns(columnNames)
-          const formattedRows = formatDataForTable(rowsJson)
+          const formattedRows = formatDataForTable(
+            rowsJson,
+            result.schema.fields
+          )
           setRows(
             formattedRows.map((row: (string | number)[]) =>
               columnNames.map((col: string) => (row as any)[col])
