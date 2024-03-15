@@ -7,7 +7,7 @@ Live deployed build: [https://pretzelai.github.io](https://pretzelai.github.io)
 
 Pretzel is an open-source, offline browser-based tool for fast and intuitive data exploration and visualization. It can handle large data files, runs locally in your browser, and requires no backend setup. You can easily manipulate data without the limitations of traditional spreadsheet software.
 
-![Demo GIF](demo.gif)
+![demo.gif](https://github.com/pretzelai/pretzelai/assets/121360087/e7f20a16-b19c-4a29-b468-88d42eaa9b43)
 
 ## Features
 
@@ -30,8 +30,11 @@ Since Pretzel doesn't have a backend you can easily install it as a Chrome app a
 1. Visit [https://pretzelai.github.io](https://pretzelai.github.io) in Chrome
 
 2. Click the install app icon
+<img width="521" alt="pretzel_chrome_install" src="https://github.com/pretzelai/pretzelai/assets/121360087/c6276699-5109-4e59-8bf5-2858c51cb4c3">
 
-3. Now you can launch Pretzel as a standalone app. It will also work offline, it may error if you try to use some internet feature (like the AI Block), just close it and open it again to fix it.
+3. Now you can launch Pretzel as a standalone app. It will also work offline, it may error if you try to use some internet feature (like the AI Block), just close it and open it again to fix it
+<img width="268" alt="pretzel_app_icon" src="https://github.com/pretzelai/pretzelai/assets/121360087/cc13e552-d93a-4990-be22-1f6b5d906b15">
+
 
 ### Developers
 
