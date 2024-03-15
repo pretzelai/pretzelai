@@ -20,6 +20,7 @@ Pretzel is an open-source, offline browser-based tool for fast and intuitive dat
 
 ## Table of Contents
 
+- [Demo video](#demo-video)
 - [Getting started](#getting-started)
   - [Website (Easiest way)](#website-easiest-way)
   - [Offline standalone app](#offline-standalone-app)
@@ -29,6 +30,10 @@ Pretzel is an open-source, offline browser-based tool for fast and intuitive dat
 - [Optional Configuration](#optional-configuration)
 - [Implemented Transformation Blocks](#implemented-transformation-blocks)
 - [Contact](#contact)
+
+## Demo video
+
+[![Demo Video](https://img.youtube.com/vi/73wNEun_L7w/0.jpg)](https://youtu.be/73wNEun_L7w)
 
 ## Getting Started
 
@@ -105,10 +110,6 @@ npm run build
 - **Remove columns**: easily add/remove columns with visual toggles
 - **Table**: add a table in the middle of your workflow to visualize data in a intermediate step
 - **Download**: export your transformed data in CSV
-
-Transformation blocks demo video:
-
-[![Demo Video](https://img.youtube.com/vi/73wNEun_L7w/0.jpg)](https://youtu.be/73wNEun_L7w)
 
 ## Contact
 
