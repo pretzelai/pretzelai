@@ -94,6 +94,8 @@ npm run build
 
 2. Upload the contents of the `build` folder to your hosting. This is what you can find live at [https://pretzelai.github.io](https://pretzelai.github.io)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
 ## Optional configuration
 
 - Bug report box: Update `/src/lib/config.ts` with your PostHog config to let users report bugs directly on the website
