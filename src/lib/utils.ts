@@ -25,12 +25,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const debounce = (f: Function, ms = 300) => {
-  let timeout: ReturnType<typeof setTimeout>
-  return function (this: any, ...args: any[]) {
-    clearTimeout(timeout)
-    timeout = setTimeout(() => f.apply(this, args), ms)
-  }
+export const debounce = (func: (...args: any[]) => void, delay = 300) => {
+  let timeout: ReturnType<typeof setTimeout>;
+
+  return function(this: any, ...args: any[]) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.call(this, ...args), delay);
+  };
+};
 }
 
 export const uploadQueryBuilder = (table: string) => {
