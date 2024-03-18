@@ -256,7 +256,7 @@ export default function App() {
         </div>
       </ResizablePanel>
       <ResizableHandle withHandle />
-      <ResizablePanel key={456} className="overflow-y-auto">
+      <ResizablePanel key={456}>
         <TableView
           key="placeholder123"
           db={db}
