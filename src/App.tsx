@@ -5,6 +5,7 @@ import Columns from "./components/Columns"
 import TableView from "./components/TableView"
 import Download from "./components/Download"
 import Chart from "./components/Chart"
+import UserQuery from "./components/UserQuery"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -100,6 +101,15 @@ export default function App() {
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
+              } else if (cell.type === "userquery") {
+                return (
+                  <UserQuery
+                    key={i}
+                    db={db}
+                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    prevQuery={cells[i - 1].query as string}
+                  />
+                )
               } else if (cell.type === "table") {
                 return (
                   <div className="mb-4 flex max-h-[25vh] max-w-full items-start justify-center overflow-y-scroll rounded-lg border">
@@ -189,6 +199,13 @@ export default function App() {
                     className="ml-2 mb-2"
                   >
                     Pivot
+                  </Button>
+
+                  <Button
+                    onClick={() => addCell("userquery", setCells)}
+                    className="ml-2 mb-2"
+                  >
+                    SQL / PRQL
                   </Button>
 
                   <Button

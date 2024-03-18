@@ -15,6 +15,7 @@ export type CellType =
   | "download"
   | "AI"
   | "sort"
+  | "userquery"
 
 export type Cell = {
   type: CellType
@@ -95,9 +96,9 @@ export const query = async (db: any, modifiedPrql: string) => {
     const opts = new CompileOptions()
     opts.signature_comment = false
     modifiedPrql = modifiedPrql.trim()
-    // Split the modified PRQL into chunks based on pivot and AIGENSQL blocks, preserving the blocks
+    // Split the modified PRQL into chunks based on pivot and SQL blocks, preserving the blocks
     let allChunks = modifiedPrql
-      .split(/(PIVOT\s*{[^}]*}|AIGENSQL\s*{[^}]*})/)
+      .split(/(PIVOT\s*{[^}]*}|SQL\s*{[^}]*})/)
       .filter((chunk) => chunk !== "")
 
     let finalSql: string | undefined = ""
@@ -105,7 +106,7 @@ export const query = async (db: any, modifiedPrql: string) => {
     if (
       allChunks.length === 1 &&
       !allChunks[0].startsWith("PIVOT") &&
-      !allChunks[0].startsWith("AIGENSQL")
+      !allChunks[0].startsWith("SQL")
     ) {
       // If there's only one chunk and it's not a special block, compile it directly
       finalSql = compile(modifiedPrql, opts)
@@ -118,8 +119,8 @@ export const query = async (db: any, modifiedPrql: string) => {
           return
         } else if (chunk.startsWith("PIVOT")) {
           chunkObjects.push({ type: "PIVOT", chunk })
-        } else if (chunk.startsWith("AIGENSQL")) {
-          chunkObjects.push({ type: "AIGENSQL", chunk })
+        } else if (chunk.startsWith("SQL")) {
+          chunkObjects.push({ type: "SQL", chunk })
         } else {
           chunkObjects.push({ type: "PRQL", chunk })
         }
@@ -143,14 +144,16 @@ export const query = async (db: any, modifiedPrql: string) => {
             .replace(/}\s*$/, "")
           currentTable = `table${i + 1}`
           ctes.push(`${currentTable} as (${pivotSql})`)
-        } else if (type === "AIGENSQL") {
-          const aigensqlSql = chunk
-            .replace(/AIGENSQL\s*{/, "")
+        } else if (type === "SQL") {
+          const sql = chunk
+            .replace(/SQL\s*{/, "")
             .replace(/}\s*$/, "")
             .replace(/`AI_Table`/g, currentTable) // handle case with backticks
             .replace("AI_Table", currentTable)
+            .replace(/`PrevTable`/g, currentTable) // handle case with backticks
+            .replace("PrevTable", currentTable)
           currentTable = `table${i + 1}`
-          ctes.push(`${currentTable} as (${aigensqlSql})`)
+          ctes.push(`${currentTable} as (${sql})`)
         }
       })
       finalSql = `with ${ctes.join(", ")}\nSELECT * FROM ${currentTable}`
