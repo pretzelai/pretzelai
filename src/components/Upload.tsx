@@ -40,6 +40,7 @@ export default function Upload({
       processCsvContent(job.csvContent, job.sourceName)
       setJob(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db])
 
   function determineDtype(arr: any[]) {
