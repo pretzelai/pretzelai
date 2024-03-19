@@ -1,0 +1,7 @@
+version: "1"
+services:
+- type: web
+  name: pretzelai
+  runtime: static
+  buildCommand: npm run build
+  staticPublishPath: build

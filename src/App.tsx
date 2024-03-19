@@ -5,6 +5,7 @@ import Columns from "./components/Columns"
 import TableView from "./components/TableView"
 import Download from "./components/Download"
 import Chart from "./components/Chart"
+import UserQuery from "./components/UserQuery"
 import {
   ResizableHandle,
   ResizablePanel,
@@ -14,7 +15,6 @@ import { initDb, AsyncDuckDB } from "./lib/duckdb"
 import { Button } from "./components/ui/button"
 import { Cell, CellType } from "./lib/utils"
 import PivotTable from "./components/Pivot"
-import { ScrollArea } from "./components/ui/scroll-area"
 import CreateColumn from "./components/CreateColumn"
 import AI from "./components/AI"
 import Feedback from "./components/Feedback"
@@ -45,6 +45,7 @@ const updateQueryFactory = (
 export default function App() {
   const [db, setDb] = useState<AsyncDuckDB | null>(null)
   const [cells, setCells] = useState<Cell[]>([{ type: "upload" }])
+
   useEffect(() => {
     const initDbAsync = async () => {
       const db = await initDb()
@@ -68,7 +69,7 @@ export default function App() {
           paddingLeft: "16px",
         }}
       >
-        <ScrollArea className="h-screen">
+        <div className="h-screen overflow-y-auto">
           <div className="flex flex-col items-center justify-center w-full">
             {POSTHOG_PUBLIC_KEY && POSTHOG_URL && <Feedback />}
             {cells?.map((cell, i) => {
@@ -94,6 +95,15 @@ export default function App() {
               } else if (cell.type === "pivot") {
                 return (
                   <PivotTable
+                    key={i}
+                    db={db}
+                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    prevQuery={cells[i - 1].query as string}
+                  />
+                )
+              } else if (cell.type === "userquery") {
+                return (
+                  <UserQuery
                     key={i}
                     db={db}
                     updateQuery={updateQueryFactory(i, cell, setCells)}
@@ -168,7 +178,6 @@ export default function App() {
               }
               return null
             })}
-
             <div className="flex items-center flex-wrap max-w-full">
               {cells[cells.length - 1].query && (
                 <>
@@ -190,7 +199,12 @@ export default function App() {
                   >
                     Pivot
                   </Button>
-
+                  <Button
+                    onClick={() => addCell("userquery", setCells)}
+                    className="ml-2 mb-2"
+                  >
+                    SQL / PRQL
+                  </Button>
                   <Button
                     onClick={() => addCell("chart", setCells)}
                     className="ml-2 mb-2"
@@ -239,7 +253,7 @@ export default function App() {
               )}
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel key={456}>

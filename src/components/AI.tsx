@@ -28,7 +28,7 @@ const aiDbQuery = (
 ) => {
   let wrappedAiQuery = ""
   if (aiQuery) {
-    wrappedAiQuery = usePrql ? aiQuery : `AIGENSQL {${aiQuery}}`
+    wrappedAiQuery = usePrql ? aiQuery : `SQL {${aiQuery}}`
   }
   const q = mergeQueries(prevQuery, wrappedAiQuery || "")
   updateQuery(q)
@@ -152,7 +152,7 @@ export default function AI({
     if (db) {
       let wrappedAiQuery = ""
       if (aiQuery) {
-        wrappedAiQuery = usePrql ? aiQuery : `AIGENSQL {${aiQuery}}`
+        wrappedAiQuery = usePrql ? aiQuery : `SQL {${aiQuery}}`
       }
       const q = mergeQueries(prevQuery, wrappedAiQuery || "")
 
@@ -269,7 +269,7 @@ export default function AI({
               <SettingsIcon className="w-6 h-6 mt-[-33px] mb-[10px] pr-[5px]" />
             </button>
           </div>
-          <div className="flex">
+          <div className="flex gap-2">
             <Input
               type="text"
               value={instruction}
