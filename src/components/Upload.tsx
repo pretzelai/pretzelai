@@ -34,6 +34,9 @@ export default function Upload({
     csvContent: string
     sourceName: string
   } | null>(null)
+  const [sheetNames, setSheetNames] = useState<string[]>([])
+  const [selectedSheet, setSelectedSheet] = useState("")
+  const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null)
 
   useEffect(() => {
     if (job) {
@@ -43,17 +46,21 @@ export default function Upload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db])
 
+  useEffect(() => {
+    if (selectedSheet && workbook) {
+      handleSheetChange()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSheet])
+
   function determineDtype(arr: any[]) {
     const sampleSize = Math.min(arr.length, 100)
     const sampleIndices = new Set()
-
     while (sampleIndices.size < sampleSize) {
       const randomIndex = Math.floor(Math.random() * arr.length)
       sampleIndices.add(randomIndex)
     }
-
     let isFloat = false
-
     for (const index of Array.from(sampleIndices)) {
       const num = arr[index as number]
       if (num && !Number.isInteger(num)) {
@@ -61,7 +68,6 @@ export default function Upload({
         break
       }
     }
-
     return isFloat
   }
 
@@ -74,7 +80,6 @@ export default function Upload({
     let parser = initParser(schema)
     let typedArrs = parser.typedArrs(csvContent)
     let typedCols = parser.typedCols(csvContent) // [ [1, 4], [2, 5], [3, 6] ]
-
     let columnTypes: { [key: string]: any } = {}
     let csvString = ""
     const delimiter = "\t" // Tab delimiter
@@ -126,6 +131,7 @@ export default function Upload({
       })
       csvString += rowIndex < typedArrs.length - 1 ? "\n" : "" // New line at the end of each row
     })
+
     return { columnTypes, csvString, delimiter }
   }
 
@@ -137,11 +143,11 @@ export default function Upload({
       })
       return
     }
+
     try {
       const c = await db.connect()
       const { columnTypes, csvString, delimiter } =
         parseCsvContentFirstPass(csvContent)
-
       await db.registerFileText(sourceName, csvString)
       if (cell.query) {
         await c.query(`DROP TABLE "${INPUT_TABLE}"`)
@@ -175,11 +181,8 @@ export default function Upload({
           type: "string",
         }).Sheets["Sheet1"]
         let jsonRows = XLSX.utils.sheet_to_json(sheet)
-
         await db.registerFileText(sourceName, JSON.stringify(jsonRows))
-
         await c.insertJSONFromPath(sourceName, { name: INPUT_TABLE })
-
         await c.close()
         const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
         if (isResetCells) {
@@ -216,6 +219,7 @@ export default function Upload({
   }
 
   const handleFileUpload = async (event: any) => {
+    setSheetNames([])
     const file = event.target.files[0]
     if (!file) {
       console.error("No file selected.")
@@ -227,8 +231,9 @@ export default function Upload({
       let csvContent
       if (file.type.includes("excel") || file.type.includes("spreadsheetml")) {
         const workbook = XLSX.read(e.target?.result, { type: "binary" })
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
+        setWorkbook(workbook)
+        setSheetNames(workbook.SheetNames)
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]]
         csvContent = XLSX.utils.sheet_to_csv(worksheet)
       } else {
         csvContent = e.target?.result as string
@@ -240,6 +245,19 @@ export default function Upload({
       reader.readAsBinaryString(file)
     } else {
       reader.readAsText(file)
+    }
+  }
+
+  const handleSheetChange = async () => {
+    setIsLoading(true)
+    try {
+      const worksheet = workbook!.Sheets[selectedSheet]
+      const csvContent = XLSX.utils.sheet_to_csv(worksheet)
+      await processCsvContent(csvContent, selectedSheet)
+    } catch (error) {
+      console.error("Error processing sheet change:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -258,6 +276,22 @@ export default function Upload({
           />
         </div>
       </div>
+      {sheetNames.length > 0 && (
+        <div className="mt-2 grid w-full max-w-sm items-center gap-1.5">
+          <Label htmlFor="sheet_select">Select Sheet</Label>
+          <select
+            id="sheet_select"
+            value={selectedSheet}
+            onChange={(e) => setSelectedSheet(e.target.value)}
+          >
+            {sheetNames.map((sheetName) => (
+              <option key={sheetName} value={sheetName}>
+                {sheetName}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="mt-2 grid w-full max-w-sm items-center gap-1.5">
         <Label htmlFor="url_upload">Upload CSV from url</Label>
         <div className="flex items-center">
