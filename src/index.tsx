@@ -8,6 +8,7 @@ import { POSTHOG_PUBLIC_KEY, POSTHOG_URL } from "./lib/config"
 if (POSTHOG_PUBLIC_KEY && POSTHOG_URL) {
   posthog.init(POSTHOG_PUBLIC_KEY, {
     api_host: POSTHOG_URL,
+    persistence: "memory",
   })
 }
 
