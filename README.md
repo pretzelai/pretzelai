@@ -92,7 +92,7 @@ To host Pretzel, follow these steps (it's just a static website!):
 npm run build
 ```
 
-2. Upload the contents of the `build` folder to your hosting. This is what you can find live at [https://pretzelai.github.io](https://pretzelai.github.io)
+2. Upload the contents of the `dist` folder to your hosting. This is what you can find live at [https://pretzelai.github.io](https://pretzelai.github.io)
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
