@@ -191,10 +191,27 @@ export default function Upload({
           updateQuery(uploadQuery)
         }
       } catch (error) {
-        console.error(
-          `Error processing CSV, second pass content from ${sourceName}:`,
-          error
-        )
+        console.log("thirrrd")
+        const c = await db.connect()
+        let sheet = XLSX.read(csvContent, {
+          raw: false,
+          dense: true,
+          type: "string",
+        }).Sheets["Sheet1"]
+        let range = XLSX.utils.decode_range(sheet["!ref"] as string)
+        range.s.r = 1 // <-- zero-indexed, so setting to 1 will skip row 0
+        console.log(range)
+        sheet["!ref"] = XLSX.utils.encode_range(range)
+        let jsonRows = XLSX.utils.sheet_to_json(sheet)
+        await db.registerFileText(sourceName, JSON.stringify(jsonRows))
+        await c.insertJSONFromPath(sourceName, { name: INPUT_TABLE })
+        await c.close()
+        const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
+        if (isResetCells) {
+          setCells([{ type: "upload", query: uploadQuery }])
+        } else {
+          updateQuery(uploadQuery)
+        }
       }
     }
   }
