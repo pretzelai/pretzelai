@@ -10,6 +10,7 @@ import Block from "./ui/Block"
 import { PyodideInterface } from "pyodide"
 import CodeMirror, { minimalSetup } from "@uiw/react-codemirror"
 import { python } from "@codemirror/lang-python"
+import { cn } from "../lib/utils"
 
 export default function userPython({
   db,
@@ -23,11 +24,9 @@ export default function userPython({
   pyodide?: PyodideInterface
 }) {
   const [isLoading, setIsLoading] = useState(false)
-  const [isPrqlError, setIsPrqlError] = useState(false)
-  const [isSqlError, setIsSqlError] = useState(false)
-  const [usePrql, setUsePrql] = useState(false)
-  const [result, setResult] = useState("waiting")
-  const [code, setCode] = useState("# Your python code goes here")
+  const [isError, setIsError] = useState(false)
+  const [result, setResult] = useState("")
+  const [code, setCode] = useState("# Your python code goes here\n")
 
   const runQuery = () => {
     setIsLoading(true)
@@ -37,28 +36,27 @@ export default function userPython({
           .runPythonAsync(code)
           .then((result) => {
             setResult(result)
-            setIsPrqlError(false)
-            setIsSqlError(false)
+            setIsError(false)
           })
           .catch((error) => {
-            console.error("Python execution error:", error)
-            setResult("Error executing Python code.")
-            setIsPrqlError(true) // Assuming Python errors are treated as PRQL errors for UI purposes
+            setResult(`Error: ${error.type}`)
+            setIsError(true)
           })
       } catch (error) {
         console.error("Unexpected error:", error)
         setResult("Unexpected error executing Python code.")
-        setIsPrqlError(true) // Assuming Python errors are treated as PRQL errors for UI purposes
+        setIsError(true)
       }
     } else {
       setResult("No Pyodide instance or Python code provided.")
-      setIsPrqlError(true) // Assuming missing Pyodide or Python code is treated as a PRQL error for UI purposes
+      setIsError(true)
     }
     setIsLoading(false)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      setCode((c) => c.slice(0, -1))
       runQuery()
     }
   }
@@ -66,36 +64,36 @@ export default function userPython({
   return (
     <Block className="mb-4 w-3/4" title="Python">
       <div className="flex flex-col gap-2 w-full">
-        <div className="flex flex-row w-full gap-2">
-          <CodeMirror
-            minHeight="10px"
-            theme={"light"}
-            height="100%"
-            className="w-full border h-[200px]"
-            editable
-            basicSetup={false}
-            extensions={[
-              python(),
-              minimalSetup({
-                syntaxHighlighting: true,
-                // Other options are false
-                highlightSpecialChars: false,
-                history: false,
-                drawSelection: false,
-                defaultKeymap: false,
-                historyKeymap: false,
-              }),
-            ]}
-            value={code}
-            onChange={setCode}
-            onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                runQuery()
-              }
-            }}
-          />
-          {result}
-        </div>
+        <CodeMirror
+          minHeight="10px"
+          theme={"light"}
+          height="100%"
+          className="w-full border h-[200px]"
+          editable
+          basicSetup={false}
+          extensions={[
+            python(),
+            minimalSetup({
+              syntaxHighlighting: true,
+            }),
+          ]}
+          value={code}
+          onChange={setCode}
+          onKeyDown={handleKeyDown}
+        />
+        {isLoading ? (
+          loading
+        ) : (
+          <div
+            className={cn(
+              isError ? "text-red-500" : "",
+              result && "border border-gray-500 rounded p-2",
+              "bg-gray-100"
+            )}
+          >
+            {result}
+          </div>
+        )}
       </div>
     </Block>
   )
