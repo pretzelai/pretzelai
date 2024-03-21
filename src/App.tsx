@@ -20,6 +20,8 @@ import AI from "./components/AI"
 import Feedback from "./components/Feedback"
 import { POSTHOG_PUBLIC_KEY, POSTHOG_URL } from "./lib/config"
 import Sort from "./components/Sort"
+import { loadPyodide, PyodideInterface } from "pyodide"
+import Python from "./components/Python"
 
 const addCell = (
   type: CellType,
@@ -45,6 +47,16 @@ const updateQueryFactory = (
 export default function App() {
   const [db, setDb] = useState<AsyncDuckDB | null>(null)
   const [cells, setCells] = useState<Cell[]>([{ type: "upload" }])
+  const [pyodide, setPyodide] = useState<PyodideInterface>()
+
+  useEffect(() => {
+    loadPyodide({
+      indexURL: import.meta.env.PROD ? "./pyodide" : "./public/pyodide",
+    }).then((pyodide) => {
+      setPyodide(pyodide)
+      pyodide.loadPackage("numpy")
+    })
+  }, [])
 
   useEffect(() => {
     const initDbAsync = async () => {
@@ -175,6 +187,16 @@ export default function App() {
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
+              } else if (cell.type === "python") {
+                return (
+                  <Python
+                    key={i}
+                    db={db}
+                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    prevQuery={cells[i - 1].query as string}
+                    pyodide={pyodide}
+                  />
+                )
               }
               return null
             })}
@@ -192,6 +214,12 @@ export default function App() {
                     className="ml-2 mb-2"
                   >
                     Ask AI
+                  </Button>
+                  <Button
+                    onClick={() => addCell("python", setCells)}
+                    className="ml-2 mb-2"
+                  >
+                    Python
                   </Button>
                   <Button
                     onClick={() => addCell("pivot", setCells)}

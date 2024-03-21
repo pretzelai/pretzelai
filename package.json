@@ -6,6 +6,7 @@
   "type": "module",
   "dependencies": {
     "@blueprintjs/table": "^5.1.2",
+    "@codemirror/lang-python": "^6.1.4",
     "@duckdb/duckdb-wasm": "^1.28.1-dev106.0",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -22,6 +23,7 @@
     "@types/echarts": "^4.9.22",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.22",
+    "@uiw/react-codemirror": "^4.21.24",
     "apache-arrow": "^15.0.0",
     "axios": "^1.6.7",
     "class-variance-authority": "^0.7.0",
@@ -33,6 +35,7 @@
     "marked": "^12.0.1",
     "posthog-js": "^1.112.0",
     "prql-js": "^0.11.3",
+    "pyodide": "^0.25.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-resizable": "^3.0.5",
