@@ -20,6 +20,7 @@ import AI from "./components/AI"
 import Feedback from "./components/Feedback"
 import { POSTHOG_PUBLIC_KEY, POSTHOG_URL } from "./lib/config"
 import Sort from "./components/Sort"
+import RemoveDuplicate from "./components/RemoveDuplicate"
 
 const addCell = (
   type: CellType,
@@ -41,7 +42,6 @@ const updateQueryFactory = (
     ])
   }
 }
-
 export default function App() {
   const [db, setDb] = useState<AsyncDuckDB | null>(null)
   const [cells, setCells] = useState<Cell[]>([{ type: "upload" }])
@@ -157,7 +157,18 @@ export default function App() {
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
-              } else if (cell.type === "chart") {
+              }
+                 else if (cell.type === "removeDuplicate") {
+                return (
+                  <RemoveDuplicate
+                    key={i}
+                    db={db}
+                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    prevQuery={cells[i - 1].query as string}
+                  />
+                )
+              }
+              else if (cell.type === "chart") {
                 return (
                   <Chart
                     key={i}
@@ -228,6 +239,12 @@ export default function App() {
                     className="ml-2 mb-2"
                   >
                     Sort
+                  </Button>
+                  <Button
+                    onClick={() => addCell("removeDuplicate", setCells)}
+                    className="ml-2 mb-2"
+                  >
+                    Remove Duplicates
                   </Button>
                   <Button
                     onClick={() => addCell("table", setCells)}

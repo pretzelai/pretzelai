@@ -16,6 +16,7 @@ export type CellType =
   | "AI"
   | "sort"
   | "userquery"
+  | "removeDuplicate"
 
 export type Cell = {
   type: CellType
@@ -47,6 +48,7 @@ export const getFieldsQueryBuilder = () => {
   // PRQL
   return `take 1`
 }
+
 
 export const getFieldValuesQueryBuilder = (field: string) => {
   // SQL
@@ -89,7 +91,12 @@ export const mergeQueries = (accQuery: string, nextQuery: string) => {
   // PRQL
   return `${accQuery}\n${nextQuery}`
 }
-
+export const removeQuery = (selectedColumn: string) => {
+  //SQL
+  // return  `select distinct ${selectedColumn} from table`
+  // PRQL
+  return `group \`${selectedColumn}\` (take 1)`
+}
 export const query = async (db: any, modifiedPrql: string) => {
   let result
   try {
