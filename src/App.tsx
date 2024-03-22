@@ -20,7 +20,6 @@ import AI from "./components/AI"
 import Feedback from "./components/Feedback"
 import { POSTHOG_PUBLIC_KEY, POSTHOG_URL } from "./lib/config"
 import Sort from "./components/Sort"
-import { loadPyodide, PyodideInterface } from "pyodide"
 import Python from "./components/Python"
 
 const addCell = (
@@ -47,16 +46,6 @@ const updateQueryFactory = (
 export default function App() {
   const [db, setDb] = useState<AsyncDuckDB | null>(null)
   const [cells, setCells] = useState<Cell[]>([{ type: "upload" }])
-  const [pyodide, setPyodide] = useState<PyodideInterface>()
-
-  useEffect(() => {
-    loadPyodide({
-      indexURL: import.meta.env.PROD ? "./pyodide" : "./public/pyodide",
-    }).then((pyodide) => {
-      setPyodide(pyodide)
-      pyodide.loadPackage("numpy")
-    })
-  }, [])
 
   useEffect(() => {
     const initDbAsync = async () => {
@@ -194,7 +183,6 @@ export default function App() {
                     db={db}
                     updateQuery={updateQueryFactory(i, cell, setCells)}
                     prevQuery={cells[i - 1].query as string}
-                    pyodide={pyodide}
                   />
                 )
               }
