@@ -11,6 +11,7 @@ import { PyodideInterface } from "pyodide"
 import CodeMirror, { minimalSetup } from "@uiw/react-codemirror"
 import { python } from "@codemirror/lang-python"
 import { cn } from "../lib/utils"
+import { v4 as uuid } from "uuid"
 
 export default function userPython({
   db,
@@ -24,10 +25,33 @@ export default function userPython({
   const [isLoading, setIsLoading] = useState(false)
   const [isError, setIsError] = useState(false)
   const [result, setResult] = useState("")
-  const [code, setCode] = useState("# Your Python code goes here")
+  const [code, setCode] = useState("# Your Python, save in df_output to export")
   const [worker, setWorker] = useState<any>(null)
   const [isDfLoaded, setIsDfLoaded] = useState(false)
   const [queue, setQueue] = useState("")
+  const [table, setTable] = useState("")
+
+  const exportData = async (data: any) => {
+    if (db) {
+      const c = await db.connect()
+      let t = table
+      if (t) {
+        await c.query(`DROP TABLE "${t}"`)
+      } else {
+        t = uuid()
+        setTable(t)
+      }
+      await db.registerFileText(t, data)
+      await c.insertCSVFromPath(t, {
+        schema: "main",
+        name: t,
+        detect: true,
+        header: true,
+      })
+      await c.close()
+      updateQuery(`from \`${t}\``)
+    }
+  }
 
   useEffect(() => {
     const w = new Worker(
@@ -41,7 +65,6 @@ export default function userPython({
     const fetchData = async () => {
       try {
         const { rowsJson, result } = await query(db, prevQuery)
-        updateQuery(prevQuery)
         w.postMessage(`import json
 import pandas as pd
 df = pd.DataFrame(${JSON.stringify(rowsJson).replace(/null/g, "None")})
@@ -55,6 +78,9 @@ df = pd.DataFrame(${JSON.stringify(rowsJson).replace(/null/g, "None")})
         fetchData()
       } else if (event.data === "df_loaded") {
         setIsDfLoaded(true)
+      } else if (event.data.startsWith("export")) {
+        const data = event.data.substring(6)
+        exportData(data)
       } else {
         setResult(event.data)
         setIsLoading(false)
@@ -83,6 +109,10 @@ df = pd.DataFrame(${JSON.stringify(rowsJson).replace(/null/g, "None")})
       setCode((c) => c.slice(0, -1))
       runQuery()
     }
+  }
+
+  const handleExport = () => {
+    worker.postMessage("export")
   }
 
   return (
@@ -121,6 +151,7 @@ df = pd.DataFrame(${JSON.stringify(rowsJson).replace(/null/g, "None")})
           />
         )}
       </div>
+      <Button onClick={handleExport}>Export</Button>
     </Block>
   )
 }

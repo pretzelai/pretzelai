@@ -4,10 +4,21 @@ const pyodide = await loadPyodide({
   indexURL: import.meta.env.PROD ? "./pyodide" : "../../public/pyodide",
 })
 await pyodide.loadPackage("pandas")
+await pyodide.loadPackage("numpy")
 
 postMessage("ready")
 
 onmessage = async (event) => {
-  console.log("executing", event.data)
-  postMessage(String(await pyodide.runPythonAsync(event.data)))
+  let result
+  if (event.data === "export") {
+    result =
+      "export" + String(await pyodide.runPythonAsync(`df_output.to_csv()`))
+  } else {
+    try {
+      result = String(await pyodide.runPythonAsync(event.data))
+    } catch (error: any) {
+      result = error.type
+    }
+  }
+  postMessage(result)
 }
