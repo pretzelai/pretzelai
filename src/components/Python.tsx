@@ -17,16 +17,17 @@ export default function userPython({
   db,
   updateQuery,
   prevQuery,
+  worker,
 }: {
   db: AsyncDuckDB | null
   updateQuery: (q: string) => void
   prevQuery: string
+  worker: any
 }) {
   const [isLoading, setIsLoading] = useState(false)
   const [isError, setIsError] = useState(false)
   const [result, setResult] = useState("")
-  const [code, setCode] = useState("# Your Python, save in df_output to export")
-  const [worker, setWorker] = useState<any>(null)
+  const [code, setCode] = useState("") //"# Your Python, save in df_output to export")
   const [isDfLoaded, setIsDfLoaded] = useState(false)
   const [queue, setQueue] = useState("")
   const [table, setTable] = useState("")
@@ -54,27 +55,25 @@ export default function userPython({
   }
 
   useEffect(() => {
-    const w = new Worker(
-      // eslint-disable-next-line unicorn/relative-url-style
-      new URL("../lib/worker.ts", import.meta.url),
-      {
-        type: "module",
-      }
-    )
-    setWorker(w)
     const fetchData = async () => {
       try {
         const { rowsJson, result } = await query(db, prevQuery)
-        w.postMessage(`import json
-import pandas as pd
-df = pd.DataFrame(${JSON.stringify(rowsJson).replace(/null/g, "None")})
-'df_loaded'`)
+        worker.postMessage(`df = pd.DataFrame(${JSON.stringify(
+          rowsJson,
+          (key, value) => (typeof value === "bigint" ? value.toString() : value)
+        )
+          .replace(/null/g, "None")
+          .replace(/false/g, "False")
+          .replace(/true/g, "True")})
+'df_loaded'`) // output string 'df_loaded'
       } catch (error) {
         console.error("Error in useEffect:", error)
       }
     }
-    w.onmessage = (event) => {
+    worker.onmessage = (event: any) => {
+      console.log(event.data)
       if (event.data === "ready") {
+        // fix this cause it makes it not work for second block, we need a ispyodide loaded
         fetchData()
       } else if (event.data === "df_loaded") {
         setIsDfLoaded(true)
@@ -86,7 +85,8 @@ df = pd.DataFrame(${JSON.stringify(rowsJson).replace(/null/g, "None")})
         setIsLoading(false)
       }
     }
-  }, [])
+    fetchData()
+  }, [worker])
 
   useEffect(() => {
     if (isDfLoaded && queue) {
@@ -97,6 +97,7 @@ df = pd.DataFrame(${JSON.stringify(rowsJson).replace(/null/g, "None")})
 
   const runQuery = () => {
     setIsLoading(true)
+    console.log("🚀 ~ runQuery ~ isDfLoaded:", isDfLoaded)
     if (!isDfLoaded) {
       setQueue(code)
     } else {

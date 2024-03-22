@@ -5,6 +5,11 @@ const pyodide = await loadPyodide({
 })
 await pyodide.loadPackage("pandas")
 await pyodide.loadPackage("numpy")
+try {
+  await pyodide.runPythonAsync(`import pandas as pd`)
+} catch (e) {
+  console.log(e)
+}
 
 postMessage("ready")
 

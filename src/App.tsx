@@ -46,6 +46,7 @@ const updateQueryFactory = (
 export default function App() {
   const [db, setDb] = useState<AsyncDuckDB | null>(null)
   const [cells, setCells] = useState<Cell[]>([{ type: "upload" }])
+  const [worker, setWorker] = useState<any>(null)
 
   useEffect(() => {
     const initDbAsync = async () => {
@@ -55,6 +56,14 @@ export default function App() {
       setDb(db)
     }
     initDbAsync()
+    const w = new Worker(
+      // eslint-disable-next-line unicorn/relative-url-style
+      new URL("./lib/worker.ts", import.meta.url),
+      {
+        type: "module",
+      }
+    )
+    setWorker(w)
   }, [])
 
   return (
@@ -183,6 +192,7 @@ export default function App() {
                     db={db}
                     updateQuery={updateQueryFactory(i, cell, setCells)}
                     prevQuery={cells[i - 1].query as string}
+                    worker={worker}
                   />
                 )
               }
