@@ -121,7 +121,7 @@ export default function Upload({
           }
         }
         csvString +=
-          cell !== null && cell !== "null" && cell !== undefined && !cellIsNan
+          cell !== null && cell !== undefined && !cellIsNan
             ? cell
             : ""
         csvString += cellIndex < row.length - 1 ? delimiter : ""
