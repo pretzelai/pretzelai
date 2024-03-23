@@ -30,8 +30,7 @@ export default function Upload({
   const [csvUrl, setCsvUrl] = useState("")
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isResetCells, setIsResetCells] = useState(true)
-  const [rowCount,setRowCount] = useState(1)
-  const [isRowCountVisible, setIsRowCountVisible] = useState(false);
+  const [rowCount, setRowCount] = useState(0)
   const [job, setJob] = useState<{
     csvContent: string
     sourceName: string
@@ -76,7 +75,7 @@ export default function Upload({
     let parser = initParser(schema)
     let typedArrs = parser.typedArrs(csvContent)
     let typedCols = parser.typedCols(csvContent) // [ [1, 4], [2, 5], [3, 6] ]
-    setRowCount(typedArrs.length-1)
+    setRowCount(typedArrs.length)
 
     let columnTypes: { [key: string]: any } = {}
     let csvString = ""
@@ -184,6 +183,7 @@ export default function Upload({
         await c.insertJSONFromPath(sourceName, { name: INPUT_TABLE })
 
         await c.close()
+        setRowCount(jsonRows.length)
         const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
         if (isResetCells) {
           setCells([{ type: "upload", query: uploadQuery }])
@@ -216,7 +216,6 @@ export default function Upload({
     } finally {
       setIsLoading(false)
     }
-    setIsRowCountVisible(!isRowCountVisible)
   }
 
   const handleFileUpload = async (event: any) => {
@@ -245,7 +244,6 @@ export default function Upload({
     } else {
       reader.readAsText(file)
     }
-    setIsRowCountVisible(!isRowCountVisible)
   }
 
   return (
@@ -280,10 +278,16 @@ export default function Upload({
           </Button>
         </div>
       </div>
-      <Button className="my-4" onClick={() => {urlCsvUpload(DEMO_CSV_URL)}}>
+      <Button
+        className="my-4"
+        onClick={() => {
+          urlCsvUpload(DEMO_CSV_URL)
+        }}
+      >
         Load Demo CSV
-      </Button><br/>
-      <Label className={isRowCountVisible ? '' : 'invisible'}>The file has {rowCount} records</Label>
+      </Button>
+      <br />
+      {!!rowCount && <Label>{rowCount} rows loaded</Label>}
       {/* <div className="flex items-center space-x-2">
         <Checkbox
           id="terms"
