@@ -27,7 +27,9 @@ export default function userPython({
   const [isLoading, setIsLoading] = useState(false)
   const [isError, setIsError] = useState(false)
   const [result, setResult] = useState("")
-  const [code, setCode] = useState("") //"# Your Python, save in df_output to export")
+  const [code, setCode] = useState(
+    "# Data loaded in df, save in df_output to export"
+  )
   const [isDfLoaded, setIsDfLoaded] = useState(false)
   const [queue, setQueue] = useState("")
   const [table, setTable] = useState("")
