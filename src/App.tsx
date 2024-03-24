@@ -160,11 +160,12 @@ export default function App() {
               }
                  else if (cell.type === "removeDuplicate") {
                 return (
-                  <RemoveDuplicate
+                   <RemoveDuplicate
                     key={i}
                     db={db}
                     updateQuery={updateQueryFactory(i, cell, setCells)}
                     prevQuery={cells[i - 1].query as string}
+                    onDelete={() => setCells(cells.filter((_, index) => index !== i))}
                   />
                 )
               }
