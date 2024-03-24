@@ -28,6 +28,7 @@ export default function userPython({
   const [queue, setQueue] = useState("")
   const [table, setTable] = useState("")
   const [executedAt, setExecutedAt] = useState("")
+  const [isExported, setIsExported] = useState(false)
 
   const exportData = async (data: any) => {
     if (db) {
@@ -48,10 +49,13 @@ export default function userPython({
       })
       await c.close()
       updateQuery(`from \`${t}\``)
+      setIsExported(true)
+      setIsDfLoaded(false)
+      // wip: if df_output is present export
     }
   }
 
-  useEffect(() => {
+  const loadWorkerAndDf = () => {
     const fetchData = async () => {
       try {
         const { rowsJson, result } = await query(db, prevQuery)
@@ -85,7 +89,9 @@ export default function userPython({
       }
     }
     fetchData()
-  }, [worker])
+  }
+
+  useEffect(loadWorkerAndDf, [worker])
 
   useEffect(() => {
     if (isDfLoaded && queue) {
@@ -97,7 +103,11 @@ export default function userPython({
   const runQuery = () => {
     setIsLoading(true)
     console.log("🚀 ~ runQuery ~ isDfLoaded:", isDfLoaded)
-    if (!isDfLoaded) {
+    if (!isDfLoaded || isExported) {
+      if (isExported) {
+        loadWorkerAndDf()
+        setIsExported(false)
+      }
       setQueue(code)
     } else {
       worker.postMessage(code)
