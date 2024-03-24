@@ -10,6 +10,7 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import axios from "axios"
 import { inferSchema, initParser } from "udsv"
+import { json2csv } from 'json-2-csv'
 import XLSX from "xlsx"
 
 const DEMO_CSV_URL =
@@ -233,6 +234,10 @@ export default function Upload({
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
         csvContent = XLSX.utils.sheet_to_csv(worksheet)
+      } else if (file.type.includes("json")) {
+        const jsonContent = JSON.parse(e.target?.result as string)
+        const jsonRows = Array.isArray(jsonContent) ? jsonContent : [jsonContent]
+        csvContent = json2csv(jsonRows, {unwindArrays: true})
       } else {
         csvContent = e.target?.result as string
       }
@@ -255,7 +260,7 @@ export default function Upload({
           <Input
             id="file_upload"
             type="file"
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/json"
             onChange={handleFileUpload}
             disabled={isLoading}
           />
