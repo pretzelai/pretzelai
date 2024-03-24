@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react"
 import { AsyncDuckDB } from "../lib/duckdb"
-import { query, mergeQueries } from "../lib/utils"
+import { query } from "../lib/utils"
 import { Button } from "./ui/button"
-import { Textarea } from "./ui/textarea"
-import { Label } from "./ui/label"
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
 import { loading } from "./ui/loading"
 import Block from "./ui/Block"
-import { PyodideInterface } from "pyodide"
 import CodeMirror, { minimalSetup } from "@uiw/react-codemirror"
 import { python } from "@codemirror/lang-python"
-import { cn } from "../lib/utils"
 import { v4 as uuid } from "uuid"
 
 export default function userPython({
@@ -25,14 +20,14 @@ export default function userPython({
   worker: any
 }) {
   const [isLoading, setIsLoading] = useState(false)
-  const [isError, setIsError] = useState(false)
   const [result, setResult] = useState("")
   const [code, setCode] = useState(
-    "# Data loaded in df, save in df_output to export"
+    "# Data loaded in df, save in df_output to export\n"
   )
   const [isDfLoaded, setIsDfLoaded] = useState(false)
   const [queue, setQueue] = useState("")
   const [table, setTable] = useState("")
+  const [executedAt, setExecutedAt] = useState("")
 
   const exportData = async (data: any) => {
     if (db) {
@@ -75,7 +70,6 @@ export default function userPython({
     worker.onmessage = (event: any) => {
       console.log(event.data)
       if (event.data === "ready") {
-        // fix this cause it makes it not work for second block, we need a ispyodide loaded
         fetchData()
       } else if (event.data === "df_loaded") {
         setIsDfLoaded(true)
@@ -85,6 +79,9 @@ export default function userPython({
       } else {
         setResult(event.data)
         setIsLoading(false)
+        setExecutedAt(
+          `Cell executed at ${new Date().toLocaleTimeString()} without output`
+        )
       }
     }
     fetchData()
@@ -119,7 +116,7 @@ export default function userPython({
   }
 
   return (
-    <Block className="mb-4 w-3/4" title="Python">
+    <Block className="mb-4 w-full" title="Python">
       <div className="flex flex-col gap-2 w-full">
         <CodeMirror
           minHeight="10px"
@@ -139,10 +136,13 @@ export default function userPython({
           onKeyDown={handleKeyDown}
         />
         {isLoading ? (
-          loading
-        ) : isError ? (
-          <div className="text-red-500">{String(result)}</div>
-        ) : (
+          <div className="flex">
+            {loading}
+            {" loading in pandas dataframe"}
+          </div>
+        ) : result.startsWith("Error: ") ? (
+          <div className="text-red-500">{result}</div>
+        ) : result ? (
           <CodeMirror
             minHeight="10px"
             theme={"light"}
@@ -150,8 +150,10 @@ export default function userPython({
             className="w-full border h-[200px]"
             editable={false}
             basicSetup={false}
-            value={String(result)}
+            value={result}
           />
+        ) : (
+          <div className="text-gray-500">{executedAt}</div>
         )}
       </div>
       <Button onClick={handleExport}>Export</Button>

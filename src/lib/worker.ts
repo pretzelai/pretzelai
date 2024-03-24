@@ -20,9 +20,9 @@ onmessage = async (event) => {
       "export" + String(await pyodide.runPythonAsync(`df_output.to_csv()`))
   } else {
     try {
-      result = String(await pyodide.runPythonAsync(event.data))
+      result = String((await pyodide.runPythonAsync(event.data)) || "")
     } catch (error: any) {
-      result = error.type
+      result = `Error: ${error.type}`
     }
   }
   postMessage(result)
