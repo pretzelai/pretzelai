@@ -14,16 +14,15 @@ try {
 postMessage("ready")
 
 onmessage = async (event) => {
-  let result
-  if (event.data === "export") {
-    result =
-      "export" + String(await pyodide.runPythonAsync(`df_output.to_csv()`))
-  } else {
-    try {
-      result = String((await pyodide.runPythonAsync(event.data)) || "")
-    } catch (error: any) {
-      result = `Error: ${error.type}`
+  try {
+    postMessage(String((await pyodide.runPythonAsync(event.data)) || ""))
+    // "df_output" without "#" before
+    if (/^(?!.*#.*df_output).*df_output/gm.test(event.data)) {
+      postMessage(
+        "export" + String(await pyodide.runPythonAsync(`df_output.to_csv()`))
+      )
     }
+  } catch (error: any) {
+    postMessage(`Error: ${error.type}`)
   }
-  postMessage(result)
 }

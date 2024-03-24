@@ -22,16 +22,17 @@ export default function userPython({
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState("")
   const [code, setCode] = useState(
-    "# Data loaded in df, save in df_output to export\n"
+    "# Data loaded in df, save in df_output to export. Example:\n# df_output = df.head()\ndf.describe()"
   )
   const [isDfLoaded, setIsDfLoaded] = useState(false)
   const [queue, setQueue] = useState("")
   const [table, setTable] = useState("")
   const [executedAt, setExecutedAt] = useState("")
-  const [isExported, setIsExported] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   const exportData = async (data: any) => {
     if (db) {
+      setIsExporting(true)
       const c = await db.connect()
       let t = table
       if (t) {
@@ -48,14 +49,12 @@ export default function userPython({
         header: true,
       })
       await c.close()
-      updateQuery(`from \`${t}\``)
-      setIsExported(true)
-      setIsDfLoaded(false)
-      // wip: if df_output is present export
+      updateQuery(`from \`${t}\` #${Date.now()}`)
+      setIsExporting(false)
     }
   }
 
-  const loadWorkerAndDf = () => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const { rowsJson, result } = await query(db, prevQuery)
@@ -71,6 +70,7 @@ export default function userPython({
         console.error("Error in useEffect:", error)
       }
     }
+
     worker.onmessage = (event: any) => {
       console.log(event.data)
       if (event.data === "ready") {
@@ -89,25 +89,18 @@ export default function userPython({
       }
     }
     fetchData()
-  }
-
-  useEffect(loadWorkerAndDf, [worker])
+  }, [worker])
 
   useEffect(() => {
     if (isDfLoaded && queue) {
-      setQueue("")
       worker.postMessage(queue)
+      setQueue("")
     }
   }, [isDfLoaded])
 
   const runQuery = () => {
     setIsLoading(true)
-    console.log("🚀 ~ runQuery ~ isDfLoaded:", isDfLoaded)
-    if (!isDfLoaded || isExported) {
-      if (isExported) {
-        loadWorkerAndDf()
-        setIsExported(false)
-      }
+    if (!isDfLoaded) {
       setQueue(code)
     } else {
       worker.postMessage(code)
@@ -116,13 +109,8 @@ export default function userPython({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      setCode((c) => c.slice(0, -1))
       runQuery()
     }
-  }
-
-  const handleExport = () => {
-    worker.postMessage("export")
   }
 
   return (
@@ -145,10 +133,14 @@ export default function userPython({
           onChange={setCode}
           onKeyDown={handleKeyDown}
         />
-        {isLoading ? (
+        <Button
+          onClick={runQuery}
+          className="w-min"
+        >{`Run (Cmd + Enter)`}</Button>
+        {isLoading || isExporting ? (
           <div className="flex">
             {loading}
-            {" loading in pandas dataframe"}
+            {isExporting ? "Exporting data" : "Loading in pandas dataframe"}
           </div>
         ) : result.startsWith("Error: ") ? (
           <div className="text-red-500">{result}</div>
@@ -166,7 +158,6 @@ export default function userPython({
           <div className="text-gray-500">{executedAt}</div>
         )}
       </div>
-      <Button onClick={handleExport}>Export</Button>
     </Block>
   )
 }
