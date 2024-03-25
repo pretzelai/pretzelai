@@ -36,6 +36,7 @@ export default function Upload({
     csvContent: string
     sourceName: string
   } | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (job) {
@@ -225,6 +226,7 @@ export default function Upload({
       console.error("No file selected.")
       return
     }
+    setError(null)
     setIsLoading(true)
     const reader = new FileReader()
     reader.onload = async (e) => {
@@ -235,9 +237,16 @@ export default function Upload({
         const worksheet = workbook.Sheets[sheetName]
         csvContent = XLSX.utils.sheet_to_csv(worksheet)
       } else if (file.type.includes("json")) {
-        const jsonContent = JSON.parse(e.target?.result as string)
-        const jsonRows = Array.isArray(jsonContent) ? jsonContent : [jsonContent]
-        csvContent = json2csv(jsonRows, {unwindArrays: true})
+        try {
+          const jsonContent = JSON.parse(e.target?.result as string)
+          const jsonRows = Array.isArray(jsonContent) ? jsonContent : [jsonContent]
+          csvContent = await json2csv(jsonRows, {unwindArrays: true})
+        } catch (error) {
+          console.error(error)
+          setError(`Error loading JSON`)
+          setIsLoading(false)
+          return
+        }
       } else {
         csvContent = e.target?.result as string
       }
@@ -293,6 +302,15 @@ export default function Upload({
       </Button>
       <br />
       {!!rowCount && <Label>{rowCount} rows loaded</Label>}
+      <div className="bg-red-200 font-bold max-w-full">
+        {error &&
+          error.split("\n").map((line, index) => (
+            <span key={index}>
+              {line}
+              <br />
+            </span>
+          ))}
+      </div>
       {/* <div className="flex items-center space-x-2">
         <Checkbox
           id="terms"
