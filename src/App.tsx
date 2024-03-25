@@ -20,6 +20,7 @@ import AI from "./components/AI"
 import Feedback from "./components/Feedback"
 import { POSTHOG_PUBLIC_KEY, POSTHOG_URL } from "./lib/config"
 import Sort from "./components/Sort"
+import Python from "./components/Python"
 
 const addCell = (
   type: CellType,
@@ -45,6 +46,7 @@ const updateQueryFactory = (
 export default function App() {
   const [db, setDb] = useState<AsyncDuckDB | null>(null)
   const [cells, setCells] = useState<Cell[]>([{ type: "upload" }])
+  const [worker, setWorker] = useState<any>(null)
 
   useEffect(() => {
     const initDbAsync = async () => {
@@ -54,6 +56,14 @@ export default function App() {
       setDb(db)
     }
     initDbAsync()
+    const w = new Worker(
+      //eslint-disable-next-line unicorn/relative-url-style
+      new URL("./core/worker.ts", import.meta.url),
+      {
+        type: "module",
+      }
+    )
+    setWorker(w)
   }, [])
 
   return (
@@ -175,6 +185,16 @@ export default function App() {
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
+              } else if (cell.type === "python") {
+                return (
+                  <Python
+                    key={i}
+                    db={db}
+                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    prevQuery={cells[i - 1].query as string}
+                    worker={worker}
+                  />
+                )
               }
               return null
             })}
@@ -192,6 +212,12 @@ export default function App() {
                     className="ml-2 mb-2"
                   >
                     Ask AI
+                  </Button>
+                  <Button
+                    onClick={() => addCell("python", setCells)}
+                    className="ml-2 mb-2"
+                  >
+                    Python
                   </Button>
                   <Button
                     onClick={() => addCell("pivot", setCells)}

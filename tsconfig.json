@@ -17,5 +17,5 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "vite-plugin-svgr/client"]
   },
-  "include": ["src"]
+  "include": ["src", "public/pyodide"]
 }
