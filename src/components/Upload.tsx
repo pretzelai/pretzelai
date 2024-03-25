@@ -10,7 +10,7 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import axios from "axios"
 import { inferSchema, initParser } from "udsv"
-import { json2csv } from 'json-2-csv'
+import { json2csv } from "json-2-csv"
 import XLSX from "xlsx"
 
 const DEMO_CSV_URL =
@@ -123,9 +123,7 @@ export default function Upload({
           }
         }
         csvString +=
-          cell !== null && cell !== undefined && !cellIsNan
-            ? cell
-            : ""
+          cell !== null && cell !== undefined && !cellIsNan ? cell : ""
         csvString += cellIndex < row.length - 1 ? delimiter : ""
       })
       csvString += rowIndex < typedArrs.length - 1 ? "\n" : "" // New line at the end of each row
@@ -236,14 +234,20 @@ export default function Upload({
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
         csvContent = XLSX.utils.sheet_to_csv(worksheet)
-      } else if (file.type.includes("json") && typeof e.target?.result === "string") {
+      } else if (
+        file.type.includes("json") &&
+        typeof e.target?.result === "string"
+      ) {
         try {
           const jsonContent = JSON.parse(e.target.result)
-          const jsonRows = Array.isArray(jsonContent) ? jsonContent : [jsonContent]
-          csvContent = await json2csv(jsonRows, {unwindArrays: true})
+          const jsonRows = Array.isArray(jsonContent)
+            ? jsonContent
+            : [jsonContent]
+          csvContent = await json2csv(jsonRows, { unwindArrays: true })
         } catch (error) {
           console.error(error)
           setError(`Error loading JSON`)
+          setRowCount(0)
           setIsLoading(false)
           return
         }
