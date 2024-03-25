@@ -236,9 +236,9 @@ export default function Upload({
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
         csvContent = XLSX.utils.sheet_to_csv(worksheet)
-      } else if (file.type.includes("json")) {
+      } else if (file.type.includes("json") && typeof e.target?.result === "string") {
         try {
-          const jsonContent = JSON.parse(e.target?.result as string)
+          const jsonContent = JSON.parse(e.target.result)
           const jsonRows = Array.isArray(jsonContent) ? jsonContent : [jsonContent]
           csvContent = await json2csv(jsonRows, {unwindArrays: true})
         } catch (error) {
