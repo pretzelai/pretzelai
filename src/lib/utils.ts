@@ -91,12 +91,22 @@ export const mergeQueries = (accQuery: string, nextQuery: string) => {
   // PRQL
   return `${accQuery}\n${nextQuery}`
 }
-export const removeQuery = (selectedColumn: string) => {
-  //SQL
-  // return  `select distinct ${selectedColumn} from table`
-  // PRQL
-  return `group \`${selectedColumn}\` (take 1)`
-}
+// utils.ts
+
+export const removeQuery = (selectedColumn: string, fields: string[]) => {
+  if (selectedColumn === "Full Rows") {
+    // Execute removal of duplicates based on all columns
+    const columnsToGroup = fields.filter(column => column !== "Full Rows");
+    const groupedColumns = columnsToGroup.map(column => `\`${column}\``).join(",");
+    return `group {${groupedColumns}} (take 1)`;
+  } else {
+    // Execute removal of duplicates based on the selected column
+    return `group \`${selectedColumn}\` (take 1)`;
+  }
+};
+
+
+
 export const query = async (db: any, modifiedPrql: string) => {
   let result
   try {

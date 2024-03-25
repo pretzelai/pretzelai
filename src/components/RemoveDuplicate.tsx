@@ -22,32 +22,34 @@ export default function RemoveDuplicateBlock({
   db,
   updateQuery,
   prevQuery,
-  onDelete, // Add onDelete prop
+  onDelete,
 }: DuplicateProps) {
   const [fields, setFields] = useState<string[]>([]);
-  const [selectedColumn, setSelectedColumn] = useState<string>("");
+  const [selectedColumn, setSelectedColumn] = useState<string>("Full Rows");
   const [tableRows, setTableRows] = useState<number>(0);
   const [currentTableRows, setCurrentTableRows] = useState<number>(0);
   const [numDuplicatesRemoved, setNumDuplicatesRemoved] = useState<number>(0);
   const [pendingColumn, setPendingColumn] = useState<string>("");
 
   useEffect(() => {
-    const fetchFields = async () => {
-      if (db && prevQuery) {
-        const { rowsJson } = await query(db, mergeQueries(prevQuery, ""));
-        if (rowsJson?.[0]) {
-          setFields(Object.keys(rowsJson[0]));
-          setTableRows(rowsJson.length);
-        }
+  const fetchFields = async () => {
+    if (db && prevQuery) {
+      const { rowsJson } = await query(db, mergeQueries(prevQuery, ""));
+      if (rowsJson?.[0]) {
+        // Include "Full Rows" in the fields state
+        setFields(["Full Rows", ...Object.keys(rowsJson[0])]);
+        setTableRows(rowsJson.length);
       }
-    };
-    fetchFields();
-  }, [db, prevQuery]);
+    }
+  };
+  fetchFields();
+}, [db, prevQuery]);
+
 
   useEffect(() => {
     const handleRemoveDuplicates = async () => {
       if (pendingColumn) {
-        const removeDuplicateQuery = removeQuery(pendingColumn);
+        const removeDuplicateQuery = removeQuery(pendingColumn, fields);
         const q = mergeQueries(prevQuery, removeDuplicateQuery);
         const result = await query(db, q);
         if (result.rowsJson && result.rowsJson.length > 0) {
@@ -61,7 +63,14 @@ export default function RemoveDuplicateBlock({
     };
     const timeoutId = setTimeout(handleRemoveDuplicates, 500);
     return () => clearTimeout(timeoutId);
-  }, [db, prevQuery, pendingColumn, tableRows, updateQuery]);
+  }, [db, prevQuery, pendingColumn, tableRows, updateQuery, fields]);
+
+  useEffect(() => {
+    // Automatically remove duplicates on mount with the default option "Full Rows"
+    if (selectedColumn === "Full Rows") {
+      setPendingColumn(selectedColumn);
+    }
+  }, [selectedColumn]);
 
   return (
     <Block className="mb-4 w-3/4 flex-col" title="Remove Duplicates">
@@ -87,7 +96,6 @@ export default function RemoveDuplicateBlock({
             ))}
           </SelectContent>
         </Select>
-        {/* Call onDelete function when delete button is clicked */}
         <Button
           className="rounded-md bg-red-500 px-3 py-2 text-white hover:bg-red-600"
           onClick={onDelete}
