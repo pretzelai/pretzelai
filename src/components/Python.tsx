@@ -72,7 +72,6 @@ export default function userPython({
     }
 
     worker.onmessage = (event: any) => {
-      console.log(event.data)
       if (event.data === "ready") {
         fetchData()
       } else if (event.data === "df_loaded") {

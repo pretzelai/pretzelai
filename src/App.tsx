@@ -57,8 +57,8 @@ export default function App() {
     }
     initDbAsync()
     const w = new Worker(
-      // eslint-disable-next-line unicorn/relative-url-style
-      new URL("./lib/worker.ts", import.meta.url),
+      //eslint-disable-next-line unicorn/relative-url-style
+      new URL("./core/worker.ts", import.meta.url),
       {
         type: "module",
       }

@@ -1,10 +1,9 @@
 import { loadPyodide } from "pyodide"
 
 const pyodide = await loadPyodide({
-  indexURL: import.meta.env.PROD ? "./pyodide" : "../../public/pyodide",
+  indexURL: import.meta.env.PROD ? "../pyodide" : "../../public/pyodide",
 })
-await pyodide.loadPackage("pandas")
-await pyodide.loadPackage("numpy")
+await Promise.all([pyodide.loadPackage("pandas"), pyodide.loadPackage("numpy")])
 try {
   await pyodide.runPythonAsync(`import pandas as pd`)
 } catch (e) {
