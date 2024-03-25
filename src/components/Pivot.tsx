@@ -227,7 +227,7 @@ export default function PivotTable({
                           <SelectItem value="stddev">Std Dev</SelectItem>
                           <SelectItem value="variance">Variance</SelectItem>
                           <SelectItem value="first">First Value</SelectItem>
-                          <SelectItem value="var_samp">Last Value</SelectItem>
+                          <SelectItem value="last">Last Value</SelectItem> 
                           <SelectItem value="arbitrary">
                             Arbitrary Value
                           </SelectItem>
