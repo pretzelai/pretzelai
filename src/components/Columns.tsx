@@ -10,16 +10,9 @@ import {
   columnErrorQueryBuilder,
 } from "../lib/utils"
 import { Button } from "./ui/button"
-
-export default function Columns({
-  db,
-  updateQuery,
-  prevQuery,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-}) {
+import { useCell } from "../store/useStore"
+export default function Columns({ id }: { id: number }) {
+  const { updateQuery, prevQuery, db } = useCell(id)
   const [fields, setFields] = useState<string[] | null>(null)
   const [selectedFieldsStatus, setSelectedFieldsStatus] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)

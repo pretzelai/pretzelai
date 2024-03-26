@@ -46,7 +46,10 @@ export const useStore = create<AppState>()((set, get) => ({
 
 export const useCell = (id: number) => {
   const cell = useStore((state) => state.cells[id])
-  const updateQuery = (q: string) =>
-    useStore((state) => state.updateQuery(id, q))
-  return { cell, updateQuery }
+  const update = useStore((state) => state.updateQuery)
+  const updateQuery = (q: string) => update(id, q)
+  const cells = useStore((state) => state.cells)
+  const prevQuery = cells[id - 1]?.query || ""
+  const db = useStore((state) => state.db)
+  return { cell, updateQuery, prevQuery, db }
 }

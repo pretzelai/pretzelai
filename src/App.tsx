@@ -113,14 +113,7 @@ export default function App() {
                   </div>
                 )
               } else if (cell.type === "columns") {
-                return (
-                  <Columns
-                    key={i}
-                    db={db}
-                    updateQuery={(q) => updateQuery(i, q)}
-                    prevQuery={cells[i - 1].query as string}
-                  />
-                )
+                return <Columns key={i} id={i} />
               } else if (cell.type === "derive") {
                 return (
                   <CreateColumn
