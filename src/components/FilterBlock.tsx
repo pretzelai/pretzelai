@@ -16,6 +16,7 @@ import {
   getFieldsQueryBuilder,
   getFieldValuesQueryBuilder,
   filterQueryBuilder,
+  filterQueryBuilderEquals,
   cn,
 } from "../lib/utils"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
@@ -61,13 +62,14 @@ const Filter: React.FC<FilterProps> = ({
   accQuery,
 }) => {
   const [fieldValues, setFieldValues] = useState<string[]>([])
+  const [val,setVal] = useState(0)
 
   useEffect(() => {
     const fetchFieldValues = async () => {
-      if (db && filter.column) {
+      if (db && filter.column) {        
         const { rowsJson } = await query(
           db,
-          mergeQueries(accQuery, getFieldValuesQueryBuilder(filter.column))
+          mergeQueries(accQuery, getFieldValuesQueryBuilder(filter.column)),
         )
         if (rowsJson) {
           setFieldValues(
@@ -78,6 +80,19 @@ const Filter: React.FC<FilterProps> = ({
     }
     fetchFieldValues()
   }, [db, accQuery, filter.column])
+
+  useEffect(()=>{
+    const fetchValues = async()=>{
+      if(db && filter.value && filter.column && filter.operator){
+        const { rowsJson } = await query(
+          db,
+          mergeQueries(accQuery, filterQueryBuilderEquals(filter.column ,filter.operator,filter.value )),
+        )
+        setVal(rowsJson.length)
+      }
+    }
+    fetchValues()
+  },[filter.value,filter.operator])
 
   useEffect(() => {
     if (filter.column) {
@@ -159,7 +174,10 @@ const Filter: React.FC<FilterProps> = ({
         {filter?.operator !== "notNull" &&
           (!filter?.operator?.includes("equals") || fieldValues.length > 100 ? (
             <TextInput
-              setFieldValue={(value) => onFilterChange({ ...filter, value })}
+              setFieldValue={(value) => {
+                onFilterChange({ ...filter, value })
+                filter.value=value;
+              }}
             />
           ) : (
             <Select
@@ -189,6 +207,7 @@ const Filter: React.FC<FilterProps> = ({
           Delete
         </Button>
       </div>
+      {val} rows filtered
     </FilterSection>
   )
 }

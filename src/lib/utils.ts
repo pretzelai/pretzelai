@@ -70,6 +70,21 @@ export const columnErrorQueryBuilder = (columns: string[]) => {
   return "select {`" + columns.join("`,`") + "`}\ntake 1"
 }
 
+export const filterQueryBuilderEquals = (filter: string,operator:string,value:string) => {
+  // SQL
+  // return `select * from table where (${filter}) = (${value})`
+  // PRQL
+  if(filter && value){
+    if(operator=='equals'){
+      return `filter ${filter} == '${value}'`
+    }
+    if(operator=='not equals'){
+      return `filter ${filter} != '${value}'`
+    }
+  }
+  return ""
+}
+
 export const filterQueryBuilder = (filter: string) => {
   // SQL
   // return `select * from table where (${filter})`
