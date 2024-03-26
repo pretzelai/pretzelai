@@ -43,3 +43,10 @@ export const useStore = create<AppState>()((set, get) => ({
     get().setWorker(w)
   },
 }))
+
+export const useCell = (id: number) => {
+  const cell = useStore((state) => state.cells[id])
+  const updateQuery = (q: string) =>
+    useStore((state) => state.updateQuery(id, q))
+  return { cell, updateQuery }
+}

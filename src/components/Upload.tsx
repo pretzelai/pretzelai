@@ -10,17 +10,16 @@ import axios from "axios"
 import { inferSchema, initParser } from "udsv"
 import { json2csv } from "json-2-csv"
 import XLSX from "xlsx"
-import { useStore } from "../store/useStore"
+import { useStore, useCell } from "../store/useStore"
 
 const DEMO_CSV_URL =
   "https://pretzelai.github.io/github_public_code_editors.csv"
 
 export default function Upload({ id }: { id: number }) {
-  const { db, cells, setCells, updateQuery } = useStore()
+  const { db, setCells } = useStore()
+  const { cell } = useCell(id)
   const [isLoading, setIsLoading] = useState(false)
   const [csvUrl, setCsvUrl] = useState("")
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isResetCells, setIsResetCells] = useState(true)
   const [rowCount, setRowCount] = useState(0)
   const [job, setJob] = useState<{
     csvContent: string
@@ -135,7 +134,7 @@ export default function Upload({ id }: { id: number }) {
         parseCsvContentFirstPass(csvContent)
 
       await db.registerFileText(sourceName, csvString)
-      if (cells[id].query) {
+      if (cell.query) {
         await c.query(`DROP TABLE "${INPUT_TABLE}"`)
       }
       await c.insertCSVFromPath(sourceName, {
@@ -148,11 +147,7 @@ export default function Upload({ id }: { id: number }) {
       })
       await c.close()
       const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
-      if (isResetCells) {
-        setCells([{ type: "upload", query: uploadQuery }])
-      } else {
-        updateQuery(id, uploadQuery)
-      }
+      setCells([{ type: "upload", query: uploadQuery }])
     } catch (error) {
       console.error(
         `Error processing CSV, first pass content from ${sourceName}:`,
@@ -175,11 +170,7 @@ export default function Upload({ id }: { id: number }) {
         await c.close()
         setRowCount(jsonRows.length)
         const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
-        if (isResetCells) {
-          setCells([{ type: "upload", query: uploadQuery }])
-        } else {
-          updateQuery(id, uploadQuery)
-        }
+        setCells([{ type: "upload", query: uploadQuery }])
       } catch (error) {
         console.error(
           `Error processing CSV, second pass content from ${sourceName}:`,
@@ -305,19 +296,6 @@ export default function Upload({ id }: { id: number }) {
             </span>
           ))}
       </div>
-      {/* <div className="flex items-center space-x-2">
-        <Checkbox
-          id="terms"
-          checked={isResetCells}
-          onCheckedChange={() => setIsResetCells(!isResetCells)}
-        />
-        <label
-          htmlFor="terms"
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          Reset workflow on new upload
-        </label>
-      </div> */}
     </Block>
   )
 }
