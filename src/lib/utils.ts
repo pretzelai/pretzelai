@@ -70,10 +70,12 @@ export const columnErrorQueryBuilder = (columns: string[]) => {
 }
 
 export const filterQueryBuilder = (filter: string) => {
-  // SQL
-  // return `select * from table where (${filter})`
-  // PRQL
-  return filter ? `filter ${filter}` : ""
+  if (filter && filter.includes("text.lower") && filter.includes("not")) {
+    // Incase of "text.lower" and "not"
+    return `filter !${filter.replace("not","")}`;
+  } else {
+    return filter ? `filter ${filter}` : "";
+  }
 }
 
 export const tableViewQueryBuilder = (rowAmount: number) => {
