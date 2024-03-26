@@ -1,7 +1,5 @@
-import { AsyncDuckDB } from "../lib/duckdb"
 import * as arrow from "apache-arrow"
 import Block from "./ui/Block"
-import { Cell } from "../lib/utils"
 import { uploadQueryBuilder, INPUT_TABLE } from "../lib/utils"
 import { useEffect, useState } from "react"
 import { loading } from "./ui/loading"
@@ -12,21 +10,13 @@ import axios from "axios"
 import { inferSchema, initParser } from "udsv"
 import { json2csv } from "json-2-csv"
 import XLSX from "xlsx"
+import { useStore } from "../store/useStore"
 
 const DEMO_CSV_URL =
   "https://pretzelai.github.io/github_public_code_editors.csv"
 
-export default function Upload({
-  db,
-  updateQuery,
-  cell,
-  setCells,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  cell: Cell
-  setCells: (cells: Cell[]) => void
-}) {
+export default function Upload({ id }: { id: number }) {
+  const { db, cells, setCells, updateQuery } = useStore()
   const [isLoading, setIsLoading] = useState(false)
   const [csvUrl, setCsvUrl] = useState("")
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -145,7 +135,7 @@ export default function Upload({
         parseCsvContentFirstPass(csvContent)
 
       await db.registerFileText(sourceName, csvString)
-      if (cell.query) {
+      if (cells[id].query) {
         await c.query(`DROP TABLE "${INPUT_TABLE}"`)
       }
       await c.insertCSVFromPath(sourceName, {
@@ -161,7 +151,7 @@ export default function Upload({
       if (isResetCells) {
         setCells([{ type: "upload", query: uploadQuery }])
       } else {
-        updateQuery(uploadQuery)
+        updateQuery(id, uploadQuery)
       }
     } catch (error) {
       console.error(
@@ -188,7 +178,7 @@ export default function Upload({
         if (isResetCells) {
           setCells([{ type: "upload", query: uploadQuery }])
         } else {
-          updateQuery(uploadQuery)
+          updateQuery(id, uploadQuery)
         }
       } catch (error) {
         console.error(

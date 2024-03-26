@@ -72,15 +72,7 @@ export default function App() {
             {POSTHOG_PUBLIC_KEY && POSTHOG_URL && <Feedback />}
             {cells?.map((cell, i) => {
               if (cell.type === "upload") {
-                return (
-                  <Upload
-                    key={i}
-                    db={db}
-                    updateQuery={(q) => updateQuery(i, q)}
-                    cell={cell}
-                    setCells={setCells}
-                  />
-                )
+                return <Upload key={i} id={i} />
               } else if (cell.type === "filter") {
                 return (
                   <FilterBlock

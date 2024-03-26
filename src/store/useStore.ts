@@ -12,9 +12,10 @@ interface AppState {
   addCell: (type: CellType) => void
   updateQuery: (i: number, q: string) => void
   deleteLastBlock: () => void
+  initDbAndWorker: () => Promise<void>
 }
 
-export const useStore = create<AppState>()((set) => ({
+export const useStore = create<AppState>()((set, get) => ({
   db: null,
   cells: [{ type: "upload" }],
   worker: null,
@@ -31,4 +32,14 @@ export const useStore = create<AppState>()((set) => ({
       ],
     })),
   deleteLastBlock: () => set((state) => ({ cells: state.cells.slice(0, -1) })),
+  initDbAndWorker: async () => {
+    const db = await initDb()
+    const con = await db.connect()
+    con.query("SET pivot_limit=1000001")
+    get().setDb(db)
+    const w = new Worker(new URL("../core/worker.ts", import.meta.url), {
+      type: "module",
+    })
+    get().setWorker(w)
+  },
 }))
