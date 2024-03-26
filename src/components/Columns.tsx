@@ -1,9 +1,7 @@
 import Block from "./ui/Block"
 import { useState, useEffect } from "react"
-import { AsyncDuckDB } from "../lib/duckdb"
 import { Toggle } from "./ui/toggle"
 import {
-  query,
   columnFilterQueryBuilder,
   mergeQueries,
   getFieldsQueryBuilder,
@@ -12,72 +10,63 @@ import {
 import { Button } from "./ui/button"
 import { useCell } from "../store/useStore"
 export default function Columns({ id }: { id: number }) {
-  const { updateQuery, prevQuery, db } = useCell(id)
+  const { updateQuery, prevQuery, query } = useCell(id)
   const [fields, setFields] = useState<string[] | null>(null)
   const [selectedFieldsStatus, setSelectedFieldsStatus] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (db) {
-      const fetch = async () => {
-        let rowsJson
-        if (selectedFieldsStatus) {
-          setError(null)
-          const selectedFields = Object.keys(selectedFieldsStatus).filter(
-            (key) => selectedFieldsStatus[key]
-          )
-          rowsJson = (
-            await query(
-              db,
-              mergeQueries(prevQuery, columnErrorQueryBuilder(selectedFields))
-            )
-          ).rowsJson
-          if (!rowsJson) {
-            const row = (
-              await query(db, mergeQueries(prevQuery, getFieldsQueryBuilder()))
-            )?.rowsJson?.[0]
-            if (row) {
-              const prevColumns = Object.keys(row)
-              const missinFields = selectedFields.filter(
-                (f) => !prevColumns.includes(f)
-              )
-              setError(`MISSING FIELDS:\n${missinFields.join("\n")}`)
-            }
-          }
-        }
+    const fetch = async () => {
+      let rowsJson
+      if (selectedFieldsStatus) {
+        setError(null)
+        const selectedFields = Object.keys(selectedFieldsStatus).filter(
+          (key) => selectedFieldsStatus[key]
+        )
         rowsJson = (
-          await query(db, mergeQueries(prevQuery, getFieldsQueryBuilder()))
-        )?.rowsJson
-        if (rowsJson?.[0]) {
-          const fieldsArray = Object.keys(rowsJson[0])
-          setFields(fieldsArray)
-          if (!selectedFieldsStatus) {
-            setSelectedFieldsStatus(
-              fieldsArray.reduce(
-                (acc, field) => ({ ...acc, [field]: true }),
-                {}
-              )
+          await query(
+            mergeQueries(prevQuery, columnErrorQueryBuilder(selectedFields))
+          )
+        ).rowsJson
+        if (!rowsJson) {
+          const row = (
+            await query(mergeQueries(prevQuery, getFieldsQueryBuilder()))
+          )?.rowsJson?.[0]
+          if (row) {
+            const prevColumns = Object.keys(row)
+            const missinFields = selectedFields.filter(
+              (f) => !prevColumns.includes(f)
             )
+            setError(`MISSING FIELDS:\n${missinFields.join("\n")}`)
           }
         }
       }
-      fetch()
+      rowsJson = (await query(mergeQueries(prevQuery, getFieldsQueryBuilder())))
+        ?.rowsJson
+      if (rowsJson?.[0]) {
+        const fieldsArray = Object.keys(rowsJson[0])
+        setFields(fieldsArray)
+        if (!selectedFieldsStatus) {
+          setSelectedFieldsStatus(
+            fieldsArray.reduce((acc, field) => ({ ...acc, [field]: true }), {})
+          )
+        }
+      }
     }
-  }, [db, prevQuery])
+    fetch()
+  }, [prevQuery])
 
   useEffect(() => {
     if (selectedFieldsStatus) {
       const selectedFields = Object.keys(selectedFieldsStatus).filter(
         (key) => selectedFieldsStatus[key]
       )
-      if (db) {
-        const fetch = async () => {
-          const columnQuery = columnFilterQueryBuilder(selectedFields)
-          const q = mergeQueries(prevQuery, columnQuery)
-          updateQuery(q)
-        }
-        fetch()
+      const fetch = async () => {
+        const columnQuery = columnFilterQueryBuilder(selectedFields)
+        const q = mergeQueries(prevQuery, columnQuery)
+        updateQuery(q)
       }
+      fetch()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFieldsStatus, fields])
