@@ -47,7 +47,8 @@
     "typescript": "^4.9.5",
     "udsv": "^0.5.3",
     "uuid": "^9.0.1",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz",
+    "zustand": "^4.5.2"
   },
   "scripts": {
     "start": "vite",

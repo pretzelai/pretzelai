@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Upload from "./components/Upload"
 import FilterBlock from "./components/FilterBlock"
 import Columns from "./components/Columns"
@@ -21,32 +21,20 @@ import Feedback from "./components/Feedback"
 import { POSTHOG_PUBLIC_KEY, POSTHOG_URL } from "./lib/config"
 import Sort from "./components/Sort"
 import Python from "./components/Python"
-
-const addCell = (
-  type: CellType,
-  setCells: React.Dispatch<React.SetStateAction<Cell[]>>
-) => {
-  setCells((prevCells) => [...prevCells, { type }])
-}
-
-const updateQueryFactory = (
-  i: number,
-  cell: Cell,
-  setCells: React.Dispatch<React.SetStateAction<Cell[]>>
-) => {
-  return (q: string) => {
-    setCells((prev) => [
-      ...prev.slice(0, i),
-      { ...cell, query: q },
-      ...prev.slice(i + 1),
-    ])
-  }
-}
+import { useStore } from "./store/useStore"
 
 export default function App() {
-  const [db, setDb] = useState<AsyncDuckDB | null>(null)
-  const [cells, setCells] = useState<Cell[]>([{ type: "upload" }])
-  const [worker, setWorker] = useState<any>(null)
+  const {
+    db,
+    cells,
+    worker,
+    setDb,
+    setCells,
+    setWorker,
+    addCell,
+    updateQuery,
+    deleteLastBlock,
+  } = useStore()
 
   useEffect(() => {
     const initDbAsync = async () => {
@@ -88,7 +76,7 @@ export default function App() {
                   <Upload
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     cell={cell}
                     setCells={setCells}
                   />
@@ -98,7 +86,7 @@ export default function App() {
                   <FilterBlock
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
@@ -107,7 +95,7 @@ export default function App() {
                   <PivotTable
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
@@ -116,7 +104,7 @@ export default function App() {
                   <UserQuery
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
@@ -126,7 +114,7 @@ export default function App() {
                     <TableView
                       key={i}
                       db={db}
-                      updateQuery={updateQueryFactory(i, cell, setCells)}
+                      updateQuery={(q) => updateQuery(i, q)}
                       prevQuery={cells[i - 1].query as string}
                       rowAmount={100}
                     />
@@ -137,7 +125,7 @@ export default function App() {
                   <Columns
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
@@ -146,7 +134,7 @@ export default function App() {
                   <CreateColumn
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
@@ -163,7 +151,7 @@ export default function App() {
                   <Sort
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
@@ -172,7 +160,7 @@ export default function App() {
                   <Chart
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
@@ -181,7 +169,7 @@ export default function App() {
                   <AI
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                   />
                 )
@@ -190,7 +178,7 @@ export default function App() {
                   <Python
                     key={i}
                     db={db}
-                    updateQuery={updateQueryFactory(i, cell, setCells)}
+                    updateQuery={(q) => updateQuery(i, q)}
                     prevQuery={cells[i - 1].query as string}
                     worker={worker}
                   />
@@ -202,67 +190,61 @@ export default function App() {
               {cells[cells.length - 1].query && (
                 <>
                   <Button
-                    onClick={() => addCell("filter", setCells)}
+                    onClick={() => addCell("filter")}
                     className="ml-2 mb-2"
                   >
                     Filter
                   </Button>
-                  <Button
-                    onClick={() => addCell("AI", setCells)}
-                    className="ml-2 mb-2"
-                  >
+                  <Button onClick={() => addCell("AI")} className="ml-2 mb-2">
                     Ask AI
                   </Button>
                   <Button
-                    onClick={() => addCell("python", setCells)}
+                    onClick={() => addCell("python")}
                     className="ml-2 mb-2"
                   >
                     Python
                   </Button>
                   <Button
-                    onClick={() => addCell("pivot", setCells)}
+                    onClick={() => addCell("pivot")}
                     className="ml-2 mb-2"
                   >
                     Pivot
                   </Button>
                   <Button
-                    onClick={() => addCell("userquery", setCells)}
+                    onClick={() => addCell("userquery")}
                     className="ml-2 mb-2"
                   >
                     SQL / PRQL
                   </Button>
                   <Button
-                    onClick={() => addCell("chart", setCells)}
+                    onClick={() => addCell("chart")}
                     className="ml-2 mb-2"
                   >
                     Chart
                   </Button>
                   <Button
-                    onClick={() => addCell("derive", setCells)}
+                    onClick={() => addCell("derive")}
                     className="ml-2 mb-2"
                   >
                     Create column
                   </Button>
                   <Button
-                    onClick={() => addCell("columns", setCells)}
+                    onClick={() => addCell("columns")}
                     className="ml-2 mb-2"
                   >
                     Remove columns
                   </Button>
-                  <Button
-                    onClick={() => addCell("sort", setCells)}
-                    className="ml-2 mb-2"
-                  >
+                  <Button onClick={() => addCell("sort")} className="ml-2 mb-2">
                     Sort
                   </Button>
                   <Button
-                    onClick={() => addCell("table", setCells)}
+                    onClick={() => addCell("table")}
                     className="ml-2 mb-2"
                   >
                     Table
                   </Button>
                   <Button
-                    onClick={() => addCell("download", setCells)}
+                    onClick={() => addCell("download")}
                     className="ml-2 mb-2 bg-blue-500 hover:bg-blue-600"
                   >
                     Download
@@ -271,7 +253,7 @@ export default function App() {
               )}
               {cells.length > 1 && (
                 <Button
-                  onClick={() => setCells(cells.slice(0, -1))}
+                  onClick={deleteLastBlock}
                   className="ml-2 mb-2 bg-red-500 hover:bg-red-600"
                 >
                   Delete last block
