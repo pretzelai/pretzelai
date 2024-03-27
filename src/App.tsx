@@ -92,14 +92,7 @@ export default function App() {
               } else if (cell.type === "download") {
                 return <Download key={i} id={i} />
               } else if (cell.type === "sort") {
-                return (
-                  <Sort
-                    key={i}
-                    db={db}
-                    updateQuery={(q) => updateQuery(i, q)}
-                    prevQuery={cells[i - 1].query as string}
-                  />
-                )
+                return <Sort key={i} id={i} />
               } else if (cell.type === "chart") {
                 return (
                   <Chart
