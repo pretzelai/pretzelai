@@ -90,13 +90,7 @@ export default function App() {
               } else if (cell.type === "derive") {
                 return <CreateColumn key={i} id={i} />
               } else if (cell.type === "download") {
-                return (
-                  <Download
-                    key={i}
-                    db={db}
-                    prevQuery={cells[i - 1].query as string}
-                  />
-                )
+                return <Download key={i} id={i} />
               } else if (cell.type === "sort") {
                 return (
                   <Sort
