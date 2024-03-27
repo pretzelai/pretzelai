@@ -1,19 +1,19 @@
 import { useState } from "react"
-import { AsyncDuckDB } from "../lib/duckdb"
-import { query, mergeQueries } from "../lib/utils"
+import { mergeQueries } from "../lib/utils"
 import { Button } from "./ui/button"
 import { Textarea } from "./ui/textarea"
 import { Label } from "./ui/label"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
 import { loading } from "./ui/loading"
 import Block from "./ui/Block"
+import { useCell } from "../store/useStore"
 
 const dbQuery = (
   userQuery: string | null,
   usePrql: boolean,
   prevQuery: string,
   updateQuery: (q: string) => void,
-  db: AsyncDuckDB | null,
+  query: (q: string) => Promise<{ rowsJson: any; result: any }>,
   setIsPrqlError: (isError: boolean) => void,
   setIsSqlError: (isError: boolean) => void
 ) => {
@@ -25,9 +25,8 @@ const dbQuery = (
   updateQuery(q)
   const fetch = async () => {
     let rowsJson
-    rowsJson = (
-      await query(db, mergeQueries(prevQuery, wrappedUserQuery || ""))
-    ).rowsJson
+    rowsJson = (await query(mergeQueries(prevQuery, wrappedUserQuery || "")))
+      .rowsJson
     if (rowsJson) {
       setIsPrqlError(false)
       setIsSqlError(false)
@@ -39,15 +38,8 @@ const dbQuery = (
   fetch()
 }
 
-export default function UserQuery({
-  db,
-  updateQuery,
-  prevQuery,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-}) {
+export default function UserQuery({ id }: { id: number }) {
+  const { updateQuery, prevQuery, query } = useCell(id)
   const [userQuery, setUserQuery] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isPrqlError, setIsPrqlError] = useState(false)
@@ -61,7 +53,7 @@ export default function UserQuery({
       usePrql,
       prevQuery,
       updateQuery,
-      db,
+      query,
       setIsPrqlError,
       setIsSqlError
     )

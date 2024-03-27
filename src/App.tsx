@@ -11,9 +11,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "./components/ui/resizable"
-import { initDb, AsyncDuckDB } from "./lib/duckdb"
+import { initDb } from "./lib/duckdb"
 import { Button } from "./components/ui/button"
-import { Cell, CellType } from "./lib/utils"
 import PivotTable from "./components/Pivot"
 import CreateColumn from "./components/CreateColumn"
 import AI from "./components/AI"
@@ -78,14 +77,7 @@ export default function App() {
               } else if (cell.type === "pivot") {
                 return <PivotTable key={i} id={i} />
               } else if (cell.type === "userquery") {
-                return (
-                  <UserQuery
-                    key={i}
-                    db={db}
-                    updateQuery={(q) => updateQuery(i, q)}
-                    prevQuery={cells[i - 1].query as string}
-                  />
-                )
+                return <UserQuery key={i} id={i} />
               } else if (cell.type === "table") {
                 return (
                   <div className="mb-4 flex max-h-[25vh] max-w-full items-start justify-center overflow-y-scroll rounded-lg border">
