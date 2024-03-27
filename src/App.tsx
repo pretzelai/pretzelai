@@ -19,7 +19,7 @@ import AI from "./components/AI"
 import Feedback from "./components/Feedback"
 import { POSTHOG_PUBLIC_KEY, POSTHOG_URL } from "./lib/config"
 import Sort from "./components/Sort"
-import RemoveDuplicate from "./components/RemoveDuplicate"
+import RemoveDuplicates from "./components/RemoveDuplicates"
 import Python from "./components/Python"
 import { useStore } from "./store/useStore"
 
@@ -75,6 +75,8 @@ export default function App() {
                 return <AI key={i} id={i} />
               } else if (cell.type === "python") {
                 return <Python key={i} id={i} />
+              } else if (cell.type === "removeDuplicates") {
+                return <RemoveDuplicates key={i} id={i} />
               }
               return null
             })}
@@ -134,6 +136,12 @@ export default function App() {
                     className="ml-2 mb-2"
                   >
                     Table
+                  </Button>
+                  <Button
+                    onClick={() => addCell("removeDuplicates")}
+                    className="ml-2 mb-2"
+                  >
+                    Remove Duplicates
                   </Button>
                   <Button
                     onClick={() => addCell("download")}
