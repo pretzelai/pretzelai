@@ -70,16 +70,21 @@ export const columnErrorQueryBuilder = (columns: string[]) => {
   return "select {`" + columns.join("`,`") + "`}\ntake 1"
 }
 
-export const filterQueryBuilderEquals = (filter: string,operator:string,value:string) => {
+export const filterQueryOperatorBuilder = (filter: string,operator:string,value:string) => {
   // SQL
-  // return `select * from table where (${filter}) = (${value})`
+  // return `select * from table where (${filter}) (${operator}) (${value})`
   // PRQL
-  if(filter && value){
-    if(operator=='equals'){
-      return `filter ${filter} == '${value}'`
+  if(filter && operator){
+    if(value){
+      if(operator=='equals'){
+        return `filter ${filter} == '${value}'`
+      }
+      if(operator=='not equals'){
+        return `filter ${filter} != '${value}'`
+      }
     }
-    if(operator=='not equals'){
-      return `filter ${filter} != '${value}'`
+    else{ // for handling non null operator
+      return `filter ${filter} != null`
     }
   }
   return ""

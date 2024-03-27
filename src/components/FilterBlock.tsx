@@ -16,7 +16,7 @@ import {
   getFieldsQueryBuilder,
   getFieldValuesQueryBuilder,
   filterQueryBuilder,
-  filterQueryBuilderEquals,
+  filterQueryOperatorBuilder,
   cn,
 } from "../lib/utils"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
@@ -86,7 +86,7 @@ const Filter: React.FC<FilterProps> = ({
       if(db && filter.value && filter.column && filter.operator){
         const { rowsJson } = await query(
           db,
-          mergeQueries(accQuery, filterQueryBuilderEquals(filter.column ,filter.operator,filter.value )),
+          mergeQueries(accQuery, filterQueryOperatorBuilder(filter.column ,filter.operator,filter.value )),
         )
         setVal(rowsJson.length)
       }
