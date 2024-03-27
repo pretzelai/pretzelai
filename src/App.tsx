@@ -19,16 +19,12 @@ import AI from "./components/AI"
 import Feedback from "./components/Feedback"
 import { POSTHOG_PUBLIC_KEY, POSTHOG_URL } from "./lib/config"
 import Sort from "./components/Sort"
+import RemoveDuplicate from "./components/RemoveDuplicate"
 import Python from "./components/Python"
 import { useStore } from "./store/useStore"
 
 export default function App() {
-  const {
-    cells,
-    addCell,
-    deleteLastBlock,
-    initDbAndWorker,
-  } = useStore()
+  const { cells, addCell, deleteLastBlock, initDbAndWorker } = useStore()
 
   useEffect(() => {
     initDbAndWorker()
