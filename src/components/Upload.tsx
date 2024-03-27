@@ -3,7 +3,7 @@ import * as arrow from "apache-arrow"
 import Block from "./ui/Block"
 import { Cell } from "../lib/utils"
 import { uploadQueryBuilder, INPUT_TABLE } from "../lib/utils"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { loading } from "./ui/loading"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -264,6 +264,9 @@ export default function Upload({
     }
   }
 
+  const uploadFromDeviceRef = useRef(null)
+  const uploadFromUrlRef = useRef(null)
+
   return (
     <Block className="mb-4 flex-col" title="Upload">
       <div className="grid w-full max-w-sm items-center gap-1.5">
@@ -271,6 +274,7 @@ export default function Upload({
         <div className="flex items-center">
           {isLoading && loading}
           <Input
+            ref={uploadFromDeviceRef}
             id="file_upload"
             type="file"
             accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/json"
@@ -284,6 +288,7 @@ export default function Upload({
         <div className="flex items-center">
           {isLoading && loading}
           <Input
+            ref={uploadFromUrlRef}
             id="url_upload"
             type="text"
             value={csvUrl}
@@ -291,7 +296,12 @@ export default function Upload({
             disabled={isLoading}
             placeholder={DEMO_CSV_URL}
           />
-          <Button onClick={() => urlCsvUpload(csvUrl || DEMO_CSV_URL)}>
+          <Button onClick={() =>{ 
+            urlCsvUpload(csvUrl || DEMO_CSV_URL)
+            if (uploadFromDeviceRef.current) {
+              (uploadFromDeviceRef.current as HTMLInputElement).value = '';
+            }
+            }}>
             Load
           </Button>
         </div>
@@ -300,6 +310,12 @@ export default function Upload({
         className="my-4"
         onClick={() => {
           urlCsvUpload(DEMO_CSV_URL)
+          if (uploadFromDeviceRef.current) {
+            (uploadFromDeviceRef.current as HTMLInputElement).value = '';
+          }
+          if (uploadFromUrlRef.current) {
+            (uploadFromUrlRef.current as HTMLInputElement).value = '';
+          }
         }}
       >
         Load Demo CSV
