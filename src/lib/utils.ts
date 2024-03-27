@@ -16,6 +16,8 @@ export type CellType =
   | "AI"
   | "sort"
   | "userquery"
+  | "removeDuplicates"
+  | "python"
 
 export type Cell = {
   type: CellType
@@ -88,6 +90,20 @@ export const mergeQueries = (accQuery: string, nextQuery: string) => {
   // return nextQuery.replace("table", `(${accQuery})`)
   // PRQL
   return `${accQuery}\n${nextQuery}`
+}
+
+export const removeQuery = (selectedColumn: string, fields: string[]) => {
+  if (selectedColumn === "Full Rows") {
+    // Execute removal of duplicates based on all columns
+    const columnsToGroup = fields.filter((column) => column !== "Full Rows")
+    const groupedColumns = columnsToGroup
+      .map((column) => `\`${column}\``)
+      .join(",")
+    return `group {${groupedColumns}} (take 1)`
+  } else {
+    // Execute removal of duplicates based on the selected column
+    return `group \`${selectedColumn}\` (take 1)`
+  }
 }
 
 export const query = async (db: any, modifiedPrql: string) => {
@@ -173,33 +189,36 @@ export const query = async (db: any, modifiedPrql: string) => {
 
 export function formatDataForTable(rowsJson: any, fields: any[]) {
   // TODO: Write in WASM
-  const fieldTypeMap: Record<string, string> = {};
+  const fieldTypeMap: Record<string, string> = {}
   fields.forEach((field: any) => {
-    fieldTypeMap[field.name] = field.type.toString();
-  });
+    fieldTypeMap[field.name] = field.type.toString()
+  })
   return rowsJson.map((row: Record<string, any>) => {
     const formattedRow: Record<string, any> = {}
     Object.keys(row).forEach((key) => {
-      const value = row[key];
-      const fieldType = fieldTypeMap[key];
+      const value = row[key]
+      const fieldType = fieldTypeMap[key]
       if (value === null || value === undefined || Number.isNaN(value)) {
-        formattedRow[key] = "";
-      }
-      else if (fieldType === "Utf8") {
-        formattedRow[key] = value; // Strings are left unchanged
+        formattedRow[key] = ""
+      } else if (fieldType === "Utf8") {
+        formattedRow[key] = value // Strings are left unchanged
       } else if (fieldType === "Int32") {
         formattedRow[key] = value
       } else if (fieldType === "Int64") {
-        if(parseInt(value).toString() !== value.toString()) // it's an actual bigInt
+        if (parseInt(value).toString() !== value.toString())
+          // it's an actual bigInt
           formattedRow[key] = parseFloat(value)
-        else
-          formattedRow[key] = parseInt(value)
+        else formattedRow[key] = parseInt(value)
       } else if (fieldType.includes("Float")) {
-        formattedRow[key] = typeof value === "number" ? Math.round(value * 100) / 100 : value;
+        formattedRow[key] =
+          typeof value === "number" ? Math.round(value * 100) / 100 : value
       } else if (fieldType === "Timestamp<MICROSECOND>") {
-        formattedRow[key] = value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+        formattedRow[key] =
+          value instanceof Date
+            ? value.toISOString()
+            : new Date(value).toISOString()
       } else if (fieldType === "Uint32Array") {
-        formattedRow[key] = value instanceof Uint32Array ? value[0] : value;
+        formattedRow[key] = value instanceof Uint32Array ? value[0] : value
       } else {
         // Non-number and non-date values are left unchanged
         formattedRow[key] = value

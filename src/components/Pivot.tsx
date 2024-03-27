@@ -2,12 +2,10 @@ import "../index.css"
 import "@blueprintjs/table/lib/css/table.css"
 
 import React, { useEffect, useState } from "react"
-import { AsyncDuckDB } from "../lib/duckdb"
 import {
   formatDataForTable,
   getFieldsQueryBuilder,
   mergeQueries,
-  query,
 } from "../lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import {
@@ -18,16 +16,10 @@ import {
   SelectValue,
 } from "./ui/select"
 import { Cell, Column, Table2 } from "@blueprintjs/table"
+import { useCell } from "../store/useStore"
 
-export default function PivotTable({
-  db,
-  updateQuery,
-  prevQuery,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-}) {
+export default function PivotTable({ id }: { id: number }) {
+  const { updateQuery, prevQuery, query } = useCell(id)
   const [availableColumns, setAvailableColumns] = useState<string[]>([])
   const [rows, setRows] = useState<string[]>([])
   const [columns, setColumns] = useState<string[]>([])
@@ -39,20 +31,18 @@ export default function PivotTable({
 
   useEffect(() => {
     const fetchAndSetAvailableColumns = async () => {
-      if (db) {
-        try {
-          const { result } = await query(
-            db,
-            mergeQueries(prevQuery, getFieldsQueryBuilder())
-          )
-          setAvailableColumns(result.schema.fields.map((f: any) => f.name))
-        } catch (error) {
-          console.error("Error fetching available columns:", error)
-        }
+      try {
+        const { result } = await query(
+          mergeQueries(prevQuery, getFieldsQueryBuilder())
+        )
+        setAvailableColumns(result.schema.fields.map((f: any) => f.name))
+      } catch (error) {
+        console.error("Error fetching available columns:", error)
       }
     }
+
     fetchAndSetAvailableColumns()
-  }, [db, prevQuery])
+  }, [prevQuery])
 
   useEffect(() => {
     const updatePivotQuery = async () => {
@@ -80,7 +70,7 @@ export default function PivotTable({
 
         const q = mergeQueries(prevQuery, pivotQuery)
         updateQuery(q)
-        const { rowsJson, result } = await query(db, q)
+        const { rowsJson, result } = await query(q)
         if (rowsJson?.length > 0) {
           const formattedData = formatDataForTable(
             rowsJson,
@@ -97,7 +87,7 @@ export default function PivotTable({
     }
     updatePivotQuery()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, rows, columns, values, prevQuery, availableColumns])
+  }, [rows, columns, values, prevQuery, availableColumns])
 
   const handleDragStart = (
     event: React.DragEvent<HTMLDivElement>,
@@ -227,7 +217,7 @@ export default function PivotTable({
                           <SelectItem value="stddev">Std Dev</SelectItem>
                           <SelectItem value="variance">Variance</SelectItem>
                           <SelectItem value="first">First Value</SelectItem>
-                          <SelectItem value="var_samp">Last Value</SelectItem>
+                          <SelectItem value="last">Last Value</SelectItem>
                           <SelectItem value="arbitrary">
                             Arbitrary Value
                           </SelectItem>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react"
-import { AsyncDuckDB } from "../lib/duckdb"
 import {
   Select,
   SelectTrigger,
@@ -9,20 +8,16 @@ import {
 } from "./ui/select"
 import Block from "./ui/Block"
 import { Button } from "./ui/button"
-import { query, mergeQueries, getFieldsQueryBuilder } from "../lib/utils"
-
-interface SortProps {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-}
+import { mergeQueries, getFieldsQueryBuilder } from "../lib/utils"
+import { useCell } from "../store/useStore"
 
 interface SortColumn {
   column: string | null
   order: "asc" | "desc" | null
 }
 
-export default function SortBlock({ db, updateQuery, prevQuery }: SortProps) {
+export default function SortBlock({ id }: { id: number }) {
+  const { query, prevQuery, updateQuery } = useCell(id)
   const [fields, setFields] = useState<string[]>([])
   const [sortColumns, setSortColumns] = useState<SortColumn[]>([
     { column: null, order: null },
@@ -30,9 +25,8 @@ export default function SortBlock({ db, updateQuery, prevQuery }: SortProps) {
 
   useEffect(() => {
     const fetchFields = async () => {
-      if (db && prevQuery) {
+      if (prevQuery) {
         const { rowsJson } = await query(
-          db,
           mergeQueries(prevQuery, getFieldsQueryBuilder())
         )
         if (rowsJson?.[0]) {
@@ -41,23 +35,21 @@ export default function SortBlock({ db, updateQuery, prevQuery }: SortProps) {
       }
     }
     fetchFields()
-  }, [db, prevQuery])
+  }, [prevQuery])
 
   useEffect(() => {
     const updateSortQuery = async () => {
-      if (db) {
-        const sortParts = sortColumns
-          .filter((col) => col.column && col.order)
-          .map((col) => `${col.order === "asc" ? "+" : "-"}\`${col.column}\``)
-        let sortQuery =
-          sortParts.length > 0 ? `sort {${sortParts.join(", ")}}` : ""
-        const q = mergeQueries(prevQuery, sortQuery)
-        updateQuery(q)
-      }
+      const sortParts = sortColumns
+        .filter((col) => col.column && col.order)
+        .map((col) => `${col.order === "asc" ? "+" : "-"}\`${col.column}\``)
+      let sortQuery =
+        sortParts.length > 0 ? `sort {${sortParts.join(", ")}}` : ""
+      const q = mergeQueries(prevQuery, sortQuery)
+      updateQuery(q)
     }
     updateSortQuery()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, sortColumns, prevQuery])
+  }, [sortColumns, prevQuery])
 
   const handleColumnChange = (index: number, column: string | null) => {
     const updatedSortColumns = [...sortColumns]

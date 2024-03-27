@@ -3,20 +3,14 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import { AsyncDuckDB } from "../lib/duckdb"
-import { getFieldsQueryBuilder, mergeQueries, query } from "../lib/utils"
+import { getFieldsQueryBuilder, mergeQueries } from "../lib/utils"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip"
-
-interface CreateColumnProps {
-  db: AsyncDuckDB | null
-  prevQuery: string
-  updateQuery: (q: string) => void
-}
+import { useCell } from "../store/useStore"
 
 const QuestionMarkCircleIcon = () => {
   return (
@@ -38,17 +32,13 @@ const QuestionMarkCircleIcon = () => {
   )
 }
 
-const CreateColumn: React.FC<CreateColumnProps> = ({
-  db,
-  prevQuery,
-  updateQuery,
-}) => {
+const CreateColumn = ({ id }: { id: number }) => {
+  const { query, updateQuery, prevQuery } = useCell(id)
   const [columns, setColumns] = useState<string[]>([])
   const [newColumnName, setNewColumnName] = useState("")
   const [formula, setFormula] = useState("")
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0)
   const [showSuggestions, setShowSuggestions] = useState(false)
-  // const [validFormula, setValidFormula] = useState(true)
   const [filteredColumns, setFilteredColumns] = useState<string[]>([])
   const [isNewColAdded, setIsNewColAdded] = useState(false)
 
@@ -56,21 +46,18 @@ const CreateColumn: React.FC<CreateColumnProps> = ({
 
   useEffect(() => {
     const fetchAndSetColumns = async () => {
-      if (db) {
-        try {
-          handleCreateColumn()
-          const { result } = await query(
-            db,
-            mergeQueries(prevQuery, getFieldsQueryBuilder())
-          )
-          setColumns(result.schema.fields.map((f: any) => f.name))
-        } catch (error) {
-          console.error("Error fetching available columns:", error)
-        }
+      try {
+        handleCreateColumn()
+        const { result } = await query(
+          mergeQueries(prevQuery, getFieldsQueryBuilder())
+        )
+        setColumns(result.schema.fields.map((f: any) => f.name))
+      } catch (error) {
+        console.error("Error fetching available columns:", error)
       }
     }
     fetchAndSetColumns()
-  }, [db, prevQuery])
+  }, [prevQuery])
 
   useEffect(() => {
     if (showSuggestions && activeSuggestionIndex >= filteredColumns.length) {

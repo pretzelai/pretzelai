@@ -1,11 +1,10 @@
 import { useEffect, useState, useRef, SetStateAction } from "react"
 import ReactECharts from "echarts-for-react"
 import { EChartOption, registerTheme } from "echarts"
-import { AsyncDuckDB } from "../lib/duckdb"
-import { query } from "../lib/utils"
 import { Resizable } from "react-resizable"
 // import * as eChartsConfig from "../lib/echartsConfig.js"
 import eChartsTheme from "../lib/eChartsTheme.json"
+import { useCell } from "../store/useStore"
 
 import {
   Select,
@@ -37,15 +36,8 @@ interface ChartData {
   data: Record<string, string>[]
 }
 
-export default function Chart({
-  db,
-  updateQuery,
-  prevQuery,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-}) {
+export default function Chart({ id }: { id: number }) {
+  const { query, prevQuery, updateQuery } = useCell(id)
   const [chartData, setChartData] = useState<ChartData | null>(null)
   const [chartType, setChartType] = useState<ChartType>("line")
   const [xAxisColumn, setXAxisColumn] = useState("")
@@ -69,21 +61,20 @@ export default function Chart({
   }
 
   useEffect(() => {
-    if (db) {
-      const fetch = async () => {
-        if (prevQuery) {
-          const { rowsJson } = await query(db, prevQuery)
-          if (rowsJson?.[0]) {
-            const columns = Object.keys(rowsJson[0])
-            setChartData({ columns, data: rowsJson })
-            updateQuery(prevQuery)
-          }
+    const fetch = async () => {
+      if (prevQuery) {
+        const { rowsJson } = await query(prevQuery)
+        if (rowsJson?.[0]) {
+          const columns = Object.keys(rowsJson[0])
+          setChartData({ columns, data: rowsJson })
+          updateQuery(prevQuery)
         }
       }
-      fetch()
     }
+    fetch()
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, prevQuery])
+  }, [prevQuery])
 
   useEffect(() => {
     if (chartData && chartData.data.length) {

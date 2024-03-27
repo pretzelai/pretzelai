@@ -2,34 +2,24 @@ import "../index.css"
 import "@blueprintjs/table/lib/css/table.css"
 
 import { useEffect, useState } from "react"
-import { AsyncDuckDB } from "../lib/duckdb"
 import {
-  query,
   tableViewQueryBuilder,
   mergeQueries,
   formatDataForTable,
 } from "../lib/utils"
 import { Column, Cell, Table2 } from "@blueprintjs/table"
+import { useStore } from "../store/useStore"
 
-export default function TableView({
-  db,
-  updateQuery,
-  prevQuery,
-  rowAmount = 100,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-  rowAmount: number
-}) {
+export default function TableView({ rowAmount = 1000 }: { rowAmount: number }) {
+  const { query, lastQuery } = useStore()
   const [columns, setColumns] = useState<string[]>([])
   const [rows, setRows] = useState<(string | number)[][]>([])
 
   useEffect(() => {
-    if (db && prevQuery) {
+    if (lastQuery()) {
       const fetch = async () => {
-        const q = mergeQueries(prevQuery, tableViewQueryBuilder(rowAmount))
-        const { rowsJson, result } = await query(db, q)
+        const q = mergeQueries(lastQuery(), tableViewQueryBuilder(rowAmount))
+        const { rowsJson, result } = await query(q)
         if (rowsJson?.length > 0) {
           const columnNames: string[] = Object.keys(rowsJson[0])
           setColumns(columnNames)
@@ -45,11 +35,10 @@ export default function TableView({
         } else {
           setRows([])
         }
-        updateQuery(prevQuery)
       }
       fetch()
     }
-  }, [db, prevQuery])
+  }, [lastQuery()])
 
   if (!rows.length) {
     return <div>No data / Zero rows returned</div>

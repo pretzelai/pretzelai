@@ -1,7 +1,5 @@
-import { AsyncDuckDB } from "../lib/duckdb"
 import * as arrow from "apache-arrow"
 import Block from "./ui/Block"
-import { Cell } from "../lib/utils"
 import { uploadQueryBuilder, INPUT_TABLE } from "../lib/utils"
 import { useEffect, useState } from "react"
 import { loading } from "./ui/loading"
@@ -10,30 +8,24 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import axios from "axios"
 import { inferSchema, initParser } from "udsv"
+import { json2csv } from "json-2-csv"
 import XLSX from "xlsx"
+import { useStore, useCell } from "../store/useStore"
 
 const DEMO_CSV_URL =
   "https://pretzelai.github.io/github_public_code_editors.csv"
 
-export default function Upload({
-  db,
-  updateQuery,
-  cell,
-  setCells,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  cell: Cell
-  setCells: (cells: Cell[]) => void
-}) {
+export default function Upload({ id }: { id: number }) {
+  const { db, setCells } = useStore()
+  const { cell } = useCell(id)
   const [isLoading, setIsLoading] = useState(false)
   const [csvUrl, setCsvUrl] = useState("")
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isResetCells, setIsResetCells] = useState(true)
+  const [rowCount, setRowCount] = useState(0)
   const [job, setJob] = useState<{
     csvContent: string
     sourceName: string
   } | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (job) {
@@ -74,6 +66,7 @@ export default function Upload({
     let parser = initParser(schema)
     let typedArrs = parser.typedArrs(csvContent)
     let typedCols = parser.typedCols(csvContent) // [ [1, 4], [2, 5], [3, 6] ]
+    setRowCount(typedArrs.length)
 
     let columnTypes: { [key: string]: any } = {}
     let csvString = ""
@@ -119,9 +112,7 @@ export default function Upload({
           }
         }
         csvString +=
-          cell !== null && cell !== "null" && cell !== undefined && !cellIsNan
-            ? cell
-            : ""
+          cell !== null && cell !== undefined && !cellIsNan ? cell : ""
         csvString += cellIndex < row.length - 1 ? delimiter : ""
       })
       csvString += rowIndex < typedArrs.length - 1 ? "\n" : "" // New line at the end of each row
@@ -156,11 +147,7 @@ export default function Upload({
       })
       await c.close()
       const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
-      if (isResetCells) {
-        setCells([{ type: "upload", query: uploadQuery }])
-      } else {
-        updateQuery(uploadQuery)
-      }
+      setCells([{ type: "upload", query: uploadQuery }])
     } catch (error) {
       console.error(
         `Error processing CSV, first pass content from ${sourceName}:`,
@@ -181,12 +168,9 @@ export default function Upload({
         await c.insertJSONFromPath(sourceName, { name: INPUT_TABLE })
 
         await c.close()
+        setRowCount(jsonRows.length)
         const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
-        if (isResetCells) {
-          setCells([{ type: "upload", query: uploadQuery }])
-        } else {
-          updateQuery(uploadQuery)
-        }
+        setCells([{ type: "upload", query: uploadQuery }])
       } catch (error) {
         console.error(
           `Error processing CSV, second pass content from ${sourceName}:`,
@@ -221,6 +205,7 @@ export default function Upload({
       console.error("No file selected.")
       return
     }
+    setError(null)
     setIsLoading(true)
     const reader = new FileReader()
     reader.onload = async (e) => {
@@ -230,6 +215,23 @@ export default function Upload({
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
         csvContent = XLSX.utils.sheet_to_csv(worksheet)
+      } else if (
+        file.type.includes("json") &&
+        typeof e.target?.result === "string"
+      ) {
+        try {
+          const jsonContent = JSON.parse(e.target.result)
+          const jsonRows = Array.isArray(jsonContent)
+            ? jsonContent
+            : [jsonContent]
+          csvContent = await json2csv(jsonRows, { unwindArrays: true })
+        } catch (error) {
+          console.error(error)
+          setError(`Error loading JSON`)
+          setRowCount(0)
+          setIsLoading(false)
+          return
+        }
       } else {
         csvContent = e.target?.result as string
       }
@@ -252,7 +254,7 @@ export default function Upload({
           <Input
             id="file_upload"
             type="file"
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/json"
             onChange={handleFileUpload}
             disabled={isLoading}
           />
@@ -275,22 +277,25 @@ export default function Upload({
           </Button>
         </div>
       </div>
-      <Button className="my-4" onClick={() => urlCsvUpload(DEMO_CSV_URL)}>
+      <Button
+        className="my-4"
+        onClick={() => {
+          urlCsvUpload(DEMO_CSV_URL)
+        }}
+      >
         Load Demo CSV
       </Button>
-      {/* <div className="flex items-center space-x-2">
-        <Checkbox
-          id="terms"
-          checked={isResetCells}
-          onCheckedChange={() => setIsResetCells(!isResetCells)}
-        />
-        <label
-          htmlFor="terms"
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          Reset workflow on new upload
-        </label>
-      </div> */}
+      <br />
+      {!!rowCount && <Label>{rowCount} rows loaded</Label>}
+      <div className="bg-red-200 font-bold max-w-full">
+        {error &&
+          error.split("\n").map((line, index) => (
+            <span key={index}>
+              {line}
+              <br />
+            </span>
+          ))}
+      </div>
     </Block>
   )
 }
