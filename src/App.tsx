@@ -96,14 +96,7 @@ export default function App() {
               } else if (cell.type === "chart") {
                 return <Chart key={i} id={i} />
               } else if (cell.type === "AI") {
-                return (
-                  <AI
-                    key={i}
-                    db={db}
-                    updateQuery={(q) => updateQuery(i, q)}
-                    prevQuery={cells[i - 1].query as string}
-                  />
-                )
+                return <AI key={i} id={i} />
               } else if (cell.type === "python") {
                 return (
                   <Python
