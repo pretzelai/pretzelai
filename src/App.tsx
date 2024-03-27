@@ -76,14 +76,7 @@ export default function App() {
               } else if (cell.type === "filter") {
                 return <FilterBlock key={i} id={i} />
               } else if (cell.type === "pivot") {
-                return (
-                  <PivotTable
-                    key={i}
-                    db={db}
-                    updateQuery={(q) => updateQuery(i, q)}
-                    prevQuery={cells[i - 1].query as string}
-                  />
-                )
+                return <PivotTable key={i} id={i} />
               } else if (cell.type === "userquery") {
                 return (
                   <UserQuery
