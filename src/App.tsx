@@ -98,15 +98,7 @@ export default function App() {
               } else if (cell.type === "AI") {
                 return <AI key={i} id={i} />
               } else if (cell.type === "python") {
-                return (
-                  <Python
-                    key={i}
-                    db={db}
-                    updateQuery={(q) => updateQuery(i, q)}
-                    prevQuery={cells[i - 1].query as string}
-                    worker={worker}
-                  />
-                )
+                return <Python key={i} id={i} />
               }
               return null
             })}

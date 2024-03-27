@@ -1,24 +1,15 @@
 import { useEffect, useState } from "react"
-import { AsyncDuckDB } from "../lib/duckdb"
-import { query } from "../lib/utils"
 import { Button } from "./ui/button"
 import { loading } from "./ui/loading"
 import Block from "./ui/Block"
 import CodeMirror, { minimalSetup } from "@uiw/react-codemirror"
 import { python } from "@codemirror/lang-python"
 import { v4 as uuid } from "uuid"
+import { useCell, useStore } from "../store/useStore"
 
-export default function userPython({
-  db,
-  updateQuery,
-  prevQuery,
-  worker,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-  worker: any
-}) {
+export default function userPython({ id }: { id: number }) {
+  const { db, worker } = useStore()
+  const { query, prevQuery, updateQuery } = useCell(id)
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState("")
   const [code, setCode] = useState(
@@ -57,7 +48,7 @@ export default function userPython({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { rowsJson, result } = await query(db, prevQuery)
+        const { rowsJson, result } = await query(prevQuery)
         worker.postMessage(`df = pd.DataFrame(${JSON.stringify(
           rowsJson,
           (key, value) => (typeof value === "bigint" ? value.toString() : value)
