@@ -88,14 +88,7 @@ export default function App() {
               } else if (cell.type === "columns") {
                 return <Columns key={i} id={i} />
               } else if (cell.type === "derive") {
-                return (
-                  <CreateColumn
-                    key={i}
-                    db={db}
-                    updateQuery={(q) => updateQuery(i, q)}
-                    prevQuery={cells[i - 1].query as string}
-                  />
-                )
+                return <CreateColumn key={i} id={i} />
               } else if (cell.type === "download") {
                 return (
                   <Download
