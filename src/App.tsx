@@ -12,7 +12,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "./components/ui/resizable"
-import { initDb } from "./lib/duckdb"
 import { Button } from "./components/ui/button"
 import PivotTable from "./components/Pivot"
 import CreateColumn from "./components/CreateColumn"
@@ -25,33 +24,14 @@ import { useStore } from "./store/useStore"
 
 export default function App() {
   const {
-    db,
     cells,
-    worker,
-    setDb,
-    setCells,
-    setWorker,
     addCell,
-    updateQuery,
     deleteLastBlock,
+    initDbAndWorker,
   } = useStore()
 
   useEffect(() => {
-    const initDbAsync = async () => {
-      const db = await initDb()
-      const con = await db.connect()
-      con.query("SET pivot_limit=1000001")
-      setDb(db)
-    }
-    initDbAsync()
-    const w = new Worker(
-      //eslint-disable-next-line unicorn/relative-url-style
-      new URL("./core/worker.ts", import.meta.url),
-      {
-        type: "module",
-      }
-    )
-    setWorker(w)
+    initDbAndWorker()
   }, [])
 
   return (
