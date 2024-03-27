@@ -92,7 +92,6 @@ export const mergeQueries = (accQuery: string, nextQuery: string) => {
   // PRQL
   return `${accQuery}\n${nextQuery}`
 }
-// utils.ts
 
 export const removeQuery = (selectedColumn: string, fields: string[]) => {
   if (selectedColumn === "Full Rows") {
@@ -105,8 +104,6 @@ export const removeQuery = (selectedColumn: string, fields: string[]) => {
     return `group \`${selectedColumn}\` (take 1)`;
   }
 };
-
-
 
 export const query = async (db: any, modifiedPrql: string) => {
   let result
