@@ -1,12 +1,6 @@
 import Block from "./ui/Block"
 import { useState, useEffect } from "react"
-import { AsyncDuckDB } from "../lib/duckdb"
-import {
-  query,
-  mergeQueries,
-  getFieldsQueryBuilder,
-  debounce,
-} from "../lib/utils"
+import { mergeQueries, getFieldsQueryBuilder, debounce } from "../lib/utils"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { loading } from "./ui/loading"
@@ -16,13 +10,14 @@ import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
 import { AI_ENDPOINT } from "../lib/config"
 import { PRQLPromptFormatter, SQLPromptFormatter } from "../lib/prompts"
 import { SettingsIcon } from "./ui/settings-icon"
+import { useCell } from "../store/useStore"
 
 const aiDbQuery = (
   aiQuery: string | null,
   usePrql: boolean,
   prevQuery: string,
   updateQuery: (q: string) => void,
-  db: AsyncDuckDB | null,
+  query: (q: string) => Promise<{ rowsJson: any }>,
   setIsPrqlError: (isError: boolean) => void,
   setIsSqlError: (isError: boolean) => void
 ) => {
@@ -34,7 +29,7 @@ const aiDbQuery = (
   updateQuery(q)
   const fetch = async () => {
     let rowsJson
-    rowsJson = (await query(db, mergeQueries(prevQuery, wrappedAiQuery || "")))
+    rowsJson = (await query(mergeQueries(prevQuery, wrappedAiQuery || "")))
       .rowsJson
     if (rowsJson) {
       setIsPrqlError(false)
@@ -49,15 +44,8 @@ const aiDbQuery = (
 
 const debouncedAiDbQuery = debounce(aiDbQuery, 1000)
 
-export default function AI({
-  db,
-  updateQuery,
-  prevQuery,
-}: {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-}) {
+export default function AI({ id }: { id: number }) {
+  const { query, prevQuery, updateQuery } = useCell(id)
   const [fields, setFields] = useState<string[] | null>(null)
   const [aiQuery, setAiQuery] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -149,54 +137,49 @@ export default function AI({
   }
 
   useEffect(() => {
-    if (db) {
-      let wrappedAiQuery = ""
-      if (aiQuery) {
-        wrappedAiQuery = usePrql ? aiQuery : `SQL {${aiQuery}}`
-      }
-      const q = mergeQueries(prevQuery, wrappedAiQuery || "")
-
-      updateQuery(q)
-      const fetch = async () => {
-        let rowsJson
-        rowsJson = (
-          await query(db, mergeQueries(prevQuery, getFieldsQueryBuilder()))
-        ).rowsJson
-        if (rowsJson?.[0]) {
-          const fieldsArray = Object.keys(rowsJson[0])
-          setFields(fieldsArray)
-        }
-      }
-      fetch()
+    let wrappedAiQuery = ""
+    if (aiQuery) {
+      wrappedAiQuery = usePrql ? aiQuery : `SQL {${aiQuery}}`
     }
+    const q = mergeQueries(prevQuery, wrappedAiQuery || "")
+
+    updateQuery(q)
+    const fetch = async () => {
+      let rowsJson
+      rowsJson = (await query(mergeQueries(prevQuery, getFieldsQueryBuilder())))
+        .rowsJson
+      if (rowsJson?.[0]) {
+        const fieldsArray = Object.keys(rowsJson[0])
+        setFields(fieldsArray)
+      }
+    }
+    fetch()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, prevQuery])
+  }, [prevQuery])
 
   useEffect(() => {
-    if (db) {
-      if (isEdit) {
-        debouncedAiDbQuery(
-          aiQuery,
-          usePrql,
-          prevQuery,
-          updateQuery,
-          db,
-          setIsPrqlError,
-          setIsSqlError
-        )
-      } else {
-        aiDbQuery(
-          aiQuery,
-          usePrql,
-          prevQuery,
-          updateQuery,
-          db,
-          setIsPrqlError,
-          setIsSqlError
-        )
-      }
+    if (isEdit) {
+      debouncedAiDbQuery(
+        aiQuery,
+        usePrql,
+        prevQuery,
+        updateQuery,
+        query,
+        setIsPrqlError,
+        setIsSqlError
+      )
+    } else {
+      aiDbQuery(
+        aiQuery,
+        usePrql,
+        prevQuery,
+        updateQuery,
+        query,
+        setIsPrqlError,
+        setIsSqlError
+      )
     }
-  }, [db, aiQuery])
+  }, [aiQuery])
 
   return (
     <Block className="mb-4 w-3/4" title="AI Query">

@@ -1,10 +1,8 @@
-import { AsyncDuckDB } from "../lib/duckdb"
 import Block from "./ui/Block"
-import { v4 as uuid } from "uuid"
-import { Cell, query } from "../lib/utils"
 import { useState } from "react"
 import { saveAs } from "file-saver"
 import { Button } from "./ui/button"
+import { useCell } from "../store/useStore"
 
 const mapWithOptionalQuotes = (value: string | number) => {
   if (typeof value === "string" && value.includes(`,`)) {
@@ -13,18 +11,13 @@ const mapWithOptionalQuotes = (value: string | number) => {
   return value
 }
 
-export default function Upload({
-  db,
-  prevQuery,
-}: {
-  db: AsyncDuckDB | null
-  prevQuery: string
-}) {
+export default function Upload({ id }: { id: number }) {
+  const { query, prevQuery } = useCell(id)
   const [downloadFileName, setDownloadFileName] =
     useState<string>(`download_file`)
 
   const handleDownload = async () => {
-    const result = (await query(db, prevQuery)).rowsJson
+    const result = (await query(prevQuery)).rowsJson
     const content = result
       .map((row: any) =>
         (Object.values(row) as (string | number)[])
