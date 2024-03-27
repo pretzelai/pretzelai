@@ -14,11 +14,13 @@ interface AppState {
   deleteLastBlock: () => void
   initDbAndWorker: () => Promise<void>
   query: (modifiedPrql: string) => Promise<{ rowsJson: any; result: any }>
+  lastQuery: () => string
 }
 
 export const useStore = create<AppState>()((set, get) => ({
   db: null,
   cells: [{ type: "upload" }],
+  lastQuery: () => get().cells[get().cells.length - 1]?.query || "",
   worker: null,
   setDb: (db) => set({ db }),
   setCells: (cells) => set({ cells }),

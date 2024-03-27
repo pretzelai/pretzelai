@@ -3,6 +3,7 @@ import Upload from "./components/Upload"
 import FilterBlock from "./components/FilterBlock"
 import Columns from "./components/Columns"
 import TableView from "./components/TableView"
+import TableBlock from "./components/TableBlock"
 import Download from "./components/Download"
 import Chart from "./components/Chart"
 import UserQuery from "./components/UserQuery"
@@ -81,13 +82,7 @@ export default function App() {
               } else if (cell.type === "table") {
                 return (
                   <div className="mb-4 flex max-h-[25vh] max-w-full items-start justify-center overflow-y-scroll rounded-lg border">
-                    <TableView
-                      key={i}
-                      db={db}
-                      updateQuery={(q) => updateQuery(i, q)}
-                      prevQuery={cells[i - 1].query as string}
-                      rowAmount={100}
-                    />
+                    <TableBlock key={i} id={i} rowAmount={100} />
                   </div>
                 )
               } else if (cell.type === "columns") {
@@ -228,13 +223,7 @@ export default function App() {
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel key={456}>
-        <TableView
-          key="placeholder123"
-          db={db}
-          updateQuery={() => {}}
-          prevQuery={cells[cells.length - 1].query as string}
-          rowAmount={10000}
-        />
+        <TableView key="placeholder123" rowAmount={10000} />
       </ResizablePanel>
     </ResizablePanelGroup>
   )
