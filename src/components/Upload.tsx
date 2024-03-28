@@ -11,6 +11,7 @@ import { inferSchema, initParser } from "udsv"
 import { json2csv } from "json-2-csv"
 import XLSX from "xlsx"
 import { useStore, useCell } from "../store/useStore"
+import { DuckDBDataProtocol } from "../lib/duckdb"
 
 const DEMO_CSV_URL =
   "https://pretzelai.github.io/github_public_code_editors.csv"
@@ -38,14 +39,11 @@ export default function Upload({ id }: { id: number }) {
   function determineDtype(arr: any[]) {
     const sampleSize = Math.min(arr.length, 100)
     const sampleIndices = new Set()
-
     while (sampleIndices.size < sampleSize) {
       const randomIndex = Math.floor(Math.random() * arr.length)
       sampleIndices.add(randomIndex)
     }
-
     let isFloat = false
-
     for (const index of Array.from(sampleIndices)) {
       const num = arr[index as number]
       if (num && !Number.isInteger(num)) {
@@ -53,7 +51,6 @@ export default function Upload({ id }: { id: number }) {
         break
       }
     }
-
     return isFloat
   }
 
@@ -67,11 +64,9 @@ export default function Upload({ id }: { id: number }) {
     let typedArrs = parser.typedArrs(csvContent)
     let typedCols = parser.typedCols(csvContent) // [ [1, 4], [2, 5], [3, 6] ]
     setRowCount(typedArrs.length)
-
     let columnTypes: { [key: string]: any } = {}
     let csvString = ""
     const delimiter = "\t" // Tab delimiter
-
     schema.cols.forEach((col, index) => {
       const name = col.name
       let arrowType
@@ -97,7 +92,6 @@ export default function Upload({ id }: { id: number }) {
       // only run this if index is not the last element
       csvString += name + (index < schema.cols.length - 1 ? delimiter : "\n")
     })
-
     // Construct the data rows of the CSV string
     typedArrs.forEach((row, rowIndex) => {
       row.forEach((cell: any, cellIndex) => {
@@ -132,7 +126,6 @@ export default function Upload({ id }: { id: number }) {
       const c = await db.connect()
       const { columnTypes, csvString, delimiter } =
         parseCsvContentFirstPass(csvContent)
-
       await db.registerFileText(sourceName, csvString)
       if (cell.query) {
         await c.query(`DROP TABLE "${INPUT_TABLE}"`)
@@ -162,11 +155,8 @@ export default function Upload({ id }: { id: number }) {
           type: "string",
         }).Sheets["Sheet1"]
         let jsonRows = XLSX.utils.sheet_to_json(sheet)
-
         await db.registerFileText(sourceName, JSON.stringify(jsonRows))
-
         await c.insertJSONFromPath(sourceName, { name: INPUT_TABLE })
-
         await c.close()
         setRowCount(jsonRows.length)
         const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
@@ -177,6 +167,42 @@ export default function Upload({ id }: { id: number }) {
           error
         )
       }
+    }
+  }
+
+  const processParquetContent = async (file: File) => {
+    if (!db) {
+      setJob({
+        csvContent: "",
+        sourceName: file.name,
+      })
+      return
+    }
+    try {
+      const c = await db.connect()
+      await db.registerFileHandle(
+        file.name,
+        file,
+        DuckDBDataProtocol.BROWSER_FILEREADER,
+        true
+      )
+      if (cell.query) {
+        await c.query(`DROP TABLE "${INPUT_TABLE}"`)
+      }
+      await c.query(`
+        CREATE TABLE ${INPUT_TABLE} AS
+        SELECT * FROM '${file.name}'
+      `)
+      const result = await c.query(
+        `SELECT CAST(COUNT(*) AS INT) AS rows FROM ${INPUT_TABLE}`
+      )
+      setRowCount(result.toArray().map((row: any) => row.toJSON())[0].rows)
+      await c.close()
+      const uploadQuery = uploadQueryBuilder(INPUT_TABLE)
+      setCells([{ type: "upload", query: uploadQuery }])
+      setIsLoading(false)
+    } catch (error) {
+      console.error(`Error processing Parquet file ${file.name}:`, error)
     }
   }
 
@@ -207,41 +233,48 @@ export default function Upload({ id }: { id: number }) {
     }
     setError(null)
     setIsLoading(true)
-    const reader = new FileReader()
-    reader.onload = async (e) => {
-      let csvContent
-      if (file.type.includes("excel") || file.type.includes("spreadsheetml")) {
-        const workbook = XLSX.read(e.target?.result, { type: "binary" })
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
-        csvContent = XLSX.utils.sheet_to_csv(worksheet)
-      } else if (
-        file.type.includes("json") &&
-        typeof e.target?.result === "string"
-      ) {
-        try {
-          const jsonContent = JSON.parse(e.target.result)
-          const jsonRows = Array.isArray(jsonContent)
-            ? jsonContent
-            : [jsonContent]
-          csvContent = await json2csv(jsonRows, { unwindArrays: true })
-        } catch (error) {
-          console.error(error)
-          setError(`Error loading JSON`)
-          setRowCount(0)
-          setIsLoading(false)
-          return
-        }
-      } else {
-        csvContent = e.target?.result as string
-      }
-      await processCsvContent(csvContent, file.name)
-      setIsLoading(false)
-    }
-    if (file.type.includes("excel") || file.type.includes("spreadsheetml")) {
-      reader.readAsBinaryString(file)
+    if (file.name.includes(".parquet")) {
+      await processParquetContent(file)
     } else {
-      reader.readAsText(file)
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        let csvContent
+        if (
+          file.type.includes("excel") ||
+          file.type.includes("spreadsheetml")
+        ) {
+          const workbook = XLSX.read(e.target?.result, { type: "binary" })
+          const sheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[sheetName]
+          csvContent = XLSX.utils.sheet_to_csv(worksheet)
+        } else if (
+          file.type.includes("json") &&
+          typeof e.target?.result === "string"
+        ) {
+          try {
+            const jsonContent = JSON.parse(e.target.result)
+            const jsonRows = Array.isArray(jsonContent)
+              ? jsonContent
+              : [jsonContent]
+            csvContent = await json2csv(jsonRows, { unwindArrays: true })
+          } catch (error) {
+            console.error(error)
+            setError(`Error loading JSON`)
+            setRowCount(0)
+            setIsLoading(false)
+            return
+          }
+        } else {
+          csvContent = e.target?.result as string
+        }
+        await processCsvContent(csvContent, file.name)
+        setIsLoading(false)
+      }
+      if (file.type.includes("excel") || file.type.includes("spreadsheetml")) {
+        reader.readAsBinaryString(file)
+      } else {
+        reader.readAsText(file)
+      }
     }
   }
 
@@ -254,7 +287,7 @@ export default function Upload({ id }: { id: number }) {
           <Input
             id="file_upload"
             type="file"
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/json"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, application/json, application/parquet, .parquet"
             onChange={handleFileUpload}
             disabled={isLoading}
           />
