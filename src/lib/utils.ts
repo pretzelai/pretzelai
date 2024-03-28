@@ -71,6 +71,44 @@ export const columnErrorQueryBuilder = (columns: string[]) => {
   return "select {`" + columns.join("`,`") + "`}\ntake 1"
 }
 
+export const filterQueryOperatorBuilder = (filter: string,operator:string,value:string) => {
+  // SQL
+  // return `select * from table where (${filter}) (${operator}) (${value})`
+  // PRQL
+  if(filter && operator){
+    if(value){
+      if(operator=='equals'){
+        return `filter ${filter} == '${value}'`
+      }
+      if(operator=='not equals'){
+        return `filter ${filter} != '${value}'`
+      }
+      if(operator=='contains'){
+        return `filter (std.text.contains this.${filter} "${value}")`
+      }
+      if(operator=='startsWith'){
+        return `filter (std.text.starts_with this.${filter} "${value}")`
+      }
+      if(operator=='endsWith'){
+        return `filter (std.text.ends_with this.${filter} "${value}")`
+      }
+      if(operator=='not contains'){
+        return `filter !(std.text.contains this.${filter} "${value}")`
+      }
+      if(operator=='not startsWith'){
+        return `filter !(std.text.starts_with this.${filter} "${value}")`
+      }
+      if(operator=='not endsWith'){
+        return `filter !(std.text.ends_with this.${filter} "${value}")`
+      }
+    }
+    else{ // for handling non null operator
+      return `filter ${filter} != null`
+    }
+  }
+  return ""
+}
+
 export const filterQueryBuilder = (filter: string) => {
   // SQL
   // return `select * from table where (${filter})`

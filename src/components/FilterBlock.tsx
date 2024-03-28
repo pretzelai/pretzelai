@@ -14,6 +14,7 @@ import {
   getFieldsQueryBuilder,
   getFieldValuesQueryBuilder,
   filterQueryBuilder,
+  filterQueryOperatorBuilder,
   cn,
 } from "../lib/utils"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
@@ -60,6 +61,7 @@ const Filter: React.FC<FilterProps> = ({
   query,
 }) => {
   const [fieldValues, setFieldValues] = useState<string[]>([])
+  const [val,setVal] = useState(0)
 
   useEffect(() => {
     const fetchFieldValues = async () => {
@@ -76,6 +78,19 @@ const Filter: React.FC<FilterProps> = ({
     }
     fetchFieldValues()
   }, [accQuery, filter.column])
+
+  useEffect(()=>{
+    const fetchValues = async()=>{
+      if(filter.value && filter.column && filter.operator){
+        const { rowsJson } = await query(
+          mergeQueries(accQuery, filterQueryOperatorBuilder(filter.column ,filter.operator,filter.value )),
+        )
+        console.log(rowsJson)
+        setVal(rowsJson.length)
+      }
+    }
+    fetchValues()
+  },[filter.value,filter.operator])
 
   useEffect(() => {
     if (filter.column) {
@@ -157,7 +172,10 @@ const Filter: React.FC<FilterProps> = ({
         {filter?.operator !== "notNull" &&
           (!filter?.operator?.includes("equals") || fieldValues.length > 100 ? (
             <TextInput
-              setFieldValue={(value) => onFilterChange({ ...filter, value })}
+              setFieldValue={(value) => {
+                onFilterChange({ ...filter, value })
+                filter.value=value;
+              }}
             />
           ) : (
             <Select
@@ -187,6 +205,7 @@ const Filter: React.FC<FilterProps> = ({
           Delete
         </Button>
       </div>
+      {val} rows filtered
     </FilterSection>
   )
 }
