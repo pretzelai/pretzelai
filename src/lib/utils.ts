@@ -93,7 +93,13 @@ export const filterQueryOperatorBuilder = (filter: string,operator:string,value:
         return `filter (std.text.ends_with this.${filter} "${value}")`
       }
       if(operator=='not contains'){
-        return `filter (std.text.contains this.${filter} "${value}")`
+        return `filter !(std.text.contains this.${filter} "${value}")`
+      }
+      if(operator=='not startsWith'){
+        return `filter !(std.text.starts_with this.${filter} "${value}")`
+      }
+      if(operator=='not endsWith'){
+        return `filter !(std.text.ends_with this.${filter} "${value}")`
       }
     }
     else{ // for handling non null operator
