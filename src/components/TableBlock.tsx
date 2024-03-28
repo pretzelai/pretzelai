@@ -8,17 +8,23 @@ import {
   formatDataForTable,
 } from "../lib/utils"
 import { Column, Cell, Table2 } from "@blueprintjs/table"
-import { useStore } from "../store/useStore"
+import { useCell } from "../store/useStore"
 
-export default function TableView({ rowAmount = 1000 }: { rowAmount: number }) {
-  const { query, lastQuery } = useStore()
+export default function TableBlock({
+  id,
+  rowAmount = 100,
+}: {
+  id: number
+  rowAmount: number
+}) {
+  const { query, prevQuery, updateQuery } = useCell(id)
   const [columns, setColumns] = useState<string[]>([])
   const [rows, setRows] = useState<(string | number)[][]>([])
 
   useEffect(() => {
-    if (lastQuery()) {
+    if (prevQuery) {
       const fetch = async () => {
-        const q = mergeQueries(lastQuery(), tableViewQueryBuilder(rowAmount))
+        const q = mergeQueries(prevQuery, tableViewQueryBuilder(rowAmount))
         const { rowsJson, result } = await query(q)
         if (rowsJson?.length > 0) {
           const columnNames: string[] = Object.keys(rowsJson[0])
@@ -35,10 +41,11 @@ export default function TableView({ rowAmount = 1000 }: { rowAmount: number }) {
         } else {
           setRows([])
         }
+        updateQuery(prevQuery)
       }
       fetch()
     }
-  }, [lastQuery()])
+  }, [prevQuery])
 
   if (!rows.length) {
     return <div>No data / Zero rows returned</div>

@@ -16,6 +16,7 @@ export type CellType =
   | "AI"
   | "sort"
   | "userquery"
+  | "removeDuplicates"
   | "python"
 
 export type Cell = {
@@ -109,6 +110,20 @@ export const mergeQueries = (accQuery: string, nextQuery: string) => {
   // return nextQuery.replace("table", `(${accQuery})`)
   // PRQL
   return `${accQuery}\n${nextQuery}`
+}
+
+export const removeQuery = (selectedColumn: string, fields: string[]) => {
+  if (selectedColumn === "Full Rows") {
+    // Execute removal of duplicates based on all columns
+    const columnsToGroup = fields.filter((column) => column !== "Full Rows")
+    const groupedColumns = columnsToGroup
+      .map((column) => `\`${column}\``)
+      .join(",")
+    return `group {${groupedColumns}} (take 1)`
+  } else {
+    // Execute removal of duplicates based on the selected column
+    return `group \`${selectedColumn}\` (take 1)`
+  }
 }
 
 export const query = async (db: any, modifiedPrql: string) => {

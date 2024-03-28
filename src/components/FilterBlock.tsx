@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react"
-import { AsyncDuckDB } from "../lib/duckdb"
 import {
   Select,
   SelectTrigger,
@@ -11,7 +10,6 @@ import Block from "./ui/Block"
 import { Button } from "./ui/button"
 import TextInput from "./ui/textinput"
 import {
-  query,
   mergeQueries,
   getFieldsQueryBuilder,
   getFieldValuesQueryBuilder,
@@ -20,6 +18,7 @@ import {
   cn,
 } from "../lib/utils"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
+import { useCell } from "../store/useStore"
 
 interface FilterSectionProps {
   children: React.ReactNode
@@ -43,8 +42,8 @@ interface FilterProps {
   filter: Filter
   onFilterChange: (newFilter: Filter) => void
   onFilterDelete: () => void
-  db: AsyncDuckDB | null
   accQuery: string
+  query: (q: string) => Promise<{ rowsJson: any; result: any }>
 }
 
 const isNumeric = (filter: Filter) => {
@@ -58,18 +57,17 @@ const Filter: React.FC<FilterProps> = ({
   filter,
   onFilterChange,
   onFilterDelete,
-  db,
   accQuery,
+  query,
 }) => {
   const [fieldValues, setFieldValues] = useState<string[]>([])
   const [val,setVal] = useState(0)
 
   useEffect(() => {
     const fetchFieldValues = async () => {
-      if (db && filter.column) {        
+      if (filter.column) {
         const { rowsJson } = await query(
-          db,
-          mergeQueries(accQuery, getFieldValuesQueryBuilder(filter.column)),
+          mergeQueries(accQuery, getFieldValuesQueryBuilder(filter.column))
         )
         if (rowsJson) {
           setFieldValues(
@@ -79,7 +77,7 @@ const Filter: React.FC<FilterProps> = ({
       }
     }
     fetchFieldValues()
-  }, [db, accQuery, filter.column])
+  }, [accQuery, filter.column])
 
   useEffect(()=>{
     const fetchValues = async()=>{
@@ -222,7 +220,7 @@ interface FilterGroupProps {
   onFilterGroupChange: (newFilterGroup: FilterGroup) => void
   onFilterGroupDelete: () => void
   indent?: number
-  db: AsyncDuckDB | null
+  query: (q: string) => Promise<{ rowsJson: any; result: any }>
   accQuery: string
 }
 
@@ -231,7 +229,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
   onFilterGroupChange,
   onFilterGroupDelete,
   indent = 0,
-  db,
+  query,
   accQuery,
 }) => {
   const [fields, setFields] = useState<string[]>([])
@@ -239,9 +237,8 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
 
   useEffect(() => {
     const fetchFields = async () => {
-      if (db && accQuery) {
+      if (accQuery) {
         const { result, rowsJson } = await query(
-          db,
           mergeQueries(accQuery, getFieldsQueryBuilder())
         )
         if (rowsJson?.[0]) {
@@ -254,7 +251,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
       }
     }
     fetchFields()
-  }, [db, accQuery])
+  }, [accQuery])
 
   const handleAddFilter = () => {
     const newFilter: Filter = {
@@ -345,8 +342,8 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
                 handleFilterChange(index, newFilter)
               }
               onFilterDelete={() => handleFilterDelete(index)}
-              db={db}
               accQuery={accQuery}
+              query={query}
             />
           ) : (
             <FilterGroup
@@ -356,7 +353,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
               }
               onFilterGroupDelete={() => handleFilterDelete(index)}
               indent={indent + 1}
-              db={db}
+              query={query}
               accQuery={accQuery}
             />
           )}
@@ -454,40 +451,29 @@ const constructSQL = (filterGroup: FilterGroup): string => {
   return sqlParts.join(" ")
 }
 
-interface FilterBlockProps {
-  db: AsyncDuckDB | null
-  updateQuery: (q: string) => void
-  prevQuery: string
-}
-
-export default function FilterBlock({
-  db,
-  updateQuery,
-  prevQuery,
-}: FilterBlockProps) {
+export default function FilterBlock({ id }: { id: number }) {
+  const { updateQuery, prevQuery, query } = useCell(id)
   const [rootFilterGroup, setRootFilterGroup] = useState<FilterGroup>({
     children: [],
     boolOperators: [],
   })
 
   useEffect(() => {
-    if (db) {
-      const q = mergeQueries(
-        prevQuery,
-        filterQueryBuilder(constructSQL(rootFilterGroup))
-      )
-      updateQuery(q)
-    }
-  }, [db, rootFilterGroup, prevQuery])
+    const q = mergeQueries(
+      prevQuery,
+      filterQueryBuilder(constructSQL(rootFilterGroup))
+    )
+    updateQuery(q)
+  }, [rootFilterGroup, prevQuery])
 
   return (
     <Block className="mb-3 flex-col" title="Filter">
       <FilterGroup
         filterGroup={rootFilterGroup}
         onFilterGroupChange={setRootFilterGroup}
-        db={db}
         accQuery={prevQuery}
         onFilterGroupDelete={() => {}}
+        query={query}
       />
     </Block>
   )

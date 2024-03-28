@@ -1,11 +1,13 @@
 # 🥨 Pretzel
 
+[![Discord](https://img.shields.io/discord/1222658588791799849?logo=discord&label=discord)](https://discord.gg/CYMGh3KJ)
 [![License](https://img.shields.io/github/license/pretzelai/pretzelai)](https://github.com/pretzelai/pretzelai/blob/main/LICENSE)
+[![X](https://img.shields.io/twitter/follow/Pretzel_AI_?style=social)](https://twitter.com/Pretzel_AI_)
 [![GitHub Stars](https://img.shields.io/github/stars/pretzelai/pretzelai?style=social)](https://github.com/pretzelai/pretzelai)
 
 Live deployed build: [https://pretzelai.github.io](https://pretzelai.github.io)
 
-Pretzel is an open-source, offline browser-based tool for fast and intuitive data exploration and visualization. It can handle large data files, runs locally in your browser, and requires no backend setup. Pretzel makes it easy to manipulate data via visual chained data transform blocks. It's also reactive - chaging an tranform block in the chain automatically updates all transform blocks and charts that follow.
+Pretzel is an open-source, offline browser-based tool for fast and intuitive data exploration and visualization. It can handle large data files, runs locally in your browser, and requires no backend setup. Pretzel makes it easy to manipulate data via visual chained data transform blocks. It's also reactive - changing a transform block in the chain automatically updates all transform blocks, and charts that follow.
 
 ![demo.gif](https://github.com/pretzelai/pretzelai/assets/121360087/e7f20a16-b19c-4a29-b468-88d42eaa9b43)
 
@@ -15,8 +17,7 @@ Pretzel is an open-source, offline browser-based tool for fast and intuitive dat
 - 🔍 Intuitive data exploration with a visual, top-down pipeline of data transformations and visualizations
 - 🧠 AI-powered transformation block to help with fast data manipulation
 - 🔒 Privacy-first design: run Pretzel AI locally or host it yourself for full control over your data
-- 📊 Upcoming features: Local LLM support, API calls, in-browser Python support with [Pyodide](https://github.com/pyodide/pyodide), save and share workflows securely and canvas based table rendering
-
+- 📊 Upcoming features: Local LLM support, API calls, in-browser Python support with [Pyodide](https://github.com/pyodide/pyodide), save and share workflows securely and canvas-based table rendering
 
 ## Table of Contents
 
@@ -44,16 +45,15 @@ The easiest way to use Pretzel is to visit [https://pretzelai.github.io](https:/
 
 ### Offline standalone app
 
-Since Pretzel doesn't have a backend you can easily install it as a Chrome app and it will work even without internet (for those long flights!)
+Since Pretzel doesn't have a backend, you can easily install it as a Chrome app and it will work even without internet (for those long flights!)
 
 1. Visit [https://pretzelai.github.io](https://pretzelai.github.io) in Chrome
 
 2. Click the install app icon
 <img width="521" alt="pretzel_chrome_install" src="https://github.com/pretzelai/pretzelai/assets/121360087/c6276699-5109-4e59-8bf5-2858c51cb4c3">
 
-3. Now you can launch Pretzel as a standalone app. It will also work offline, it may error if you try to use some internet feature (like the AI Block), just close it and open it again to fix it
+3. Now you can launch Pretzel as a standalone app. It will also work offline, though it may error if you try to use some internet feature (like the AI Block). Just close it and open it again to fix it.
 <img width="268" alt="pretzel_app_icon" src="https://github.com/pretzelai/pretzelai/assets/121360087/cc13e552-d93a-4990-be22-1f6b5d906b15">
-
 
 ### Developers
 
@@ -117,7 +117,7 @@ npm run build
 ## Known Bugs
 
 - Dates are sometimes parsed incorrectly - existing GH issue [here](https://github.com/pretzelai/pretzelai/issues/23)
-- Table panel is slow for large datasets. We're planning on moving to a canvas based table
+- Table panel is slow for large datasets. We're planning on moving to a canvas-based table.
 - [Rare] Charts axes can sometimes not be ordered correctly
 
 Please report any bugs you find in [GitHub issues](https://github.com/pretzelai/pretzelai). 
