@@ -81,11 +81,11 @@ const Filter: React.FC<FilterProps> = ({
 
   useEffect(()=>{
     const fetchValues = async()=>{
-      if(db && filter.value && filter.column && filter.operator){
+      if(filter.value && filter.column && filter.operator){
         const { rowsJson } = await query(
-          db,
           mergeQueries(accQuery, filterQueryOperatorBuilder(filter.column ,filter.operator,filter.value )),
         )
+        console.log(rowsJson)
         setVal(rowsJson.length)
       }
     }
