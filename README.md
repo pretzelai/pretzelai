@@ -1,6 +1,8 @@
 # 🥨 Pretzel
 
+[![Discord](https://img.shields.io/discord/1222658588791799849?logo=discord&label=discord)](https://discord.gg/CYMGh3KJ)
 [![License](https://img.shields.io/github/license/pretzelai/pretzelai)](https://github.com/pretzelai/pretzelai/blob/main/LICENSE)
+[![X](https://img.shields.io/twitter/follow/Pretzel_AI_?style=social)](https://twitter.com/Pretzel_AI_)
 [![GitHub Stars](https://img.shields.io/github/stars/pretzelai/pretzelai?style=social)](https://github.com/pretzelai/pretzelai)
 
 Live deployed build: [https://pretzelai.github.io](https://pretzelai.github.io)

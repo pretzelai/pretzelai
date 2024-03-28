@@ -17,3 +17,5 @@ export const initDb = async () => {
 }
 
 export type AsyncDuckDB = duckdb.AsyncDuckDB
+
+export const DuckDBDataProtocol = duckdb.DuckDBDataProtocol
