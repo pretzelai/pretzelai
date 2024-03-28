@@ -374,7 +374,7 @@ const constructSQL = (filterGroup: FilterGroup): string => {
       } else if (child.operator === "not equals") {
         operatorStr = "!="
       } else if (child.operator.includes("contains")) {
-        operatorStr = "| text.contains"
+        operatorStr = "| text.lower | text.contains"
       } else if (child.operator.includes("startsWith")) {
         operatorStr = "| text.starts_with"
       } else if (child.operator.includes("endsWith")) {
