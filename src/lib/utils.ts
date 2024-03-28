@@ -72,10 +72,21 @@ export const columnErrorQueryBuilder = (columns: string[]) => {
 }
 
 export const filterQueryBuilder = (filter: string) => {
-  // SQL
-  // return `select * from table where (${filter})`
-  // PRQL
-  return filter ? `filter ${filter}` : ""
+  if (filter && filter.includes("text.lower") && filter.includes("not")) {
+    // If the filter includes "text.lower" and "not"
+    const parts = filter.split(/\s*(\|\||&&)\s*/); // Split based on both "OR" and "AND" conditions
+    const modifiedFilter = parts.map(part => {
+      if (part.includes("text.lower") && part.includes("not")) {
+        return `!${part.replace("not ", "")}`;
+      } else {
+        return part;
+      }
+    }).join(" ");
+    return `filter ${modifiedFilter}`;
+  } else {
+    // Otherwise, return the regular filter query
+    return filter ? `filter ${filter}` : "";
+  }
 }
 
 export const tableViewQueryBuilder = (rowAmount: number) => {
