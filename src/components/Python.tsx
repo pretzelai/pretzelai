@@ -20,6 +20,7 @@ export default function userPython({ id }: { id: number }) {
   const [table, setTable] = useState("")
   const [executedAt, setExecutedAt] = useState("")
   const [isExporting, setIsExporting] = useState(false)
+  const [htmlString, setHtmlString] = useState("")
 
   const exportData = async (data: any) => {
     if (db) {
@@ -70,6 +71,8 @@ export default function userPython({ id }: { id: number }) {
       } else if (event.data.startsWith("export")) {
         const data = event.data.substring(6)
         exportData(data)
+      } else if (event.data.includes("html")) {
+        setHtmlString(event.data)
       } else {
         setResult(event.data)
         setIsLoading(false)
@@ -147,6 +150,9 @@ export default function userPython({ id }: { id: number }) {
         ) : (
           <div className="text-gray-500">{executedAt}</div>
         )}
+        <div>
+          <iframe srcDoc={htmlString} width="100%" height="500px" />
+        </div>
       </div>
     </Block>
   )
