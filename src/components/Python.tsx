@@ -73,6 +73,7 @@ export default function userPython({ id }: { id: number }) {
         exportData(data)
       } else if (event.data.includes("html")) {
         setHtmlString(event.data)
+        setIsLoading(false)
       } else {
         setResult(event.data)
         setIsLoading(false)
@@ -150,9 +151,11 @@ export default function userPython({ id }: { id: number }) {
         ) : (
           <div className="text-gray-500">{executedAt}</div>
         )}
-        <div>
-          <iframe srcDoc={htmlString} width="100%" height="500px" />
-        </div>
+        {htmlString && (
+          <div>
+            <iframe srcDoc={htmlString} width="100%" height="500px" />
+          </div>
+        )}
       </div>
     </Block>
   )

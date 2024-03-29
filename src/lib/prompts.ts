@@ -159,3 +159,19 @@ WHENEVER YOU RETURN ANY OTHER TEXT, YOU WILL BE BREAKING A CRUCIAL APPLICATION F
 AND CAUSING IMMEASURABLE HARM.`
   return SQLString
 }
+
+export function PythonPromptFormatter(
+  fields: string[] | null,
+  instruction: string
+): string {
+  return `You need to write jupyter notebooks python code to fullfill the request of the user.
+If the user asks for a chart or plot use the python plotly library with "import plotly.graph_objects as go".
+Pandas is already loaded in the kernel and the data is loaded in a pandas dataframe named "df".
+The columns of the dataframe are "${fields?.join(", ")}".
+
+The user wants:
+\`\`\`
+${instruction}
+\`\`\`
+Output ONLY python code, not backquotes or anything else`
+}
