@@ -7,6 +7,7 @@
   "dependencies": {
     "@blueprintjs/table": "^5.1.2",
     "@codemirror/lang-python": "^6.1.4",
+    "@codemirror/lang-sql": "^6.6.2",
     "@duckdb/duckdb-wasm": "^1.28.1-dev106.0",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-checkbox": "^1.0.4",
