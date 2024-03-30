@@ -3,9 +3,15 @@ import { loadPyodide } from "pyodide"
 const pyodide = await loadPyodide({
   indexURL: import.meta.env.PROD ? "../pyodide" : "../../public/pyodide",
 })
-await Promise.all([pyodide.loadPackage("pandas"), pyodide.loadPackage("numpy")])
+
+await pyodide.loadPackage(["pandas", "numpy", "micropip", "matplotlib"])
+
 try {
-  await pyodide.runPythonAsync(`import pandas as pd`)
+  await pyodide.runPythonAsync(`import pandas as pd
+import numpy as np
+import micropip
+await micropip.install("plotly")
+import plotly`)
 } catch (e) {
   console.log(e)
 }
@@ -14,9 +20,13 @@ postMessage("ready")
 
 onmessage = async (event) => {
   try {
-    postMessage(String((await pyodide.runPythonAsync(event.data)) || ""))
+    let message = event.data
+    if (message.includes(".show()")) {
+      message = message.replace(".show()", ".to_html(full_html=False)")
+    }
+    postMessage(String((await pyodide.runPythonAsync(message)) || ""))
     // "df_output" without "#" before
-    if (/^(?!.*#.*df_output).*df_output/gm.test(event.data)) {
+    if (/^(?!.*#.*df_output).*df_output/gm.test(message)) {
       postMessage(
         "export" + String(await pyodide.runPythonAsync(`df_output.to_csv()`))
       )
