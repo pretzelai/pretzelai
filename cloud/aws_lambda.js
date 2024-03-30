@@ -159,16 +159,40 @@ AND CAUSING IMMEASURABLE HARM.`
   return SQLString
 }
 
+export function PythonPromptFormatter(fields, instruction) {
+  return `You need to write jupyter notebooks python code to fullfill the request of the user.
+If the user wants to export/transform data it should be saved in "df_output" variable.
+If the user asks for a chart or plot use the python plotly library with "import plotly.graph_objects as go" (include the import in the code).
+Pandas is already loaded in the kernel and the data is loaded in a pandas dataframe named "df".
+The columns of the dataframe are "${fields?.join(", ")}".
+
+The user wants:
+\`\`\`
+${instruction}
+\`\`\`
+Output ONLY python code, not backquotes or anything else`
+}
+
 export const handler = async (event) => {
   const { instruction, fields, language } = JSON.parse(event.body)
 
   const apiKey = OPENAI_API_KEY
   const apiUrl = "https://api.openai.com/v1/chat/completions"
 
-  const content =
-    language === "PRQL"
-      ? PRQLPromptFormatter(fields, instruction)
-      : SQLPromptFormatter(fields, instruction)
+  let content
+  switch (language) {
+    case "PRQL":
+      content = PRQLPromptFormatter(fields, instruction)
+      break
+    case "SQL":
+      content = SQLPromptFormatter(fields, instruction)
+      break
+    case "python":
+      content = PythonPromptFormatter(fields, instruction)
+      break
+    default:
+      content = "Invalid language specified."
+  }
 
   const requestBody = {
     model: "gpt-4-turbo-preview",

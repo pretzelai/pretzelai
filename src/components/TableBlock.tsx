@@ -19,7 +19,7 @@ export default function TableBlock({
 }) {
   const { query, prevQuery, updateQuery } = useCell(id)
   const [columns, setColumns] = useState<string[]>([])
-  const [rows, setRows] = useState<(string | number)[][]>([])
+  const [rows, setRows] = useState<any[][]>([])
 
   useEffect(() => {
     if (prevQuery) {
@@ -52,7 +52,8 @@ export default function TableBlock({
   }
 
   const renderCell = (rowIndex: number, columnIndex: number) => {
-    return <Cell>{rows[rowIndex][columnIndex]}</Cell>
+    const row = rows[rowIndex][columnIndex]
+    return <Cell>{typeof row === "object" ? row.toString() : row}</Cell>
   }
 
   return (
