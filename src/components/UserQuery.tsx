@@ -86,37 +86,45 @@ export default function UserQuery({ id }: { id: number }) {
           </ToggleGroup>
         </div>
         <div className="flex flex-row w-full gap-2">
-          <div className="w-full border border-input bg-transparent h-[200px] overflow-hidden">
-            <div className="relative">
-              <CodeMirror
-                minHeight="10px"
-                theme="light"
-                height="100%"
-                className= {`w-full border h-[198px]  ${
-                  isPrqlError || isSqlError
-                ? "border-2 border-red-300 h-48"
-                : "h-48"
-                }`}                
-                editable
-                basicSetup={false}
-                extensions={[sql(), minimalSetup({ syntaxHighlighting: true })]}
-                value={userQuery || ""}
-                onChange={(value) => setUserQuery(value)}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  usePrql
-                    ? "take 100\nCmd/Ctrl + Enter to run query, Enter for new line"
-                    : "SELECT * from PrevTable\nCmd/Ctrl + Enter to run query, Enter for new line"
-                }
-              />
-            </div>
+          <div className="w-full border border-input bg-transparent h-[200px] overflow-hidden relative">
+            <CodeMirror
+              minHeight="10px"
+              theme="light"
+              height="100%"
+              className={`w-full border h-[198px]   ${
+                isPrqlError || isSqlError
+                  ? "border-2 border-red-300 h-48"
+                  : "h-48"
+              }`}
+              editable
+              basicSetup={false}
+              extensions={[sql(), minimalSetup({ syntaxHighlighting: true })]}
+              value={userQuery || ""}
+              onChange={(value) => setUserQuery(value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                usePrql
+                  ? "take 100\nCmd/Ctrl + Enter to run query, Enter for new line"
+                  : "SELECT * from PrevTable\nCmd/Ctrl + Enter to run query, Enter for new line"
+              }
+            />
+          </div>
+          <div className="flex justify-center">
+            {isPrqlError && usePrql && (
+              <Label className="text-red-300 ">Invalid PRQL</Label>
+            )}
+            {isSqlError && !usePrql && (
+              <Label className="text-red-300">Invalid SQL</Label>
+            )}
           </div>
           <div className="flex flex-col justify-end ml-[-20px]">
             <Button
               onClick={runQuery}
               disabled={isLoading}
               variant="ghost"
-              className="p-0 ml-[18px] mb-[8px]"
+              className={`p-0 mb-[8px] ml-[-40px] ${
+                isPrqlError || isSqlError ? "" : "ml-[10px]"
+              }`}
             >
               {isLoading ? (
                 loading
