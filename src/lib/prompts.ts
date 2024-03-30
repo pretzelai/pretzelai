@@ -165,7 +165,8 @@ export function PythonPromptFormatter(
   instruction: string
 ): string {
   return `You need to write jupyter notebooks python code to fullfill the request of the user.
-If the user asks for a chart or plot use the python plotly library with "import plotly.graph_objects as go".
+If the user wants to export/transform data it should be saved in "df_output" variable.
+If the user asks for a chart or plot use the python plotly library with "import plotly.graph_objects as go" (include the import in the code).
 Pandas is already loaded in the kernel and the data is loaded in a pandas dataframe named "df".
 The columns of the dataframe are "${fields?.join(", ")}".
 
