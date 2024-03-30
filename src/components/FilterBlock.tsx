@@ -44,6 +44,7 @@ interface FilterProps {
   onFilterDelete: () => void
   accQuery: string
   query: (q: string) => Promise<{ rowsJson: any; result: any }>
+  onRowsFiltered: (rows:number) => void
 }
 
 const isNumeric = (filter: Filter) => {
@@ -59,9 +60,10 @@ const Filter: React.FC<FilterProps> = ({
   onFilterDelete,
   accQuery,
   query,
+  onRowsFiltered
 }) => {
   const [fieldValues, setFieldValues] = useState<string[]>([])
-  const [val,setVal] = useState(0)
+  const [rowsForTheFilter,setRowsForTheFilter] = useState(0)
 
   useEffect(() => {
     const fetchFieldValues = async () => {
@@ -80,17 +82,19 @@ const Filter: React.FC<FilterProps> = ({
   }, [accQuery, filter.column])
 
   useEffect(()=>{
-    const fetchValues = async()=>{
-      if(filter.value && filter.column && filter.operator){
-        const { rowsJson } = await query(
-          mergeQueries(accQuery, filterQueryOperatorBuilder(filter.column ,filter.operator,filter.value )),
-        )
-        console.log(rowsJson)
-        setVal(rowsJson.length)
+    const fetchValues = async () => {
+      let rowsJsonLength = 0;
+    
+      if (filter.column && filter.operator && filter.value) {
+        const { rowsJson } = await query(mergeQueries(accQuery, filterQueryOperatorBuilder(filter.column, filter.operator, filter.value)));
+        rowsJsonLength = rowsJson?.length || 0;
       }
-    }
+    
+      setRowsForTheFilter(rowsJsonLength);
+      onRowsFiltered(rowsJsonLength);
+    };
     fetchValues()
-  },[filter.value,filter.operator])
+  },[filter.column,filter.operator,filter.value])
 
   useEffect(() => {
     if (filter.column) {
@@ -174,7 +178,6 @@ const Filter: React.FC<FilterProps> = ({
             <TextInput
               setFieldValue={(value) => {
                 onFilterChange({ ...filter, value })
-                filter.value=value;
               }}
             />
           ) : (
@@ -204,8 +207,8 @@ const Filter: React.FC<FilterProps> = ({
         >
           Delete
         </Button>
-      </div>
-      {val} rows filtered
+      </div>   
+      {rowsForTheFilter} rows filtered
     </FilterSection>
   )
 }
@@ -304,8 +307,15 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
     onFilterGroupChange({ ...filterGroup, boolOperators: updatedBoolOperators })
   }
 
+  const [rowsFiltered,setRowsFiltered]=useState(0)
+
+  const handleRowsFiltered = (rows:number)=>{
+    setRowsFiltered(rowsFiltered+rows)
+  }
+
   return (
     <div style={{ marginLeft: `${indent * 20}px` }}>
+      {rowsFiltered} rows filtered
       <FilterSection>
         <div
           className="flex items-center space-x-2"
@@ -344,6 +354,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
               onFilterDelete={() => handleFilterDelete(index)}
               accQuery={accQuery}
               query={query}
+              onRowsFiltered={handleRowsFiltered}
             />
           ) : (
             <FilterGroup
