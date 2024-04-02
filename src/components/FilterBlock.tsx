@@ -14,7 +14,6 @@ import {
   getFieldsQueryBuilder,
   getFieldValuesQueryBuilder,
   filterQueryBuilder,
-  filterQueryOperatorBuilder,
   cn,
 } from "../lib/utils"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
@@ -44,7 +43,6 @@ interface FilterProps {
   onFilterDelete: () => void
   accQuery: string
   query: (q: string) => Promise<{ rowsJson: any; result: any }>
-  onRowsFiltered: (rows:number) => void
 }
 
 const isNumeric = (filter: Filter) => {
@@ -59,11 +57,9 @@ const Filter: React.FC<FilterProps> = ({
   onFilterChange,
   onFilterDelete,
   accQuery,
-  query,
-  onRowsFiltered
+  query
 }) => {
   const [fieldValues, setFieldValues] = useState<string[]>([])
-  const [rowsForTheFilter,setRowsForTheFilter] = useState(0)
 
   useEffect(() => {
     const fetchFieldValues = async () => {
@@ -80,21 +76,6 @@ const Filter: React.FC<FilterProps> = ({
     }
     fetchFieldValues()
   }, [accQuery, filter.column])
-
-  useEffect(()=>{
-    const fetchValues = async () => {
-      let rowsJsonLength = 0;
-    
-      if (filter.column && filter.operator && filter.value) {
-        const { rowsJson } = await query(mergeQueries(accQuery, filterQueryOperatorBuilder(filter.column, filter.operator, filter.value)));
-        rowsJsonLength = rowsJson?.length || 0;
-      }
-    
-      setRowsForTheFilter(rowsJsonLength);
-      onRowsFiltered(rowsJsonLength);
-    };
-    fetchValues()
-  },[filter.column,filter.operator,filter.value])
 
   useEffect(() => {
     if (filter.column) {
@@ -207,8 +188,7 @@ const Filter: React.FC<FilterProps> = ({
         >
           Delete
         </Button>
-      </div>   
-      {rowsForTheFilter} rows filtered
+      </div>
     </FilterSection>
   )
 }
@@ -307,15 +287,8 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
     onFilterGroupChange({ ...filterGroup, boolOperators: updatedBoolOperators })
   }
 
-  const [rowsFiltered,setRowsFiltered]=useState(0)
-
-  const handleRowsFiltered = (rows:number)=>{
-    setRowsFiltered(rowsFiltered+rows)
-  }
-
   return (
     <div style={{ marginLeft: `${indent * 20}px` }}>
-      {rowsFiltered} rows filtered
       <FilterSection>
         <div
           className="flex items-center space-x-2"
@@ -354,7 +327,6 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
               onFilterDelete={() => handleFilterDelete(index)}
               accQuery={accQuery}
               query={query}
-              onRowsFiltered={handleRowsFiltered}
             />
           ) : (
             <FilterGroup
@@ -469,16 +441,26 @@ export default function FilterBlock({ id }: { id: number }) {
     boolOperators: [],
   })
 
+  const [totalRowCount,setTotalRowCount] = useState(0)
+
   useEffect(() => {
     const q = mergeQueries(
       prevQuery,
       filterQueryBuilder(constructSQL(rootFilterGroup))
     )
+
     updateQuery(q)
+
+    const findTotalRowsFiltered = async()=>{
+      const{rowsJson} = await query(q)
+      setTotalRowCount(rowsJson.length)
+    }
+    findTotalRowsFiltered()    
   }, [rootFilterGroup, prevQuery])
 
   return (
     <Block className="mb-3 flex-col" title="Filter">
+      {totalRowCount} rows filtered
       <FilterGroup
         filterGroup={rootFilterGroup}
         onFilterGroupChange={setRootFilterGroup}
