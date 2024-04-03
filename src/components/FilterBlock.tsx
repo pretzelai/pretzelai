@@ -374,7 +374,7 @@ const constructSQL = (filterGroup: FilterGroup): string => {
       } else if (child.operator === "not equals") {
         operatorStr = "!="
       } else if (child.operator.includes("contains")) {
-        operatorStr = "| text.lower | text.contains"
+        operatorStr = "|text.lower | text.contains"
         valueStr=valueStr.toLowerCase()
       } else if (child.operator.includes("startsWith")) {
         operatorStr = "| text.starts_with"
@@ -391,13 +391,16 @@ const constructSQL = (filterGroup: FilterGroup): string => {
         sqlParts.push(`(\`${child.column}\` != null)`)
       } else if (child.value !== "null") {
         const NOT = "not "
-        sqlParts.push(
-          `(${
-            child.operator?.includes(NOT) && operatorStr?.includes("|")
-              ? NOT
-              : ""
-          }\`${child.column}\` ${operatorStr} ${valueStr})`
-        )
+        let part = `(${child.column}${operatorStr} ${valueStr})`
+        if (child.operator?.includes(NOT) && operatorStr?.includes("|")) {
+          if (operatorStr.includes("text.lower")) {
+            part = `!(${child.column} | text.contains ${valueStr})`
+          } else {
+            part = `(${NOT}${child.column}${operatorStr}${valueStr})`
+          }
+        }
+        sqlParts.push(part)
+
       }
       // handle the null case
       if (
@@ -440,28 +443,13 @@ export default function FilterBlock({ id }: { id: number }) {
     boolOperators: [],
   })
 
-useEffect(() => {
-  const filter = filterQueryBuilder(constructSQL(rootFilterGroup));
-  let q = mergeQueries(prevQuery, filter);
-
-  if (filter.includes("text.lower") && filter.includes("not ")) {
-    const parts = filter.split(/\s*(\|\||&&)\s*/);
-    const modifiedFilter = parts
-      .map((part) => {
-        if (part.includes("text.lower") && part.includes("not")) {
-          const replacedNeg = `!${part.replace("not ", "")}`;
-          return replacedNeg.replace("!filter", "filter !");
-        } else {
-          return part; // Return the original part if not modified
-        }
-      })
-      .join(" ");
-    q = mergeQueries(prevQuery, modifiedFilter);
-    updateQuery(q);
-  } else {
-    updateQuery(q);
-  }
-}, [rootFilterGroup, prevQuery]);
+  useEffect(() => {
+    const q = mergeQueries(
+      prevQuery,
+      filterQueryBuilder(constructSQL(rootFilterGroup))
+    )
+    updateQuery(q)
+  }, [rootFilterGroup, prevQuery])
 
   return (
     <Block className="mb-3 flex-col" title="Filter">
