@@ -374,7 +374,7 @@ const constructSQL = (filterGroup: FilterGroup): string => {
       } else if (child.operator === "not equals") {
         operatorStr = "!="
       } else if (child.operator.includes("contains")) {
-        operatorStr = "|text.lower | text.contains"
+        operatorStr = "| text.lower | text.contains"
         valueStr=valueStr.toLowerCase()
       } else if (child.operator.includes("startsWith")) {
         operatorStr = "| text.starts_with"
@@ -394,7 +394,7 @@ const constructSQL = (filterGroup: FilterGroup): string => {
         let part = `(${child.column}${operatorStr} ${valueStr})`
         if (child.operator?.includes(NOT) && operatorStr?.includes("|")) {
           if (operatorStr.includes("text.lower")) {
-            part = `!(${child.column} | text.contains ${valueStr})`
+            part = `!(text.lower ${child.column} | text.contains ${valueStr})`
           } else {
             part = `(${NOT}${child.column}${operatorStr}${valueStr})`
           }
