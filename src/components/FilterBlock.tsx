@@ -375,7 +375,7 @@ const constructSQL = (filterGroup: FilterGroup): string => {
         operatorStr = "!="
       } else if (child.operator.includes("contains")) {
         operatorStr = "| text.lower | text.contains"
-        valueStr=valueStr.toLowerCase()
+        valueStr = valueStr.toLowerCase()
       } else if (child.operator.includes("startsWith")) {
         operatorStr = "| text.starts_with"
       } else if (child.operator.includes("endsWith")) {
@@ -391,16 +391,15 @@ const constructSQL = (filterGroup: FilterGroup): string => {
         sqlParts.push(`(\`${child.column}\` != null)`)
       } else if (child.value !== "null") {
         const NOT = "not "
-        let part = `(${child.column}${operatorStr} ${valueStr})`
+        let part = `(\`${child.column}\` ${operatorStr} ${valueStr})`
         if (child.operator?.includes(NOT) && operatorStr?.includes("|")) {
           if (operatorStr.includes("text.lower")) {
-            part = `!(text.lower ${child.column} | text.contains ${valueStr})`
+            part = `!(text.lower \`${child.column}\` | text.contains ${valueStr})`
           } else {
-            part = `(${NOT}${child.column}${operatorStr}${valueStr})`
+            part = `(${NOT}\`${child.column}\` ${operatorStr} ${valueStr})`
           }
         }
         sqlParts.push(part)
-
       }
       // handle the null case
       if (
