@@ -19,9 +19,9 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
 import { useCell } from "../store/useStore"
 import * as ComLink from "comlink"
-import { MyClass } from "./worker"
+import { FilterRowCount } from "./worker"
 
-const worker = ComLink.wrap<typeof MyClass>(new Worker("./worker.ts"))
+const worker = ComLink.wrap<typeof FilterRowCount>(new Worker("./worker.ts"))
 
 interface FilterSectionProps {
   children: React.ReactNode
@@ -439,31 +439,34 @@ const constructSQL = (filterGroup: FilterGroup): string => {
 }
 
 export default function FilterBlock({ id }: { id: number }) {
-  const { updateQuery, prevQuery, query } = useCell(id)
+  const { updateQuery, prevQuery, query } = useCell(id);
   const [rootFilterGroup, setRootFilterGroup] = useState<FilterGroup>({
     children: [],
     boolOperators: [],
-  })
-
-  const [totalRowCount,setTotalRowCount] = useState(0)
+  });
+  const [totalRowCount, setTotalRowCount] = useState(0);
+  const [prevTotalRowCount, setPrevTotalRowCount] = useState<number | null>(null); // Track previous totalRowCount
 
   useEffect(() => {
-    const q = mergeQueries(
-      prevQuery,
-      filterQueryBuilder(constructSQL(rootFilterGroup))
-    )
+    const q = mergeQueries(prevQuery, filterQueryBuilder(constructSQL(rootFilterGroup)));
+    updateQuery(q);
 
-    updateQuery(q)  
-
-    const findTotalRowsFiltered = async()=>{
-      const instance = await new worker()
-      setTotalRowCount(instance.logSomething(query,q))
-    }
-    findTotalRowsFiltered()    
-  }, [rootFilterGroup, prevQuery])
+    const findTotalRowsFiltered = async () => {
+      const instance = await new worker();
+      const newTotalRowCount = instance.findFilteredRowCount(query, q);
+      setTotalRowCount(newTotalRowCount);
+      if (prevTotalRowCount !== null && prevTotalRowCount !== newTotalRowCount) {
+        setPrevTotalRowCount(prevTotalRowCount); // Update prevTotalRowCount
+      }
+    };
+    findTotalRowsFiltered();
+  }, [rootFilterGroup, prevQuery]);
 
   return (
-    <Block className="mb-3 flex-col" title="Filter">
+    <Block className="mb-3 flex-col" title="Filter"> 
+      {prevTotalRowCount !== null && prevTotalRowCount !== totalRowCount && (
+        <div>{prevTotalRowCount} -`&gt;` {totalRowCount}</div>
+      )}
       {totalRowCount} rows filtered
       <FilterGroup
         filterGroup={rootFilterGroup}
@@ -473,5 +476,5 @@ export default function FilterBlock({ id }: { id: number }) {
         query={query}
       />
     </Block>
-  )
+  );
 }

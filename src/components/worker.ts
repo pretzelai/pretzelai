@@ -1,14 +1,16 @@
 import * as Comlink from 'comlink'
 
-export class MyClass{
-    async logSomething(query:any,q:any){
-        console.log("Hello")
+export class FilterRowCount{
+    async findFilteredRowCount(
+        query:(q:string)=>Promise<{
+            rowsJson: any;
+            result: any;
+        }>,
+        q:string
+    ){
         const {rowsJson} = await query(q)
-        const filterRowCount = rowsJson.length
-        console.log(filterRowCount);
-        
-        return filterRowCount
+        return rowsJson.length
     }
 }
 
-Comlink.expose(MyClass)
+Comlink.expose(FilterRowCount)
