@@ -18,6 +18,10 @@ import {
 } from "../lib/utils"
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
 import { useCell } from "../store/useStore"
+import * as ComLink from "comlink"
+import { MyClass } from "./worker"
+
+const worker = ComLink.wrap<typeof MyClass>(new Worker("./worker.ts"))
 
 interface FilterSectionProps {
   children: React.ReactNode
@@ -449,11 +453,11 @@ export default function FilterBlock({ id }: { id: number }) {
       filterQueryBuilder(constructSQL(rootFilterGroup))
     )
 
-    updateQuery(q)
+    updateQuery(q)  
 
     const findTotalRowsFiltered = async()=>{
-      const{rowsJson} = await query(q)
-      setTotalRowCount(rowsJson.length)
+      const instance = await new worker()
+      setTotalRowCount(instance.logSomething(query,q))
     }
     findTotalRowsFiltered()    
   }, [rootFilterGroup, prevQuery])
