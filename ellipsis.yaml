@@ -1,0 +1,27 @@
+version: 1.3
+
+about:
+  - "This is a codebase for Pretzel AI  - an open-source, offline browser-based tool for fast and intuitive data exploration and visualization. It can handle large data files, runs locally in your browser, and requires no backend setup "
+
+build:
+  file: "Dockerfile"
+  commands: 
+    - name: "install_dependencies"
+      description: "This command will install all the necessary dependencies and looks for any installation dependencies"
+      command: "npm install"
+    - name: "build_project"
+      description: "This command will build and catch any import errors and other such issues"
+      command: "npm run build"
+
+pr_review:
+  confidence_threshold: 0.7
+  rules:
+    - "Code should be DRY (Dont Repeat Yourself)"
+    - "There should no secrets or credentials in the code"
+    - "Extremely Complicated Code Needs Comments"
+    - "Use Descriptive Variable and Constant Names"
+    - "API routes must have error handling, they shouldn't intentionally return a HTTP 500"
+    - "Use retries when calling external API services"
+    - "Don't log sensitive data"
+    - "Follow the Single Responsibility Principle"
+    - "Function and Method Naming Should Follow Consistent Patterns"
