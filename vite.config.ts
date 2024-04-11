@@ -10,4 +10,9 @@ export default defineConfig({
   worker: {
     format: "es",
   },
+  resolve: {
+    alias: {
+        'node-fetch': 'isomorphic-fetch',
+    },
+  },
 })
