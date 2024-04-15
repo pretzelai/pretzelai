@@ -1,12 +1,23 @@
-import { useState } from "react"
-import { mergeQueries } from "../lib/utils"
-import { Button } from "./ui/button"
-import { Textarea } from "./ui/textarea"
-import { Label } from "./ui/label"
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
-import { loading } from "./ui/loading"
-import Block from "./ui/Block"
-import { useCell } from "../store/useStore"
+import { useRef, useState} from "react";
+import { mergeQueries } from "../lib/utils";
+import { Button } from "./ui/button";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
+import { loading } from "./ui/loading";
+import Block from "./ui/Block";
+import { useCell } from "../store/useStore";
+import Editor,{loader} from "@monaco-editor/react";
+import * as monacos from "monaco-editor";
+import { Label } from "@radix-ui/react-label";
+import { customTheme ,config, prqlLang} from "./Editors";
+
+loader.init().then((monaco) => {
+  monaco.editor.defineTheme("customTheme", customTheme);
+  monaco.languages.register({ id: "prql" });
+  //@ts-ignore
+  monaco.languages.setLanguageConfiguration("prql", config);
+  //@ts-ignore
+  monaco.languages.setMonarchTokensProvider("prql", prqlLang);
+})
 
 const dbQuery = (
   userQuery: string | null,
@@ -17,37 +28,37 @@ const dbQuery = (
   setIsPrqlError: (isError: boolean) => void,
   setIsSqlError: (isError: boolean) => void
 ) => {
-  let wrappedUserQuery = ""
+  let wrappedUserQuery = "";
   if (userQuery) {
-    wrappedUserQuery = usePrql ? userQuery : `SQL {${userQuery}}`
+    wrappedUserQuery = usePrql ? userQuery : `SQL {${userQuery}}`;
   }
-  const q = mergeQueries(prevQuery, wrappedUserQuery || "")
-  updateQuery(q)
+  const q = mergeQueries(prevQuery, wrappedUserQuery || "");
+  updateQuery(q);
   const fetch = async () => {
-    let rowsJson
-    rowsJson = (await query(mergeQueries(prevQuery, wrappedUserQuery || "")))
-      .rowsJson
+    let rowsJson;
+    rowsJson = (await query(mergeQueries(prevQuery, wrappedUserQuery || ""))).rowsJson;
     if (rowsJson) {
-      setIsPrqlError(false)
-      setIsSqlError(false)
+      setIsPrqlError(false);
+      setIsSqlError(false);
     } else {
-      setIsPrqlError(true)
-      setIsSqlError(true)
+      setIsPrqlError(true);
+      setIsSqlError(true);
     }
-  }
-  fetch()
-}
+  };
+  fetch();
+};
 
 export default function UserQuery({ id }: { id: number }) {
-  const { updateQuery, prevQuery, query } = useCell(id)
-  const [userQuery, setUserQuery] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isPrqlError, setIsPrqlError] = useState(false)
-  const [isSqlError, setIsSqlError] = useState(false)
-  const [usePrql, setUsePrql] = useState(false)
+  const { updateQuery, prevQuery, query } = useCell(id);
+  const [userQuery, setUserQuery] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPrqlError, setIsPrqlError] = useState(false);
+  const [isSqlError, setIsSqlError] = useState(false);
+  const [usePrql, setUsePrql] = useState(false);
+  const [ctrlPressed, setCtrlPressed] = useState(false); // Track whether Ctrl key is pressed
 
   const runQuery = () => {
-    setIsLoading(true)
+    setIsLoading(true);
     dbQuery(
       userQuery,
       usePrql,
@@ -56,14 +67,30 @@ export default function UserQuery({ id }: { id: number }) {
       query,
       setIsPrqlError,
       setIsSqlError
-    )
-    setIsLoading(false)
+    );
+    setIsLoading(false);
+  };
+
+const editorRef = useRef<monacos.editor.IStandaloneCodeEditor | null>(null);
+
+function handleEditorDidMount(editor: monacos.editor.IStandaloneCodeEditor) {
+  editorRef.current = editor;
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      runQuery()
+  editorRef?.current?.onKeyDown((e: monacos.IKeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.code === "Enter") {
+      setCtrlPressed(true); // Set Ctrl key as pressed
     }
+  });
+  
+  //@ts-ignore
+function handleEditorChange(value) {
+  setUserQuery(value);
+  if(ctrlPressed) {
+    runQuery(); // Trigger runQuery only if Ctrl key is pressed
+    setCtrlPressed(false);
+    setIsLoading(false); // Reset Ctrl key state after running the query
+  };
   }
 
   return (
@@ -83,22 +110,32 @@ export default function UserQuery({ id }: { id: number }) {
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <div className="flex flex-row w-full gap-2">
-          <Textarea
-            className={
-              isPrqlError || isSqlError
-                ? "border-2 border-red-300 h-48"
-                : "h-48"
-            }
-            value={userQuery || ""}
-            onChange={(e) => {
-              setUserQuery(e.target.value)
+        <div className="flex flex-row w-full h-56 gap-2 relative border border-slate-300">
+          <Editor
+            className={`absolute border-2 border-slate-600 ${isPrqlError || isSqlError ? "border-2 border-red-300 h-48 " : "h-48"}`}
+            options={{
+              wordWrap: "on",
+              autoIndent: "full",
+              autoDetectHighContrast: false,
+              autoClosingBrackets: "always",
+              autoClosingQuotes: "always",
+              autoClosingOvertype: "always",
+              selectOnLineNumbers: true,
+              minimap: { enabled: false },
+              fontSize: 20,
+              scrollbar: {
+                vertical: "visible",
+                verticalHasArrows: false,
+                verticalScrollbarSize: 10,
+              },
             }}
-            onKeyDown={handleKeyDown}
-            placeholder={`${
-              usePrql ? "take 100" : "SELECT * from PrevTable"
-            } -- Cmd/Ctrl + Enter to run query, Enter for new line`}
+            language={usePrql ? "prql" : "sql"}
+            theme="customTheme"
+            onChange={handleEditorChange}
+            value={`${usePrql ? "take 100 #" : "SELECT * FROM PrevTable --"} Cmd/Ctrl + Enter to run query, Enter for new line`}
+            onMount={handleEditorDidMount}
           />
+
           {isPrqlError && usePrql && (
             <Label className="text-red-300">Invalid PRQL</Label>
           )}
@@ -106,12 +143,12 @@ export default function UserQuery({ id }: { id: number }) {
             <Label className="text-red-300">Invalid SQL</Label>
           )}
 
-          <div className="flex flex-col justify-end">
+          <div className="absolute bottom-[-10px] right-4 ">
             <Button
               onClick={runQuery}
               disabled={isLoading}
               variant="ghost"
-              className="p-0 ml-[-50px] mr-[18px] mb-[8px]"
+              className="p-0 "
             >
               {isLoading ? (
                 loading
@@ -137,5 +174,5 @@ export default function UserQuery({ id }: { id: number }) {
         </div>
       </div>
     </Block>
-  )
+  );
 }
