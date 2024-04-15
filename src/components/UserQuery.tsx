@@ -1,22 +1,22 @@
-import { useRef, useState} from "react";
-import { mergeQueries } from "../lib/utils";
-import { Button } from "./ui/button";
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
-import { loading } from "./ui/loading";
-import Block from "./ui/Block";
-import { useCell } from "../store/useStore";
-import Editor,{loader} from "@monaco-editor/react";
-import * as monacos from "monaco-editor";
-import { Label } from "@radix-ui/react-label";
-import { customTheme ,config, prqlLang} from "./Editors";
+import { useRef, useState} from "react"
+import { mergeQueries } from "../lib/utils"
+import { Button } from "./ui/button"
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group"
+import { loading } from "./ui/loading"
+import Block from "./ui/Block"
+import { useCell } from "../store/useStore"
+import Editor,{loader} from "@monaco-editor/react"
+import * as monacos from "monaco-editor"
+import { Label } from "@radix-ui/react-label"
+import { customTheme ,config, prqlLang} from "./Editors"
 
 loader.init().then((monaco) => {
-  monaco.editor.defineTheme("customTheme", customTheme);
-  monaco.languages.register({ id: "prql" });
+  monaco.editor.defineTheme("customTheme", customTheme)
+  monaco.languages.register({ id: "prql" })
   //@ts-ignore
-  monaco.languages.setLanguageConfiguration("prql", config);
+  monaco.languages.setLanguageConfiguration("prql", config)
   //@ts-ignore
-  monaco.languages.setMonarchTokensProvider("prql", prqlLang);
+  monaco.languages.setMonarchTokensProvider("prql", prqlLang)
 })
 
 const dbQuery = (
@@ -28,37 +28,37 @@ const dbQuery = (
   setIsPrqlError: (isError: boolean) => void,
   setIsSqlError: (isError: boolean) => void
 ) => {
-  let wrappedUserQuery = "";
+  let wrappedUserQuery = ""
   if (userQuery) {
-    wrappedUserQuery = usePrql ? userQuery : `SQL {${userQuery}}`;
+    wrappedUserQuery = usePrql ? userQuery : `SQL {${userQuery}}`
   }
-  const q = mergeQueries(prevQuery, wrappedUserQuery || "");
-  updateQuery(q);
+  const q = mergeQueries(prevQuery, wrappedUserQuery || "")
+  updateQuery(q)
   const fetch = async () => {
-    let rowsJson;
-    rowsJson = (await query(mergeQueries(prevQuery, wrappedUserQuery || ""))).rowsJson;
+    let rowsJson
+    rowsJson = (await query(mergeQueries(prevQuery, wrappedUserQuery || ""))).rowsJson
     if (rowsJson) {
-      setIsPrqlError(false);
-      setIsSqlError(false);
+      setIsPrqlError(false)
+      setIsSqlError(false)
     } else {
-      setIsPrqlError(true);
-      setIsSqlError(true);
+      setIsPrqlError(true)
+      setIsSqlError(true)
     }
-  };
-  fetch();
-};
+  }
+  fetch()
+}
 
 export default function UserQuery({ id }: { id: number }) {
-  const { updateQuery, prevQuery, query } = useCell(id);
-  const [userQuery, setUserQuery] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPrqlError, setIsPrqlError] = useState(false);
-  const [isSqlError, setIsSqlError] = useState(false);
-  const [usePrql, setUsePrql] = useState(false);
-  const [ctrlPressed, setCtrlPressed] = useState(false); // Track whether Ctrl key is pressed
+  const { updateQuery, prevQuery, query } = useCell(id)
+  const [userQuery, setUserQuery] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isPrqlError, setIsPrqlError] = useState(false)
+  const [isSqlError, setIsSqlError] = useState(false)
+  const [usePrql, setUsePrql] = useState(false)
+  const [ctrlPressed, setCtrlPressed] = useState(false) // Track whether Ctrl key is pressed
 
   const runQuery = () => {
-    setIsLoading(true);
+    setIsLoading(true)
     dbQuery(
       userQuery,
       usePrql,
@@ -67,30 +67,30 @@ export default function UserQuery({ id }: { id: number }) {
       query,
       setIsPrqlError,
       setIsSqlError
-    );
-    setIsLoading(false);
-  };
+    )
+    setIsLoading(false)
+  }
 
-const editorRef = useRef<monacos.editor.IStandaloneCodeEditor | null>(null);
+const editorRef = useRef<monacos.editor.IStandaloneCodeEditor | null>(null)
 
 function handleEditorDidMount(editor: monacos.editor.IStandaloneCodeEditor) {
-  editorRef.current = editor;
+  editorRef.current = editor
   }
 
   editorRef?.current?.onKeyDown((e: monacos.IKeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.code === "Enter") {
-      setCtrlPressed(true); // Set Ctrl key as pressed
+      setCtrlPressed(true) // Set Ctrl key as pressed
     }
-  });
+  })
   
   //@ts-ignore
 function handleEditorChange(value) {
-  setUserQuery(value);
+  setUserQuery(value)
   if(ctrlPressed) {
-    runQuery(); // Trigger runQuery only if Ctrl key is pressed
-    setCtrlPressed(false);
-    setIsLoading(false); // Reset Ctrl key state after running the query
-  };
+    runQuery() // Trigger runQuery only if Ctrl key is pressed
+    setCtrlPressed(false)
+    setIsLoading(false) // Reset Ctrl key state after running the query
+  }
   }
 
   return (
@@ -174,5 +174,5 @@ function handleEditorChange(value) {
         </div>
       </div>
     </Block>
-  );
+  )
 }
