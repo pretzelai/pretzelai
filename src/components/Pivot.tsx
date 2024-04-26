@@ -57,9 +57,11 @@ export default function PivotTable({ id }: { id: number }) {
           .trim()
         const valueFields = values
           .map((value) =>
-            value.aggregation === "count_distinct"
-              ? `COUNT(DISTINCT "${value.column}") as "count_distinct_${value.column}"`
-              : `${value.aggregation}("${value.column}") as "${value.aggregation}_${value.column}"`
+            value.aggregation === "sum"
+              ? `SUM(CAST("${value.column}" AS FLOAT)) as "${value.aggregation}_${value.column}"`
+              : value.aggregation === "count_distinct"
+                ? `COUNT(DISTINCT "${value.column}") as "count_distinct_${value.column}"`
+                : `${value.aggregation}("${value.column}") as "${value.aggregation}_${value.column}"`
           )
           .join(", ")
         let pivotQuery = `PIVOT {\n`
@@ -239,7 +241,7 @@ export default function PivotTable({ id }: { id: number }) {
                   {columns.map((column) => renderColumnBlock(column))}
                 </div>
               </div>
-              <div className="h-72 overflow-auto">
+              <div className="h-72 overflow-auto" key={JSON.stringify(gridData)}>
                 {gridColumns.length > 0 && (
                   <Table2 numRows={gridData.length}>
                     {gridColumns.map((col, index) => (
