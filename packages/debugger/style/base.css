@@ -1,0 +1,30 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+@import './breakpoints.css';
+@import './callstack.css';
+@import './editor.css';
+@import './kernelSources.css';
+@import './sidebar.css';
+@import './sources.css';
+@import './variables.css';
+
+.jp-left-truncated {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+}
+
+#jp-debugger .jp-switch-label {
+  margin-right: 0;
+}
+
+.jp-DebuggerBugButton[aria-pressed='true'] {
+  /* Undo default toolkit style */
+  box-shadow: none;
+}
+
+.jp-DebuggerBugButton[aria-pressed='true'] path {
+  fill: var(--jp-warn-color0);
+}

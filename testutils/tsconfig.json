@@ -1,0 +1,27 @@
+{
+  "extends": "../tsconfigbase",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src",
+    "module": "commonjs",
+    "types": ["node"]
+  },
+  "include": ["src/*"],
+  "references": [
+    {
+      "path": "../packages/application"
+    },
+    {
+      "path": "../packages/apputils"
+    },
+    {
+      "path": "../packages/notebook"
+    },
+    {
+      "path": "../packages/rendermime"
+    },
+    {
+      "path": "../packages/testing"
+    }
+  ]
+}

@@ -1,0 +1,219 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+| Variables
+|----------------------------------------------------------------------------*/
+
+:root {
+  --jp-private-sidebar-tab-width: 32px;
+}
+
+/*-----------------------------------------------------------------------------
+| SideBar
+|----------------------------------------------------------------------------*/
+
+.jp-SideBar {
+  /* This is needed so that all font sizing of children done in ems is
+   * relative to this base size */
+  font-size: var(--jp-ui-font-size1);
+}
+
+.jp-SideBar.lm-TabBar,
+#jp-down-stack .lm-TabBar {
+  color: var(--jp-ui-font-color2);
+  background: var(--jp-layout-color2);
+  font-size: var(--jp-ui-font-size1);
+  overflow: visible;
+}
+
+.jp-SideBar.lm-TabBar {
+  min-width: calc(var(--jp-private-sidebar-tab-width) + var(--jp-border-width));
+  max-width: calc(var(--jp-private-sidebar-tab-width) + var(--jp-border-width));
+  display: block;
+}
+
+.jp-SideBar .lm-TabBar-content {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  list-style-type: none;
+  height: var(--jp-private-sidebar-tab-width);
+}
+
+.jp-SideBar .lm-TabBar-tab {
+  padding: 16px 0;
+  border: none;
+  overflow: visible;
+  flex-direction: column;
+  position: relative;
+}
+
+.jp-SideBar .lm-TabBar-tab:focus-visible {
+  outline: 4px solid var(--jp-accept-color-active, var(--jp-brand-color1));
+  outline-offset: -1px;
+}
+
+.jp-SideBar .lm-TabBar-tab.lm-mod-current::after {
+  /* Internal border override pseudo-element */
+  position: absolute;
+  content: '';
+  bottom: 0;
+  right: 0;
+  top: 0;
+  left: 0;
+  border: var(--jp-border-width) solid var(--jp-layout-color1);
+}
+
+.jp-SideBar .lm-TabBar-tab:not(.lm-mod-current),
+#jp-down-stack .lm-TabBar-tab:not(.lm-mod-current) {
+  background: var(--jp-layout-color2);
+}
+
+.jp-SideBar .lm-TabBar-tabIcon.jp-SideBar-tabIcon {
+  min-width: 20px;
+  min-height: 20px;
+  background-size: 20px;
+  display: inline-block;
+  vertical-align: middle;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.jp-SideBar .lm-TabBar-tabLabel {
+  line-height: var(--jp-private-sidebar-tab-width);
+}
+
+.jp-SideBar .lm-TabBar-tab:hover:not(.lm-mod-current),
+#jp-down-stack .lm-TabBar-tab:hover:not(.lm-mod-current) {
+  background: var(--jp-layout-color1);
+}
+
+.jp-SideBar.lm-TabBar::after {
+  /* Internal border pseudo-element */
+  position: absolute;
+  content: '';
+  bottom: 0;
+  right: 0;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+/* Borders */
+
+/* stylelint-disable selector-max-class */
+
+.jp-SideBar.lm-TabBar .lm-TabBar-tab + .lm-TabBar-tab {
+  border-top: var(--jp-border-width) solid var(--jp-layout-color2);
+}
+
+.jp-SideBar.lm-TabBar .lm-TabBar-tab.lm-mod-current + .lm-TabBar-tab {
+  border-top: var(--jp-border-width) solid var(--jp-border-color0);
+}
+
+.jp-SideBar.lm-TabBar .lm-TabBar-tab + .lm-TabBar-tab.lm-mod-current {
+  border-top: var(--jp-border-width) solid var(--jp-border-color0);
+}
+
+.jp-SideBar.lm-TabBar .lm-TabBar-tab.lm-mod-current:last-child {
+  border-bottom: var(--jp-border-width) solid var(--jp-border-color0);
+}
+
+.jp-SideBar.lm-TabBar .lm-TabBar-tabLabel {
+  writing-mode: vertical-rl;
+}
+
+/* Left */
+
+/* Borders */
+
+.jp-SideBar.lm-TabBar.jp-mod-left .lm-TabBar-content {
+  /* Internal border spacing */
+  margin-right: var(--jp-border-width);
+}
+
+.jp-SideBar.lm-TabBar.jp-mod-left .lm-TabBar-tab.lm-mod-current::after {
+  /* Internal border override */
+  right: calc(-1 * var(--jp-border-width));
+}
+
+.jp-SideBar.lm-TabBar.jp-mod-left::after {
+  /* Internal border */
+  border-right: var(--jp-border-width) solid var(--jp-border-color0);
+}
+
+/* Transforms */
+
+.jp-SideBar.lm-TabBar.jp-mod-left .lm-TabBar-tabLabel {
+  transform: rotate(180deg);
+}
+
+/* Right */
+
+/* Borders */
+
+.jp-SideBar.lm-TabBar.jp-mod-right .lm-TabBar-content {
+  /* Internal border spacing */
+  margin-left: var(--jp-border-width);
+}
+
+.jp-SideBar.lm-TabBar.jp-mod-right .lm-TabBar-tab.lm-mod-current::after {
+  /* Internal border override */
+  left: calc(-1 * var(--jp-border-width));
+}
+
+.jp-SideBar.lm-TabBar.jp-mod-right::after {
+  /* Internal border */
+  border-left: var(--jp-border-width) solid var(--jp-border-color0);
+}
+
+/* Down */
+
+/* Borders */
+
+#jp-down-stack > .lm-TabBar {
+  border-top: var(--jp-border-width) solid var(--jp-border-color0);
+  border-bottom: var(--jp-border-width) solid var(--jp-border-color0);
+}
+
+#jp-down-stack > .lm-TabBar .lm-TabBar-tab {
+  border-left: none;
+  border-right: none;
+}
+
+#jp-down-stack > .lm-TabBar .lm-TabBar-tab.lm-mod-current {
+  border: var(--jp-border-width) solid var(--jp-border-color1);
+  border-bottom: none;
+  transform: translateY(var(--jp-border-width));
+}
+
+#jp-down-stack > .lm-TabBar .lm-TabBar-tab.lm-mod-current:first-child {
+  border: none;
+  border-right: var(--jp-border-width) solid var(--jp-border-color1);
+}
+
+/* stylelint-enable selector-max-class */
+
+/* Stack panels */
+
+#jp-left-stack > .lm-Widget,
+#jp-right-stack > .lm-Widget {
+  min-width: var(--jp-sidebar-min-width);
+  background-color: var(--jp-layout-color1);
+}
+
+#jp-right-stack {
+  border-left: var(--jp-border-width) solid var(--jp-border-color1);
+}
+
+#jp-left-stack {
+  border-right: var(--jp-border-width) solid var(--jp-border-color1);
+}
+
+#jp-down-stack > .lm-TabPanel-stackedPanel {
+  border: none;
+}
