@@ -5,13 +5,13 @@
   "keywords": [
     "jupyterlab"
   ],
-  "homepage": "https://github.com/jupyterlab/jupyterlab",
+  "homepage": "https://github.com/pretzelai/pretzelai",
   "bugs": {
-    "url": "https://github.com/jupyterlab/jupyterlab/issues"
+    "url": "https://github.com/pretzelai/pretzelai/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jupyterlab/jupyterlab.git"
+    "url": "https://github.com/pretzelai/pretzelai.git"
   },
   "license": "BSD-3-Clause",
   "author": "Project Jupyter",
