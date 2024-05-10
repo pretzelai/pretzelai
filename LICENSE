@@ -41,9 +41,19 @@ which is licensed under the "MIT" license.  See the semver.py file for details.
 
 All modifications and additions to the Jupyter codebase made by Pretzel
 contributors listed in the PRETZEL_CONTRIBUTORS file (found at the root of the
-project) are licensed under the terms of the GNU Affero General Public License v3.0.
-These terms can be found in the AGPLv3_LICENSE file at the root of the project.
+project) are licensed under the terms of the GNU Affero General Public License
+v3.0. These terms can be found in the LICENSE_AGPLv3 file at the root of the
+project.
 
-Copyright for all new code contributions by Pretzel AI GmbH and listed contributors
-is held by Pretzel AI GmbH. Each new file created by Pretzel AI GmbH or its contributors
-is identified with a header stating the copyright and licensing under AGPLv3.
+Copyright for all new code contributions by Pretzel AI GmbH and listed
+contributors is held by Pretzel AI GmbH. Each new file created by
+Pretzel AI GmbH or its contributors is identified with a header stating
+the copyright and licensing under AGPLv3.
+
+
+==============================================================================
+
+The contents of the folder pretzelai_visual represent an older tool, which
+is no longer actively developed. All files in this folder are licensed under
+the terms of the Apache License, Version 2.0. These terms can be found in the
+LICENSE file in the pretzelai_visual folder.
