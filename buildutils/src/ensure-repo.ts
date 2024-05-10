@@ -266,6 +266,7 @@ const SKIP_CSS: Dict<string[]> = {
     '@jupyterlab/pdf-extension',
     '@jupyterlab/pluginmanager',
     '@jupyterlab/pluginmanager-extension',
+    '@jupyterlab/pretzelai-extension',
     '@jupyterlab/rendermime-extension',
     '@jupyterlab/running',
     '@jupyterlab/running-extension',

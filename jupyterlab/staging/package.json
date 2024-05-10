@@ -91,6 +91,7 @@
     "@jupyterlab/pdf-extension": "~4.2.0-rc.0",
     "@jupyterlab/pluginmanager": "~4.2.0-rc.0",
     "@jupyterlab/pluginmanager-extension": "~4.2.0-rc.0",
+    "@jupyterlab/pretzelai-extension": "file:../../packages/pretzelai-extension",
     "@jupyterlab/property-inspector": "~4.2.0-rc.0",
     "@jupyterlab/rendermime": "~4.2.0-rc.0",
     "@jupyterlab/rendermime-extension": "~4.2.0-rc.0",
@@ -180,6 +181,7 @@
     "@jupyterlab/notebook-extension": "~4.2.0-rc.0",
     "@jupyterlab/pdf-extension": "~4.2.0-rc.0",
     "@jupyterlab/pluginmanager-extension": "~4.2.0-rc.0",
+    "@jupyterlab/pretzelai-extension": "file:../../packages/pretzelai-extension",
     "@jupyterlab/rendermime-extension": "~4.2.0-rc.0",
     "@jupyterlab/running-extension": "~4.2.0-rc.0",
     "@jupyterlab/settingeditor-extension": "~4.2.0-rc.0",
@@ -258,6 +260,7 @@
       "@jupyterlab/metadataform-extension": "",
       "@jupyterlab/notebook-extension": "",
       "@jupyterlab/pluginmanager-extension": "",
+      "@jupyterlab/pretzelai-extension": "",
       "@jupyterlab/rendermime-extension": "",
       "@jupyterlab/running-extension": "",
       "@jupyterlab/settingeditor-extension": "",
@@ -351,7 +354,9 @@
       "react-dom",
       "yjs"
     ],
-    "linkedPackages": {},
+    "linkedPackages": {
+      "@jupyterlab/pretzelai-extension": "../../packages/pretzelai-extension"
+    },
     "staticDir": "../static"
   }
 }
