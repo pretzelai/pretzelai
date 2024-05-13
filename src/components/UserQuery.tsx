@@ -144,18 +144,23 @@ export default function UserQuery({ id }: { id: number }) {
             options={{
               wordWrap: "on",
               autoIndent: "full",
+              lineNumbersMinChars: 2,
+              lineDecorationsWidth:"2px",
               autoDetectHighContrast: false,
               autoClosingBrackets: "always",
               autoClosingQuotes: "always",
               autoClosingOvertype: "always",
               selectOnLineNumbers: true,
               minimap: { enabled: false },
-              fontSize: 20,
+              fontSize: 14,
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
               scrollbar: {
-                vertical: "visible",
-                verticalHasArrows: false,
-                verticalScrollbarSize: 10,
+                  vertical: "auto",
+                      verticalHasArrows: false,
+                      verticalScrollbarSize: 10,
               },
+              overviewRulerBorder: false,
             }}
             language={usePrql ? "prql" : "sql"}
             theme="customTheme"
