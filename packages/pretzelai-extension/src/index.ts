@@ -292,9 +292,11 @@ const extension: JupyterFrontEndPlugin<void> = {
       execute: () => {
         const activeCell = notebookTracker.activeCell;
 
+        let diffEditorContainer: HTMLElement;
+        let diffContainer: HTMLElement;
+
         if (activeCell) {
           // Cmd K twice should toggle the box
-          // Check if an existing div with ID pretzelParentContainerAI exists on activeCell.node
           const existingDiv = activeCell.node.querySelector(
             '.pretzelParentContainerAI'
           );
@@ -405,6 +407,14 @@ const extension: JupyterFrontEndPlugin<void> = {
                   }
                   const modifiedModel = diffEditor!.getModel()!.modified;
                   const endLineNumber = modifiedModel.getLineCount();
+
+                  const heightPx =
+                    (diffEditor!.getModel()!.original.getLineCount() +
+                      modifiedModel.getLineCount()) *
+                    19;
+                  diffEditorContainer.style.height = heightPx + 'px';
+
+                  diffEditor?.layout();
                   const endColumn =
                     modifiedModel.getLineMaxColumn(endLineNumber);
                   modifiedModel.applyEdits([
@@ -432,15 +442,14 @@ const extension: JupyterFrontEndPlugin<void> = {
               const createEditorComponents = () => {
                 // generate the editor components
                 // first, top level container to hold all diff related items
-                const diffContainer = document.createElement('div');
+                diffContainer = document.createElement('div');
                 diffContainer.style.marginTop = '10px';
                 diffContainer.style.display = 'flex';
                 diffContainer.style.flexDirection = 'column';
                 parentContainer.appendChild(diffContainer);
 
                 // next, container to hold the diff editor
-                const diffEditorContainer = document.createElement('div');
-                diffEditorContainer.style.height = '200px';
+                diffEditorContainer = document.createElement('div');
                 diffContainer.appendChild(diffEditorContainer);
 
                 // finally, the diff editor itself
@@ -452,7 +461,8 @@ const extension: JupyterFrontEndPlugin<void> = {
                   diffEditorContainer,
                   {
                     readOnly: true,
-                    theme: currentTheme
+                    theme: currentTheme,
+                    renderSideBySide: false
                   }
                 );
                 diffEditor.setModel({
