@@ -9,6 +9,7 @@ import {
 } from "../lib/utils"
 import { Column, Cell, Table2 } from "@blueprintjs/table"
 import { useStore } from "../store/useStore"
+import { BoxIcon } from "./Icons"
 
 export default function TableView({ rowAmount = 1000 }: { rowAmount: number }) {
   const { query, lastQuery } = useStore()
@@ -41,7 +42,16 @@ export default function TableView({ rowAmount = 1000 }: { rowAmount: number }) {
   }, [lastQuery()])
 
   if (!rows.length) {
-    return <div>No data / Zero rows returned</div>
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] gap-6">
+        <BoxIcon className="w-16 h-16 text-gray-500" />
+        <h3 className="text-2xl font-bold">No Data Available</h3>
+        <p className="text-gray-500 text-center max-w-md">
+          It appears that there is no data to display at the moment. Please
+          upload a file or paste a CSV URL.
+        </p>
+      </div>
+    )
   }
 
   const renderCell = (rowIndex: number, columnIndex: number) => {
