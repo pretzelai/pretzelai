@@ -50,6 +50,8 @@ dynamic = ["version"]
 
 [project.scripts]
 jlpm = "jupyterlab.jlpmapp:main"
+pretzel = "jupyterlab.cli:main"
+pretzel-lab = "jupyterlab.labapp:main"                 # Changed from jupyter-lab to pretzel-lab
 jupyter-lab = "jupyterlab.labapp:main"
 jupyter-labextension = "jupyterlab.labextensions:main"
 jupyter-labhub = "jupyterlab.labhubapp:main"
