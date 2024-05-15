@@ -27,6 +27,7 @@ import {
   AiService,
   Embedding,
   generatePrompt,
+  generatePromptErrorFix,
   getTopSimilarities,
   openaiEmbeddings,
   systemPrompt
@@ -151,7 +152,12 @@ const extension: JupyterFrontEndPlugin<void> = {
           const errorOutput = findErrorOutput(outputs);
           if (errorOutput) {
             console.log('errorOutput', errorOutput);
-            addFixErrorButton(cell.node, codeCellModel);
+            addFixErrorButton(
+              cell.node.querySelector(
+                '.jp-RenderedText.jp-mod-trusted.jp-OutputArea-output'
+              ) as HTMLElement,
+              codeCellModel
+            );
           }
         });
       }
@@ -182,8 +188,23 @@ const extension: JupyterFrontEndPlugin<void> = {
       const button = document.createElement('button');
       button.textContent = 'Fix Error with AI';
       button.className = 'fix-error-button';
-      button.onclick = () => handleFixError(cellModel);
+      button.style.position = 'absolute';
+      button.style.top = '10px';
+      button.style.right = '10px';
+      button.style.padding = '5px 10px';
+      button.style.backgroundColor = '#007bff';
+      button.style.color = 'white';
+      button.style.border = 'none';
+      button.style.borderRadius = '4px';
+      button.style.cursor = 'pointer';
       cellNode.appendChild(button);
+      button.onclick = () => {
+        const existingButton = cellNode.querySelector('.fix-error-button');
+        if (existingButton) {
+          existingButton.remove();
+        }
+        handleFixError(cellModel);
+      };
     }
 
     async function handleFixError(cellModel: CodeCellModel) {
@@ -195,19 +216,61 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
       // else  if traceback is an array, join with newlines
       else if (traceback instanceof Array) {
-        traceback = traceback.join('\n');
+        // replace ANSI chars in traceback - they show colors that we don't need
+        // eslint-disable-next-line no-control-regex
+        traceback = traceback.join('\n').replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
       }
       // else traceback is some JS object. Convert it to a string representation
       else {
         traceback = traceback.toString();
       }
       const originalCode = cellModel.sharedModel.source;
-      const prompt = `Fix the following Python error:\nTraceback:\n${traceback}\nOriginal Code:\n${originalCode}`;
+
+      const apiKey = openAiApiKey;
+
+      const openai = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: true
+      });
+
+      const topSimilarities = await getTopSimilarities(
+        originalCode,
+        embeddings,
+        NUMBER_OF_SIMILAR_CELLS,
+        openai,
+        'OpenAI API key'
+      );
+      const prompt = generatePromptErrorFix(
+        traceback,
+        originalCode,
+        topSimilarities
+      );
 
       console.log(prompt);
-      // Use AI service to get the fix (similar to existing AI code-generation logic)
-      const fixedCode = await getAiFix(prompt);
-      cellModel.sharedModel.source = fixedCode;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      });
+
+      // print text in response
+      console.log(response.choices[0].message.content);
+
+      // send text to the cell
+      cellModel.sharedModel.setSource(
+        response.choices[0].message.content || originalCode
+      );
+      // clear output of the cell
+      cellModel.outputs.clear();
     }
 
     let embeddings: Embedding[];
@@ -219,18 +282,40 @@ const extension: JupyterFrontEndPlugin<void> = {
     ) {
       embeddings = embeddingsJSON;
       const newEmbeddingsArray: Embedding[] = [];
-      const promises = cells.map(cell => {
-        return (async () => {
-          const index = embeddings.findIndex(e => e.id === cell.id);
-          if (index !== -1) {
-            const hash = await calculateHash(cell.source);
-            if (hash !== embeddings[index].hash) {
+      const promises = cells
+        .filter(cell => cell.source.trim() !== '') // Filter out empty cells
+        .map(cell => {
+          return (async () => {
+            const index = embeddings.findIndex(e => e.id === cell.id);
+            if (index !== -1) {
+              const hash = await calculateHash(cell.source);
+              if (hash !== embeddings[index].hash) {
+                try {
+                  const response = await openaiEmbeddings(
+                    cell.source,
+                    aiService,
+                    openai
+                  );
+                  newEmbeddingsArray.push({
+                    id: cell.id,
+                    source: cell.source,
+                    hash,
+                    embedding: response.data[0].embedding
+                  });
+                } catch (error) {
+                  console.error('Error generating embedding:', error);
+                }
+              } else {
+                newEmbeddingsArray.push(embeddings[index]);
+              }
+            } else {
               try {
                 const response = await openaiEmbeddings(
                   cell.source,
                   aiService,
                   openai
                 );
+                const hash = await calculateHash(cell.source);
                 newEmbeddingsArray.push({
                   id: cell.id,
                   source: cell.source,
@@ -240,29 +325,9 @@ const extension: JupyterFrontEndPlugin<void> = {
               } catch (error) {
                 console.error('Error generating embedding:', error);
               }
-            } else {
-              newEmbeddingsArray.push(embeddings[index]);
             }
-          } else {
-            try {
-              const response = await openaiEmbeddings(
-                cell.source,
-                aiService,
-                openai
-              );
-              const hash = await calculateHash(cell.source);
-              newEmbeddingsArray.push({
-                id: cell.id,
-                source: cell.source,
-                hash,
-                embedding: response.data[0].embedding
-              });
-            } catch (error) {
-              console.error('Error generating embedding:', error);
-            }
-          }
-        })();
-      });
+          })();
+        });
       await Promise.allSettled(promises);
       const oldSet = new Set(embeddings.map(e => e.hash));
       const newSet = new Set(newEmbeddingsArray.map(e => e.hash));

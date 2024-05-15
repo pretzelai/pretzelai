@@ -53,6 +53,37 @@ ${
 Based on the above, return ONLY executable python code, no backticks.`;
 }
 
+export function generatePromptErrorFix(
+  traceback: string,
+  oldCode: string,
+  topSimilarities: string[]
+): string {
+  return `The user ran the following code in the current Jupyter notebook cell:
+
+---
+${oldCode}
+---
+
+Running the code produces the following traceback:
+${traceback}
+---
+
+${
+  topSimilarities.length > 0
+    ? `We also have the following related code chunks in the notebook\n---\n${topSimilarities.join(
+        '\n---\n'
+      )}\n---\n`
+    : ''
+}
+
+Based on the above, your instructions are:
+
+- If the error is in the CURRENT cell, fix the error and return ONLY correct, executable python code, no backticks, no comments.
+- Else if the error is NOT in the CURRENT Jupyter Notebook cell, add a comment at the top explaining this and add just enough code in the CURRENT cell to fix the error.
+- Else If you don't have enough context to fix the error, just reply with existing code and a comment at the top explaining why you cannot generate fixed code.
+`;
+}
+
 export const openaiEmbeddings = async (
   source: string,
   aiService: AiService,
@@ -88,11 +119,13 @@ export const getTopSimilarities = async (
 ): Promise<string[]> => {
   const response = await openaiEmbeddings(userInput, aiService, openai);
   const userInputEmbedding = response.data[0].embedding;
-  const similarities = embeddings.map(embedding =>
-    cosineSimilarity(embedding.embedding, userInputEmbedding)
-  );
+  const similarities = embeddings
+    .map((embedding, index) => ({
+      value: cosineSimilarity(embedding.embedding, userInputEmbedding),
+      index
+    }))
+    .filter(similarity => similarity.value < 0.995); // Remove exact match (userInput itself)
   return similarities
-    .map((value, index) => ({ value, index }))
     .sort((a, b) => b.value - a.value)
     .slice(0, numberOfSimilarities)
     .map(e => embeddings[e.index].source);
