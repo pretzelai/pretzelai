@@ -32,6 +32,9 @@ import {
   systemPrompt
 } from './prompt';
 import posthog from 'posthog-js';
+import { CodeCellModel } from '@jupyterlab/cells';
+import { OutputAreaModel } from '@jupyterlab/outputarea';
+import { IOutputModel } from '@jupyterlab/rendermime';
 
 posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
   // eslint-disable-next-line camelcase
@@ -136,6 +139,76 @@ const extension: JupyterFrontEndPlugin<void> = {
         loadSettings(updateFunc);
       }
     });
+
+    notebookTracker.activeCellChanged.connect((sender, cell) => {
+      console.log('activeCellChanged');
+      if (cell && cell.model.type === 'code') {
+        const codeCellModel = cell.model as CodeCellModel;
+        codeCellModel.outputs.changed.connect(() => {
+          console.log('outputs changed');
+
+          const outputs = codeCellModel.outputs as OutputAreaModel;
+          const errorOutput = findErrorOutput(outputs);
+          if (errorOutput) {
+            console.log('errorOutput', errorOutput);
+            addFixErrorButton(cell.node, codeCellModel);
+          }
+        });
+      }
+    });
+
+    function findErrorOutput(
+      outputs: OutputAreaModel
+    ): IOutputModel | undefined {
+      for (let i = 0; i < outputs.length; i++) {
+        const output = outputs.get(i);
+        if (output.type === 'error') {
+          return output;
+        }
+      }
+      return undefined;
+    }
+
+    function addFixErrorButton(
+      cellNode: HTMLElement,
+      cellModel: CodeCellModel
+    ) {
+      // Remove existing button if any
+      const existingButton = cellNode.querySelector('.fix-error-button');
+      if (existingButton) {
+        existingButton.remove();
+      }
+
+      const button = document.createElement('button');
+      button.textContent = 'Fix Error with AI';
+      button.className = 'fix-error-button';
+      button.onclick = () => handleFixError(cellModel);
+      cellNode.appendChild(button);
+    }
+
+    async function handleFixError(cellModel: CodeCellModel) {
+      const outputs = cellModel.outputs as OutputAreaModel;
+      let traceback = findErrorOutput(outputs)!.toJSON().traceback;
+      if (!traceback) {
+        // handle error where traceback is undefined
+        traceback = 'No traceback found';
+      }
+      // else  if traceback is an array, join with newlines
+      else if (traceback instanceof Array) {
+        traceback = traceback.join('\n');
+      }
+      // else traceback is some JS object. Convert it to a string representation
+      else {
+        traceback = traceback.toString();
+      }
+      const originalCode = cellModel.sharedModel.source;
+      const prompt = `Fix the following Python error:\nTraceback:\n${traceback}\nOriginal Code:\n${originalCode}`;
+
+      console.log(prompt);
+      // Use AI service to get the fix (similar to existing AI code-generation logic)
+      const fixedCode = await getAiFix(prompt);
+      cellModel.sharedModel.source = fixedCode;
+    }
 
     let embeddings: Embedding[];
 
