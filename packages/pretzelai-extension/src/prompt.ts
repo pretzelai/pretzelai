@@ -8,6 +8,8 @@
  */
 import { cosineSimilarity } from './utils';
 import { OpenAI } from 'openai';
+import { OpenAIClient } from '@azure/openai';
+import { Embeddings } from '@azure/openai/types/openai';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -24,6 +26,22 @@ export type Embedding = {
 };
 
 export function generatePrompt(
+  userInput: string,
+  oldCode: string,
+  topSimilarities: string[],
+  isEdit: boolean = false,
+  isError: boolean = false
+): string {
+  if (isEdit) {
+    return generatePromptEditPartial(userInput, oldCode, topSimilarities);
+  }
+  if (isError) {
+    return generatePromptErrorFix(userInput, oldCode, topSimilarities);
+  }
+  return generatePromptNewAndFullEdit(userInput, '', topSimilarities);
+}
+
+function generatePromptNewAndFullEdit(
   userInput: string,
   oldCode: string,
   topSimilarities: string[]
@@ -53,7 +71,33 @@ ${
 Based on the above, return ONLY executable python code, no backticks.`;
 }
 
-export function generatePromptErrorFix(
+function generatePromptEditPartial(
+  userInput: string,
+  oldCode: string,
+  topSimilarities: string[]
+): string {
+  return `The user has selected the following code chunk in the current Jupyter notebook cell (pay attention to the indents and newlines):
+\`\`\`
+${oldCode}
+\`\`\`
+
+The user wants to edit this code with the following instruction:
+"""
+${userInput}
+"""
+
+${
+  topSimilarities.length > 0
+    ? `Also, the following code chunks in the notebook may be relevant:\n---\n${topSimilarities.join(
+        '\n---\n'
+      )}\n---\n`
+    : ''
+}
+
+Generate new code according to the user's instructions. Remember, the selected code is a small chunk inside a larger code chunk. So, returned code MUST have the correct indentation and newlines - it will replace the old code and the resulting code MUST BE RUNNABLE and NO BACKTICKS.`;
+}
+
+function generatePromptErrorFix(
   traceback: string,
   oldCode: string,
   topSimilarities: string[]
@@ -87,44 +131,54 @@ Based on the above, your instructions are:
 export const openaiEmbeddings = async (
   source: string,
   aiService: AiService,
-  openai: OpenAI
-): Promise<OpenAI.Embeddings.CreateEmbeddingResponse> => {
-  return aiService === 'Use Pretzel AI Server'
-    ? ((await (
-        await fetch(
-          'https://e7l46ifvcg6qrbuinytg7u535y0denki.lambda-url.eu-central-1.on.aws/',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              source: source
-            })
-          }
-        )
-      ).json()) as OpenAI.Embeddings.CreateEmbeddingResponse)
-    : await openai.embeddings.create({
-        model: EMBEDDING_MODEL,
-        input: source
-      });
+  aiClient: OpenAI | OpenAIClient | null
+): Promise<OpenAI.Embeddings.CreateEmbeddingResponse | Embeddings> => {
+  if (aiService === 'Use Pretzel AI Server') {
+    return (await (
+      await fetch(
+        'https://e7l46ifvcg6qrbuinytg7u535y0denki.lambda-url.eu-central-1.on.aws/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            source: source
+          })
+        }
+      )
+    ).json()) as OpenAI.Embeddings.CreateEmbeddingResponse;
+  } else if (aiService === 'OpenAI API key') {
+    return await (aiClient as OpenAI).embeddings.create({
+      model: EMBEDDING_MODEL,
+      input: source
+    });
+  } else if (aiService === 'Use Azure API') {
+    return await (aiClient as OpenAIClient).getEmbeddings(
+      'text-embedding-ada-002',
+      [source]
+    );
+  } else {
+    throw new Error('Invalid AI service');
+  }
 };
 
 export const getTopSimilarities = async (
   userInput: string,
   embeddings: Embedding[],
   numberOfSimilarities: number,
-  openai: any,
-  aiService: AiService
+  aiClient: OpenAI | OpenAIClient | null,
+  aiService: AiService,
+  cellId: string
 ): Promise<string[]> => {
-  const response = await openaiEmbeddings(userInput, aiService, openai);
-  const userInputEmbedding = response.data[0].embedding;
+  const response = await openaiEmbeddings(userInput, aiService, aiClient);
+  const userInputEmbedding = response.data[0].embedding; // same API for openai and azure
   const similarities = embeddings
+    .filter(embedding => embedding.id !== cellId) // Exclude current cell's embedding
     .map((embedding, index) => ({
       value: cosineSimilarity(embedding.embedding, userInputEmbedding),
       index
-    }))
-    .filter(similarity => similarity.value < 0.995); // Remove exact match (userInput itself)
+    }));
   return similarities
     .sort((a, b) => b.value - a.value)
     .slice(0, numberOfSimilarities)
@@ -135,4 +189,4 @@ export const systemPrompt =
   'You are a helpful assistant that helps users write python code in Jupyter notebook cells. ' +
   'You are helping the user write new code and edit old code in Jupyter notebooks. ' +
   'You write code exactly as if an expert python user would write, reusing existing variables and functions as needed. ' +
-  'You respond with the clean, good quality, working python code only, no backticks.';
+  'You respond with the clean, good quality, working python code only, NO BACKTICKS.';

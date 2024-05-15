@@ -27,7 +27,6 @@ import {
   AiService,
   Embedding,
   generatePrompt,
-  generatePromptErrorFix,
   getTopSimilarities,
   openaiEmbeddings,
   systemPrompt
@@ -71,7 +70,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureBaseUrl = '';
     let azureDeploymentName = '';
     let azureApiKey = '';
-    let openai: OpenAI;
+    let aiClient: OpenAI | OpenAIClient | null;
 
     function loadSettings(updateFunc?: () => void) {
       settingRegistry
@@ -91,6 +90,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           aiService =
             (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
           updateFunc?.();
+          loadAIClient();
         })
         .catch(reason => {
           console.error('Failed to load settings for Pretzel', reason);
@@ -98,17 +98,22 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
     loadSettings();
 
-    function loadOpenai() {
-      if (openAiApiKey) {
-        openai = new OpenAI({
+    function loadAIClient() {
+      if (aiService === 'OpenAI API key') {
+        aiClient = new OpenAI({
           apiKey: openAiApiKey,
           dangerouslyAllowBrowser: true
         });
+      } else if (aiService === 'Use Azure API') {
+        aiClient = new OpenAIClient(
+          azureBaseUrl,
+          new AzureKeyCredential(azureApiKey)
+        );
       } else {
-        setTimeout(loadOpenai, 1000);
+        aiClient = null;
       }
     }
-    loadOpenai();
+    loadAIClient(); // first time load, later settings will trigger this
 
     // Listen for future changes in settings
     settingRegistry.pluginChanged.connect((sender, plugin) => {
@@ -238,12 +243,15 @@ const extension: JupyterFrontEndPlugin<void> = {
         embeddings,
         NUMBER_OF_SIMILAR_CELLS,
         openai,
-        'OpenAI API key'
+        'OpenAI API key',
+        cellModel.id
       );
-      const prompt = generatePromptErrorFix(
+      const prompt = generatePrompt(
         traceback,
         originalCode,
-        topSimilarities
+        topSimilarities,
+        false,
+        true
       );
 
       console.log(prompt);
@@ -294,7 +302,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   const response = await openaiEmbeddings(
                     cell.source,
                     aiService,
-                    openai
+                    aiClient
                   );
                   newEmbeddingsArray.push({
                     id: cell.id,
@@ -313,7 +321,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                 const response = await openaiEmbeddings(
                   cell.source,
                   aiService,
-                  openai
+                  aiClient
                 );
                 const hash = await calculateHash(cell.source);
                 newEmbeddingsArray.push({
@@ -429,7 +437,6 @@ const extension: JupyterFrontEndPlugin<void> = {
       label: 'Replace Cell Code',
       execute: () => {
         const activeCell = notebookTracker.activeCell;
-
         if (activeCell) {
           // Cmd K twice should toggle the box
           // Check if an existing div with ID pretzelParentContainerAI exists on activeCell.node
@@ -443,8 +450,7 @@ const extension: JupyterFrontEndPlugin<void> = {
             activeCell!.editor!.focus();
             return;
           }
-
-          const oldCode = activeCell.model.sharedModel.source;
+          const oldCode = activeCell?.model.sharedModel.source;
 
           // Create a parent container for all dynamically created elements
           const parentContainer = document.createElement('div');
@@ -531,9 +537,47 @@ const extension: JupyterFrontEndPlugin<void> = {
             submitButton.disabled = true;
           }
 
+          const getSelectedCode = () => {
+            const selection = activeCell?.editor?.getSelection();
+            const cellCode = activeCell?.model.sharedModel.source;
+            let extractedCode = '';
+            if (
+              selection &&
+              (selection.start.line !== selection.end.line ||
+                selection.start.column !== selection.end.column)
+            ) {
+              const startLine = selection.start.line;
+              const endLine = selection.end.line;
+              const startColumn = selection.start.column;
+              const endColumn = selection.end.column;
+              for (let i = startLine; i <= endLine; i++) {
+                const lineContent = cellCode!.split('\n')[i];
+                if (lineContent !== undefined) {
+                  if (i === startLine && i === endLine) {
+                    extractedCode += lineContent.substring(
+                      startColumn,
+                      endColumn
+                    );
+                  } else if (i === startLine) {
+                    extractedCode += lineContent.substring(startColumn);
+                  } else if (i === endLine) {
+                    extractedCode += '\n' + lineContent.substring(0, endColumn);
+                  } else {
+                    extractedCode += '\n' + lineContent;
+                  }
+                }
+              }
+              console.log('Extracted code:', extractedCode);
+            }
+            // also return the selection
+            return { extractedCode: extractedCode.trimEnd(), selection };
+          };
+
           const handleSubmit = async () => {
             let userInput = inputField.value;
             if (userInput !== '') {
+              const { extractedCode } = getSelectedCode();
+              const codeToUse = extractedCode ? extractedCode : oldCode;
               parentContainer.removeChild(inputContainer);
               let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
               const renderEditor = (gen: string) => {
@@ -594,7 +638,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   }
                 );
                 diffEditor.setModel({
-                  original: monaco.editor.createModel(oldCode, 'python'),
+                  original: monaco.editor.createModel(codeToUse, 'python'),
                   modified: monaco.editor.createModel('', 'python')
                 });
 
@@ -618,7 +662,16 @@ const extension: JupyterFrontEndPlugin<void> = {
                   const modifiedCode = diffEditor!
                     .getModel()!
                     .modified.getValue();
-                  activeCell.model.sharedModel.source = modifiedCode;
+                  if (extractedCode) {
+                    const searchValue = extractedCode;
+                    const replaceValue = modifiedCode;
+                    const updatedCode = oldCode
+                      .split(searchValue)
+                      .join(replaceValue);
+                    activeCell.model.sharedModel.source = updatedCode;
+                  } else {
+                    activeCell.model.sharedModel.source = modifiedCode;
+                  }
                   commands.execute('notebook:run-cell');
                   activeCell.node.removeChild(parentContainer);
                 });
@@ -713,18 +766,20 @@ const extension: JupyterFrontEndPlugin<void> = {
                       embeddings,
                       NUMBER_OF_SIMILAR_CELLS,
                       openai,
-                      aiService
+                      aiService,
+                      activeCell.model.id
                     );
                     const prompt = generatePrompt(
                       userInput,
-                      oldCode,
-                      topSimilarities
+                      codeToUse,
+                      topSimilarities,
+                      extractedCode ? true : false
                     );
                     posthog.capture('prompt', { property: userInput });
                     renderEditor('');
                     diffButtonsContainer!.appendChild(callingP!);
                     const stream = await openai.chat.completions.create({
-                      model: 'gpt-4-turbo-preview',
+                      model: 'gpt-4o',
                       messages: [
                         {
                           role: 'system',
@@ -756,8 +811,9 @@ const extension: JupyterFrontEndPlugin<void> = {
                   userInput,
                   embeddings,
                   NUMBER_OF_SIMILAR_CELLS,
-                  openai,
-                  aiService
+                  null,
+                  aiService,
+                  activeCell.model.id
                 );
                 const options: any = {
                   method: 'POST',
@@ -765,13 +821,14 @@ const extension: JupyterFrontEndPlugin<void> = {
                     'Content-Type': 'application/json'
                   },
                   body: JSON.stringify({
-                    oldCode,
+                    oldCode: codeToUse,
                     userInput,
                     topSimilarities
                   })
                 };
                 posthog.capture('prompt', { property: userInput });
                 try {
+                  // TODO: New prompt
                   renderEditor('');
                   diffButtonsContainer!.appendChild(callingP!);
                   const response = await fetch(
@@ -810,15 +867,25 @@ const extension: JupyterFrontEndPlugin<void> = {
                     azureBaseUrl,
                     new AzureKeyCredential(azureApiKey)
                   );
-                  const deploymentId = azureDeploymentName;
-                  const prompt = [
-                    `Write python code to do \n"""\n${userInput}\n"""\nThe previous code is\n"""\n${oldCode}\n"""\nReturn ONLY executable python code, no backticks`
-                  ];
-
-                  const result = await client.getCompletions(
-                    deploymentId,
-                    prompt
+                  const topSimilarities = await getTopSimilarities(
+                    userInput,
+                    embeddings,
+                    NUMBER_OF_SIMILAR_CELLS,
+                    client,
+                    aiService,
+                    activeCell.model.id
                   );
+                  const deploymentId = azureDeploymentName;
+                  const prompt = generatePrompt(
+                    userInput,
+                    codeToUse,
+                    topSimilarities,
+                    extractedCode ? true : false
+                  );
+
+                  const result = await client.getCompletions(deploymentId, [
+                    prompt
+                  ]);
 
                   for (const choice of result.choices) {
                     renderEditor(choice.text);
