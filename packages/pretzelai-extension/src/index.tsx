@@ -535,131 +535,55 @@ const extension: JupyterFrontEndPlugin<void> = {
                 }
               }
               userInput = modifiedUserInput;
-
-              if (aiService === 'OpenAI API key' && openAiApiKey) {
-                try {
-                  const openai = new OpenAI({
-                    apiKey: openAiApiKey,
-                    dangerouslyAllowBrowser: true,
-                    baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
-                  });
-                  const complete = async () => {
-                    const topSimilarities = await getTopSimilarities(
-                      userInput,
-                      embeddings,
-                      NUMBER_OF_SIMILAR_CELLS,
-                      openai,
-                      aiService,
-                      activeCell.model.id
-                    );
-                    const prompt = generatePrompt(
-                      userInput,
-                      oldCode,
-                      topSimilarities,
-                      extractedCode
-                    );
-                    posthog.capture('prompt', { property: userInput });
-                    diffEditor = renderEditor(
-                      '',
-                      parentContainer,
-                      diffEditorContainer,
-                      diffEditor,
-                      monaco,
-                      oldCode
-                    );
-                    openAiStream({
-                      aiService,
-                      openai,
-                      prompt,
-                      parentContainer,
-                      diffEditorContainer,
-                      diffEditor,
-                      monaco,
-                      oldCode
-                    });
-                  };
-                  complete();
-                } catch (error) {
-                  activeCell.node.removeChild(parentContainer);
-                }
-              } else if (aiService === 'Use Pretzel AI Server') {
+              try {
+                const openai = new OpenAI({
+                  apiKey: openAiApiKey,
+                  dangerouslyAllowBrowser: true,
+                  baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
+                });
                 const topSimilarities = await getTopSimilarities(
                   userInput,
                   embeddings,
                   NUMBER_OF_SIMILAR_CELLS,
-                  null,
+                  openai,
                   aiService,
                   activeCell.model.id
                 );
+                const prompt = generatePrompt(
+                  userInput,
+                  oldCode,
+                  topSimilarities,
+                  extractedCode
+                );
                 posthog.capture('prompt', { property: userInput });
-                try {
-                  diffEditor = renderEditor(
-                    '',
-                    parentContainer,
-                    diffEditorContainer,
-                    diffEditor,
-                    monaco,
-                    oldCode
-                  );
-                  openAiStream({
-                    aiService,
-                    parentContainer,
-                    diffEditorContainer,
-                    diffEditor,
-                    monaco,
-                    oldCode,
-                    userInput,
-                    topSimilarities
-                  });
-                } catch (error) {
-                  activeCell.model.sharedModel.source = `# Error: ${error}\n${oldCode}`;
-                  activeCell.node.removeChild(parentContainer);
-                }
-              } else if (
-                aiService === 'Use Azure API' &&
-                azureBaseUrl &&
-                azureDeploymentName &&
-                azureApiKey
-              ) {
-                try {
-                  const client = new OpenAIClient(
-                    azureBaseUrl,
-                    new AzureKeyCredential(azureApiKey)
-                  );
-                  const topSimilarities = await getTopSimilarities(
-                    userInput,
-                    embeddings,
-                    NUMBER_OF_SIMILAR_CELLS,
-                    client,
-                    aiService,
-                    activeCell.model.id
-                  );
-                  const deploymentId = azureDeploymentName;
-                  const prompt = generatePrompt(
-                    userInput,
-                    oldCode,
-                    topSimilarities,
-                    extractedCode
-                  );
-
-                  const result = await client.getCompletions(deploymentId, [
-                    prompt
-                  ]);
-
-                  for (const choice of result.choices) {
-                    renderEditor(
-                      choice.text,
-                      parentContainer,
-                      diffEditorContainer,
-                      diffEditor,
-                      monaco,
-                      oldCode
-                    );
-                  }
-                } catch (error) {
-                  activeCell.model.sharedModel.source = `# Error: ${error}\n${oldCode}`;
-                  activeCell.node.removeChild(parentContainer);
-                }
+                diffEditor = renderEditor(
+                  '',
+                  parentContainer,
+                  diffEditorContainer,
+                  diffEditor,
+                  monaco,
+                  oldCode
+                );
+                openAiStream({
+                  aiService,
+                  parentContainer,
+                  diffEditorContainer,
+                  diffEditor,
+                  monaco,
+                  oldCode,
+                  // OpenAI API
+                  openai,
+                  prompt,
+                  // Pretzel AI Server
+                  userInput,
+                  topSimilarities,
+                  // Azure API
+                  azureApiKey,
+                  azureBaseUrl,
+                  deploymentId: azureDeploymentName
+                });
+              } catch (error) {
+                activeCell.node.removeChild(parentContainer);
               }
             }
           };
