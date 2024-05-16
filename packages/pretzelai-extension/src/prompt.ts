@@ -10,6 +10,7 @@ import { cosineSimilarity } from './utils';
 import { OpenAI } from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { Embeddings } from '@azure/openai/types/openai';
+import { renderEditor } from './utils';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -138,6 +139,91 @@ Based on the above, your instructions are:
 - Else If you don't have enough context to fix the error, just reply with existing code and a comment at the top explaining why you cannot generate fixed code.
 `;
 }
+
+export const openAiStream = async ({
+  aiService,
+  openai,
+  prompt,
+  parentContainer,
+  diffEditorContainer,
+  diffEditor,
+  monaco,
+  oldCode,
+  userInput,
+  topSimilarities
+}: {
+  aiService: string;
+  openai?: OpenAI;
+  prompt?: string;
+  parentContainer: HTMLElement;
+  diffEditorContainer: HTMLElement;
+  diffEditor: any;
+  monaco: any;
+  oldCode: string;
+  userInput?: string;
+  topSimilarities?: string[];
+}): Promise<void> => {
+  if (aiService === 'OpenAI API key' && openai && prompt) {
+    const stream = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      stream: true
+    });
+    for await (const chunk of stream) {
+      renderEditor(
+        chunk.choices[0]?.delta?.content || '',
+        parentContainer,
+        diffEditorContainer,
+        diffEditor,
+        monaco,
+        oldCode
+      );
+    }
+  } else if (aiService === 'Use Pretzel AI Server') {
+    const response = await fetch(
+      'https://wjwgjk52kb3trqnlqivqqyxm3i0glvof.lambda-url.eu-central-1.on.aws/',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          oldCode,
+          userInput,
+          topSimilarities
+        })
+      }
+    );
+    const reader = response!.body!.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let isReading = true;
+    while (isReading) {
+      const { done, value } = await reader.read();
+      if (done) {
+        isReading = false;
+      }
+      const chunk = decoder.decode(value);
+      console.log(diffEditor);
+      renderEditor(
+        chunk,
+        parentContainer,
+        diffEditorContainer,
+        diffEditor,
+        monaco,
+        oldCode
+      );
+    }
+  }
+};
 
 export const openaiEmbeddings = async (
   source: string,

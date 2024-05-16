@@ -29,6 +29,7 @@ import {
   generatePrompt,
   getTopSimilarities,
   openaiEmbeddings,
+  openAiStream,
   systemPrompt
 } from './prompt';
 import posthog from 'posthog-js';
@@ -566,37 +567,16 @@ const extension: JupyterFrontEndPlugin<void> = {
                       monaco,
                       oldCode
                     );
-                    // diffButtonsContainer!.appendChild(callingP!);
-                    const stream = await openai.chat.completions.create({
-                      model: 'gpt-4o',
-                      messages: [
-                        {
-                          role: 'system',
-                          content: systemPrompt
-                        },
-                        {
-                          role: 'user',
-                          content: prompt
-                        }
-                      ],
-                      stream: true
+                    openAiStream({
+                      aiService,
+                      openai,
+                      prompt,
+                      parentContainer,
+                      diffEditorContainer,
+                      diffEditor,
+                      monaco,
+                      oldCode
                     });
-                    // diffButtonsContainer!.removeChild(callingP!);
-                    // diffButtonsContainer!.appendChild(generatingP!);
-                    for await (const chunk of stream) {
-                      renderEditor(
-                        chunk.choices[0]?.delta?.content || '',
-                        parentContainer,
-                        diffEditorContainer,
-                        diffEditor,
-                        monaco,
-                        oldCode
-                      );
-                    }
-                    // diffButtonsContainer!.removeChild(generatingP!);
-                    // diffButtonsContainer!.appendChild(acceptButton!);
-                    // diffButtonsContainer!.appendChild(rejectButton!);
-                    // diffButtonsContainer!.appendChild(editPromptButton!);
                   };
                   complete();
                 } catch (error) {
@@ -611,18 +591,6 @@ const extension: JupyterFrontEndPlugin<void> = {
                   aiService,
                   activeCell.model.id
                 );
-                const options: any = {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  // TODO: New handle extractedCode
-                  body: JSON.stringify({
-                    oldCode,
-                    userInput,
-                    topSimilarities
-                  })
-                };
                 posthog.capture('prompt', { property: userInput });
                 try {
                   diffEditor = renderEditor(
@@ -633,35 +601,16 @@ const extension: JupyterFrontEndPlugin<void> = {
                     monaco,
                     oldCode
                   );
-                  const response = await fetch(
-                    'https://wjwgjk52kb3trqnlqivqqyxm3i0glvof.lambda-url.eu-central-1.on.aws/',
-                    options
-                  );
-                  const reader = response!.body!.getReader();
-                  const decoder = new TextDecoder('utf-8');
-                  let isReading = true;
-                  // diffButtonsContainer!.removeChild(callingP!);
-                  // diffButtonsContainer!.appendChild(generatingP!);
-                  while (isReading) {
-                    const { done, value } = await reader.read();
-                    if (done) {
-                      isReading = false;
-                    }
-                    const chunk = decoder.decode(value);
-                    console.log(diffEditor);
-                    renderEditor(
-                      chunk,
-                      parentContainer,
-                      diffEditorContainer,
-                      diffEditor,
-                      monaco,
-                      oldCode
-                    );
-                  }
-                  // diffButtonsContainer!.removeChild(generatingP!);
-                  // diffButtonsContainer!.appendChild(acceptButton!);
-                  // diffButtonsContainer!.appendChild(rejectButton!);
-                  // diffButtonsContainer!.appendChild(editPromptButton!);
+                  openAiStream({
+                    aiService,
+                    parentContainer,
+                    diffEditorContainer,
+                    diffEditor,
+                    monaco,
+                    oldCode,
+                    userInput,
+                    topSimilarities
+                  });
                 } catch (error) {
                   activeCell.model.sharedModel.source = `# Error: ${error}\n${oldCode}`;
                   activeCell.node.removeChild(parentContainer);
