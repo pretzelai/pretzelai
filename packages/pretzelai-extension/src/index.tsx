@@ -147,16 +147,12 @@ const extension: JupyterFrontEndPlugin<void> = {
     });
 
     notebookTracker.activeCellChanged.connect((sender, cell) => {
-      console.log('activeCellChanged');
       if (cell && cell.model.type === 'code') {
         const codeCellModel = cell.model as CodeCellModel;
         codeCellModel.outputs.changed.connect(() => {
-          console.log('outputs changed');
-
           const outputs = codeCellModel.outputs as OutputAreaModel;
           const errorOutput = findErrorOutput(outputs);
           if (errorOutput) {
-            console.log('errorOutput', errorOutput);
             addFixErrorButton(
               cell.node.querySelector(
                 '.jp-RenderedText.jp-mod-trusted.jp-OutputArea-output'
