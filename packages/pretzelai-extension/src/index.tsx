@@ -35,11 +35,22 @@ import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
 import { OutputAreaModel } from '@jupyterlab/outputarea';
 import { IOutputModel } from '@jupyterlab/rendermime';
+import { initSplashScreen } from './splashScreen';
 
-posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
-  // eslint-disable-next-line camelcase
-  api_host: 'https://d2yfaqny8nshvd.cloudfront.net'
-});
+function initializePosthog(cookiesDisabled: boolean) {
+  if (!cookiesDisabled) {
+    posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
+      // eslint-disable-next-line camelcase
+      api_host: 'https://d2yfaqny8nshvd.cloudfront.net'
+    });
+  } else {
+    posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
+      // eslint-disable-next-line camelcase
+      api_host: 'https://d2yfaqny8nshvd.cloudfront.net',
+      persistence: 'memory'
+    });
+  }
+}
 
 const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
@@ -72,29 +83,38 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureApiKey = '';
     let aiClient: OpenAI | OpenAIClient | null;
 
-    function loadSettings(updateFunc?: () => void) {
-      settingRegistry
-        .load(PLUGIN_ID)
-        .then(settings => {
-          const openAiSettings = settings.get('openAiSettings')
-            .composite as any;
-          openAiApiKey = openAiSettings?.openAiApiKey || '';
-          openAiBaseUrl = openAiSettings?.openAiBaseUrl || '';
+    const showSplashScreen = async (consent: string) => {
+      if (!consent) {
+        initSplashScreen(settingRegistry);
+      }
+    };
 
-          const azureSettings = settings.get('azureSettings').composite as any;
-          azureBaseUrl = azureSettings?.azureBaseUrl || '';
-          azureDeploymentName = azureSettings?.azureDeploymentName || '';
-          azureApiKey = azureSettings?.azureApiKey || '';
+    async function loadSettings(updateFunc?: () => void) {
+      try {
+        const settings = await settingRegistry.load(PLUGIN_ID);
+        const openAiSettings = settings.get('openAiSettings').composite as any;
+        openAiApiKey = openAiSettings?.openAiApiKey || '';
+        openAiBaseUrl = openAiSettings?.openAiBaseUrl || '';
 
-          const aiServiceSetting = settings.get('aiService').composite;
-          aiService =
-            (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
-          updateFunc?.();
-          loadAIClient();
-        })
-        .catch(reason => {
-          console.error('Failed to load settings for Pretzel', reason);
-        });
+        const azureSettings = settings.get('azureSettings').composite as any;
+        azureBaseUrl = azureSettings?.azureBaseUrl || '';
+        azureDeploymentName = azureSettings?.azureDeploymentName || '';
+        azureApiKey = azureSettings?.azureApiKey || '';
+
+        const aiServiceSetting = settings.get('aiService').composite;
+        aiService = (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
+
+        const posthogCookieConsent = settings.get('posthogCookieConsent')
+          .composite as string;
+
+        console.log('posthogCookieConsent', posthogCookieConsent);
+        initializePosthog(posthogCookieConsent === 'No');
+        updateFunc?.();
+        loadAIClient();
+        showSplashScreen(posthogCookieConsent);
+      } catch (reason) {
+        console.error('Failed to load settings for Pretzel', reason);
+      }
     }
     loadSettings();
 

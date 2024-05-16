@@ -51,6 +51,11 @@
           "default": ""
         }
       }
+    },
+    "posthogCookieConsent": {
+      "type": "string",
+      "title": "Cookie Consent",
+      "default": ""
     }
   },
   "additionalProperties": false
