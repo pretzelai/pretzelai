@@ -142,6 +142,8 @@ Based on the above, your instructions are:
 
 export const openAiStream = async ({
   aiService,
+  openAiApiKey,
+  openAiBaseUrl,
   openai,
   prompt,
   parentContainer,
@@ -156,6 +158,8 @@ export const openAiStream = async ({
   deploymentId
 }: {
   aiService: string;
+  openAiApiKey?: string;
+  openAiBaseUrl?: string;
   openai?: OpenAI;
   prompt?: string;
   parentContainer: HTMLElement;
@@ -169,7 +173,12 @@ export const openAiStream = async ({
   azureApiKey?: string;
   deploymentId?: string;
 }): Promise<void> => {
-  if (aiService === 'OpenAI API key' && openai && prompt) {
+  if (aiService === 'OpenAI API key' && openAiApiKey && prompt) {
+    const openai = new OpenAI({
+      apiKey: openAiApiKey,
+      dangerouslyAllowBrowser: true,
+      baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
+    });
     const stream = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -203,9 +212,17 @@ export const openAiStream = async ({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          oldCode,
-          userInput,
-          topSimilarities
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
         })
       }
     );

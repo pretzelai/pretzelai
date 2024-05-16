@@ -30,13 +30,25 @@
       "path": "../apputils"
     },
     {
+      "path": "../cells"
+    },
+    {
       "path": "../notebook"
+    },
+    {
+      "path": "../outputarea"
+    },
+    {
+      "path": "../rendermime"
     },
     {
       "path": "../services"
     },
     {
       "path": "../settingregistry"
+    },
+    {
+      "path": "../ui-components"
     }
   ],
   "extends": "../../tsconfigbase"

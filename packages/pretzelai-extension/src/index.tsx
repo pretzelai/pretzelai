@@ -29,8 +29,7 @@ import {
   generatePrompt,
   getTopSimilarities,
   openaiEmbeddings,
-  openAiStream,
-  systemPrompt
+  openAiStream
 } from './prompt';
 import posthog from 'posthog-js';
 import React, { useState } from 'react';
@@ -235,18 +234,11 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
       const originalCode = cellModel.sharedModel.source;
 
-      const apiKey = openAiApiKey;
-
-      const openai = new OpenAI({
-        apiKey: apiKey,
-        dangerouslyAllowBrowser: true
-      });
-
       const topSimilarities = await getTopSimilarities(
         originalCode,
         embeddings,
         NUMBER_OF_SIMILAR_CELLS,
-        openai,
+        aiClient,
         'OpenAI API key',
         cellModel.id
       );
@@ -257,32 +249,46 @@ const extension: JupyterFrontEndPlugin<void> = {
         '',
         traceback
       );
+      let diffEditorContainer: HTMLElement = document.createElement('div');
+      let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
+      let activeCell = notebookTracker.activeCell!;
 
-      console.log(prompt);
+      const parentContainer = document.createElement('div');
+      parentContainer.classList.add('pretzelParentContainerAI');
+      activeCell.node.appendChild(parentContainer);
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      });
-
-      // print text in response
-      console.log(response.choices[0].message.content);
-
-      // send text to the cell
-      cellModel.sharedModel.setSource(
-        response.choices[0].message.content || originalCode
+      diffEditor = renderEditor(
+        '',
+        parentContainer,
+        diffEditorContainer,
+        diffEditor,
+        monaco,
+        originalCode
       );
-      // clear output of the cell
-      cellModel.outputs.clear();
+
+      openAiStream({
+        aiService,
+        openAiApiKey,
+        openAiBaseUrl,
+        prompt,
+        parentContainer: notebookTracker.currentWidget!.node,
+        diffEditorContainer,
+        diffEditor,
+        monaco,
+        oldCode: originalCode,
+        userInput: '',
+        topSimilarities: topSimilarities,
+        azureBaseUrl,
+        azureApiKey,
+        deploymentId: azureDeploymentName
+      })
+        .then(() => {
+          // clear output of the cell
+          cellModel.outputs.clear();
+        })
+        .catch(error => {
+          console.error('Error during OpenAI stream:', error);
+        });
     }
 
     let embeddings: Embedding[];
@@ -437,6 +443,67 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     }
 
+    const getSelectedCode = () => {
+      const selection = notebookTracker.activeCell?.editor?.getSelection();
+      const cellCode = notebookTracker.activeCell?.model.sharedModel.source;
+      let extractedCode = '';
+      if (
+        selection &&
+        (selection.start.line !== selection.end.line ||
+          selection.start.column !== selection.end.column)
+      ) {
+        const startLine = selection.start.line;
+        const endLine = selection.end.line;
+        const startColumn = selection.start.column;
+        const endColumn = selection.end.column;
+        for (let i = startLine; i <= endLine; i++) {
+          const lineContent = cellCode!.split('\n')[i];
+          if (lineContent !== undefined) {
+            if (i === startLine && i === endLine) {
+              extractedCode += lineContent.substring(startColumn, endColumn);
+            } else if (i === startLine) {
+              extractedCode += lineContent.substring(startColumn);
+            } else if (i === endLine) {
+              extractedCode += '\n' + lineContent.substring(0, endColumn);
+            } else {
+              extractedCode += '\n' + lineContent;
+            }
+          }
+        }
+        console.log('Extracted code:', extractedCode);
+      }
+      // also return the selection
+      return { extractedCode: extractedCode.trimEnd(), selection };
+    };
+
+    async function processTaggedVariables(userInput: string): Promise<string> {
+      const variablePattern = /@(\w+)/g;
+      let match;
+      let modifiedUserInput = userInput;
+      while ((match = variablePattern.exec(userInput)) !== null) {
+        try {
+          const variableName = match[1];
+          // get value of var using the getVariableValue function
+          const variableType = await getVariableValue(`type(${variableName})`);
+
+          // check if variableType is dataframe
+          // if it is, get columns and add to modifiedUserInput
+          if (variableType?.includes('DataFrame')) {
+            const variableColumns = await getVariableValue(
+              `${variableName}.columns`
+            );
+            modifiedUserInput += `\n${variableName} is a dataframe with the following columns: ${variableColumns}\n`;
+          } else if (variableType) {
+            const variableValue = await getVariableValue(variableName);
+            modifiedUserInput += `\nPrinting ${variableName} in Python returns the string ${variableValue}\n`;
+          }
+        } catch (error) {
+          console.error(`Error accessing variable ${match[1]}:`, error);
+        }
+      }
+      return modifiedUserInput;
+    }
+
     commands.addCommand(command, {
       label: 'Replace Cell Code',
       execute: () => {
@@ -470,82 +537,15 @@ const extension: JupyterFrontEndPlugin<void> = {
           activeCell.node.appendChild(parentContainer);
 
           const handleSubmit = async (userInput: string) => {
-            const getSelectedCode = () => {
-              const selection = activeCell?.editor?.getSelection();
-              const cellCode = activeCell?.model.sharedModel.source;
-              let extractedCode = '';
-              if (
-                selection &&
-                (selection.start.line !== selection.end.line ||
-                  selection.start.column !== selection.end.column)
-              ) {
-                const startLine = selection.start.line;
-                const endLine = selection.end.line;
-                const startColumn = selection.start.column;
-                const endColumn = selection.end.column;
-                for (let i = startLine; i <= endLine; i++) {
-                  const lineContent = cellCode!.split('\n')[i];
-                  if (lineContent !== undefined) {
-                    if (i === startLine && i === endLine) {
-                      extractedCode += lineContent.substring(
-                        startColumn,
-                        endColumn
-                      );
-                    } else if (i === startLine) {
-                      extractedCode += lineContent.substring(startColumn);
-                    } else if (i === endLine) {
-                      extractedCode +=
-                        '\n' + lineContent.substring(0, endColumn);
-                    } else {
-                      extractedCode += '\n' + lineContent;
-                    }
-                  }
-                }
-                console.log('Extracted code:', extractedCode);
-              }
-              // also return the selection
-              return { extractedCode: extractedCode.trimEnd(), selection };
-            };
             const { extractedCode } = getSelectedCode();
             if (userInput !== '') {
-              const variablePattern = /@(\w+)/g;
-              let match;
-              let modifiedUserInput = userInput;
-              while ((match = variablePattern.exec(userInput)) !== null) {
-                try {
-                  const variableName = match[1];
-                  // get value of var using the getVariableValue function
-                  const variableType = await getVariableValue(
-                    `type(${variableName})`
-                  );
-
-                  // check if variableType is dataframe
-                  // if it is, get columns and add to modifiedUserInput
-                  if (variableType?.includes('DataFrame')) {
-                    const variableColumns = await getVariableValue(
-                      `${variableName}.columns`
-                    );
-                    modifiedUserInput += `\n${variableName} is a dataframe with the following columns: ${variableColumns}\n`;
-                  } else if (variableType) {
-                    const variableValue = await getVariableValue(variableName);
-                    modifiedUserInput += `\nPrinting ${variableName} in Python returns the string ${variableValue}\n`;
-                  }
-                } catch (error) {
-                  console.error(`Error accessing variable ${match[1]}:`, error);
-                }
-              }
-              userInput = modifiedUserInput;
+              userInput = await processTaggedVariables(userInput);
               try {
-                const openai = new OpenAI({
-                  apiKey: openAiApiKey,
-                  dangerouslyAllowBrowser: true,
-                  baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
-                });
                 const topSimilarities = await getTopSimilarities(
                   userInput,
                   embeddings,
                   NUMBER_OF_SIMILAR_CELLS,
-                  openai,
+                  aiClient,
                   aiService,
                   activeCell.model.id
                 );
@@ -562,7 +562,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   diffEditorContainer,
                   diffEditor,
                   monaco,
-                  oldCode
+                  extractedCode ? extractedCode : oldCode
                 );
                 openAiStream({
                   aiService,
@@ -570,9 +570,10 @@ const extension: JupyterFrontEndPlugin<void> = {
                   diffEditorContainer,
                   diffEditor,
                   monaco,
-                  oldCode,
+                  oldCode: extractedCode ? extractedCode : oldCode,
                   // OpenAI API
-                  openai,
+                  openAiApiKey,
+                  openAiBaseUrl,
                   prompt,
                   // Pretzel AI Server
                   userInput,
