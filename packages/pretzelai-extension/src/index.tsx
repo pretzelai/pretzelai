@@ -32,6 +32,10 @@ import {
   systemPrompt
 } from './prompt';
 import posthog from 'posthog-js';
+import React, { useState } from 'react';
+
+import { Widget } from '@lumino/widgets';
+import { ReactWidget } from '@jupyterlab/ui-components';
 
 posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
   // eslint-disable-next-line camelcase
@@ -295,6 +299,11 @@ const extension: JupyterFrontEndPlugin<void> = {
         let diffEditorContainer: HTMLElement;
         let diffContainer: HTMLElement;
 
+        const callingP = document.createElement('p');
+        callingP.textContent = 'Calling AI Service...';
+        const generatingP = document.createElement('p');
+        generatingP.textContent = 'Generating code...';
+
         if (activeCell) {
           // Cmd K twice should toggle the box
           const existingDiv = activeCell.node.querySelector(
@@ -309,96 +318,12 @@ const extension: JupyterFrontEndPlugin<void> = {
           }
 
           const oldCode = activeCell.model.sharedModel.source;
-
-          // Create a parent container for all dynamically created elements
           const parentContainer = document.createElement('div');
           parentContainer.classList.add('pretzelParentContainerAI');
           activeCell.node.appendChild(parentContainer);
-          // Create an input field and append it below the cell
-          const inputContainer = document.createElement('div');
-          inputContainer.style.marginTop = '10px';
-          inputContainer.style.marginLeft = '70px';
-          inputContainer.style.display = 'flex';
-          inputContainer.style.flexDirection = 'column';
-          parentContainer.appendChild(inputContainer);
 
-          const inputField = document.createElement('textarea');
-          inputField.classList.add('pretzelInputField');
-          inputField.placeholder = placeHolderEnabled;
-          inputField.style.width = '100%';
-          inputField.style.height = '100px';
-          inputContainer.appendChild(inputField);
-          inputField.addEventListener('keydown', event => {
-            if (event.key === 'Escape') {
-              // TODO: this doesn't work - the Escape key isn't being captured
-              // but every other key press is being captured
-              event.preventDefault(); // Prevent any default behavior
-              // Shift focus back to the editor of the active cell
-              const activeCell = notebookTracker.activeCell;
-              if (activeCell && activeCell.editor) {
-                activeCell.editor.focus(); // Focus the editor of the active cell
-              }
-            }
-            // handle enter key press to trigger submit
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              if (!submitButton.disabled) {
-                handleSubmit();
-              }
-            }
-          });
-
-          const callingP = document.createElement('p');
-          callingP.textContent = 'Calling AI Service...';
-          const generatingP = document.createElement('p');
-          generatingP.textContent = 'Generating code...';
-
-          const inputFieldButtonsContainer = document.createElement('div');
-          inputFieldButtonsContainer.style.marginTop = '10px';
-          inputFieldButtonsContainer.style.display = 'flex';
-          inputFieldButtonsContainer.style.flexDirection = 'row';
-          inputContainer.appendChild(inputFieldButtonsContainer);
-          inputField.focus();
-
-          const submitButton = document.createElement('button');
-          submitButton.classList.add('pretzelInputSubmitButton');
-          submitButton.textContent = 'Submit';
-          submitButton.style.backgroundColor = 'lightblue';
-          submitButton.style.borderRadius = '5px';
-          submitButton.style.border = '1px solid darkblue';
-          submitButton.style.maxWidth = '100px';
-          submitButton.style.minHeight = '25px';
-          submitButton.style.marginTop = '10px';
-          submitButton.style.marginRight = '10px';
-          inputFieldButtonsContainer.appendChild(submitButton);
-
-          // write code to add a button the removed the inputField and submitButton
-          const removeButton = document.createElement('button');
-          removeButton.textContent = 'Remove';
-          removeButton.style.backgroundColor = 'lightcoral';
-          removeButton.style.borderRadius = '5px';
-          removeButton.style.border = '1px solid darkred';
-          removeButton.style.maxWidth = '100px';
-          removeButton.style.minHeight = '25px';
-          removeButton.style.marginTop = '10px';
-          inputFieldButtonsContainer.appendChild(removeButton);
-          removeButton.addEventListener('click', () => {
-            activeCell.node.removeChild(parentContainer);
-          });
-
-          if (
-            (aiService === 'OpenAI API key' && !openAiApiKey) ||
-            (aiService === 'Use Azure API' &&
-              (!azureBaseUrl || !azureDeploymentName || !azureApiKey))
-          ) {
-            inputField.placeholder = placeholderDisabled;
-            submitButton.disabled = true;
-          }
-
-          const handleSubmit = async () => {
-            let userInput = inputField.value;
+          const handleSubmit = async (userInput: string) => {
             if (userInput !== '') {
-              parentContainer.removeChild(inputContainer);
               let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
               const renderEditor = (gen: string) => {
                 try {
@@ -518,7 +443,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                 editPromptButton.style.marginRight = '10px';
                 editPromptButton.addEventListener('click', () => {
                   parentContainer.removeChild(diffContainer);
-                  parentContainer.appendChild(inputContainer);
+                  // parentContainer.appendChild(inputContainer);
                   diffEditor = null;
                 });
 
@@ -702,9 +627,114 @@ const extension: JupyterFrontEndPlugin<void> = {
               }
             }
           };
+          function AiWidget() {
+            const [isVisible, setIsVisible] = useState(true);
+            const [inputValue, setInputValue] = useState('');
+            const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+            const [placeholderText, setPlaceholderText] = useState('');
 
-          // Handle submit button click to trigger accept
-          submitButton.addEventListener('click', handleSubmit);
+            React.useEffect(() => {
+              const updatePlaceholderText = () => {
+                if (
+                  (aiService === 'OpenAI API key' && openAiApiKey) ||
+                  aiService === 'Use Pretzel AI Server' ||
+                  (aiService === 'Use Azure API' &&
+                    azureBaseUrl &&
+                    azureDeploymentName &&
+                    azureApiKey)
+                ) {
+                  setIsSubmitDisabled(false);
+                  setPlaceholderText(placeHolderEnabled);
+                } else {
+                  setIsSubmitDisabled(true);
+                  setPlaceholderText(placeholderDisabled);
+                }
+              };
+
+              updatePlaceholderText();
+            }, [
+              aiService,
+              openAiApiKey,
+              azureBaseUrl,
+              azureDeploymentName,
+              azureApiKey
+            ]);
+
+            const handleInputChange = (
+              event: React.ChangeEvent<HTMLTextAreaElement>
+            ) => {
+              setInputValue(event.target.value);
+            };
+
+            const handleRemove = () => {
+              setIsVisible(false);
+            };
+
+            if (!isVisible) {
+              return null;
+            }
+
+            return (
+              <div className="pretzelParentContainerAI">
+                <div
+                  style={{
+                    marginTop: '10px',
+                    marginLeft: '70px',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                >
+                  <textarea
+                    className="pretzelInputField"
+                    placeholder={placeholderText}
+                    style={{ width: '100%', height: '100px' }}
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    autoFocus={true}
+                  />
+                  <div
+                    style={{
+                      marginTop: '10px',
+                      display: 'flex',
+                      flexDirection: 'row'
+                    }}
+                  >
+                    <button
+                      className="pretzelInputSubmitButton"
+                      style={{
+                        backgroundColor: 'lightblue',
+                        borderRadius: '5px',
+                        border: '1px solid darkblue',
+                        maxWidth: '100px',
+                        minHeight: '25px',
+                        marginTop: '10px',
+                        marginRight: '10px'
+                      }}
+                      onClick={() => handleSubmit(inputValue)}
+                      disabled={isSubmitDisabled}
+                    >
+                      Submit
+                    </button>
+                    <button
+                      style={{
+                        backgroundColor: 'lightcoral',
+                        borderRadius: '5px',
+                        border: '1px solid darkred',
+                        maxWidth: '100px',
+                        minHeight: '25px',
+                        marginTop: '10px'
+                      }}
+                      onClick={handleRemove}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          const AiWidgetComponent = ReactWidget.create(<AiWidget />);
+          Widget.attach(AiWidgetComponent, activeCell.node);
         }
       }
     });
