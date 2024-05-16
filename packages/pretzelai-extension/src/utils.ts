@@ -44,6 +44,7 @@ export const renderEditor = (
   try {
     if (!diffEditor) {
       const diffContainer = document.createElement('div');
+      diffContainer.className = 'diff-container';
       diffContainer.style.marginTop = '10px';
       diffContainer.style.display = 'flex';
       diffContainer.style.flexDirection = 'column';

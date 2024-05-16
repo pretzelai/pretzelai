@@ -268,16 +268,16 @@ const extension: JupyterFrontEndPlugin<void> = {
         openAiApiKey,
         openAiBaseUrl,
         prompt,
-        parentContainer: notebookTracker.currentWidget!.node,
+        parentContainer,
         diffEditorContainer,
         diffEditor,
         monaco,
         oldCode: originalCode,
-        userInput: '',
-        topSimilarities: topSimilarities,
         azureBaseUrl,
         azureApiKey,
-        deploymentId: azureDeploymentName
+        deploymentId: azureDeploymentName,
+        activeCell,
+        commands
       })
         .then(() => {
           // clear output of the cell
@@ -648,13 +648,12 @@ const extension: JupyterFrontEndPlugin<void> = {
                   openAiApiKey,
                   openAiBaseUrl,
                   prompt,
-                  // Pretzel AI Server
-                  userInput,
-                  topSimilarities,
                   // Azure API
                   azureApiKey,
                   azureBaseUrl,
-                  deploymentId: azureDeploymentName
+                  deploymentId: azureDeploymentName,
+                  activeCell,
+                  commands
                 });
               } catch (error) {
                 activeCell.node.removeChild(parentContainer);

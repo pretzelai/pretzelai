@@ -146,34 +146,32 @@ export const openAiStream = async ({
   aiService,
   openAiApiKey,
   openAiBaseUrl,
-  openai,
   prompt,
   parentContainer,
   diffEditorContainer,
   diffEditor,
   monaco,
   oldCode,
-  userInput,
-  topSimilarities,
   azureBaseUrl,
   azureApiKey,
-  deploymentId
+  deploymentId,
+  activeCell,
+  commands
 }: {
   aiService: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
-  openai?: OpenAI;
   prompt?: string;
   parentContainer: HTMLElement;
   diffEditorContainer: HTMLElement;
   diffEditor: any;
   monaco: any;
   oldCode: string;
-  userInput?: string;
-  topSimilarities?: string[];
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
+  activeCell: any;
+  commands: any;
 }): Promise<void> => {
   if (aiService === 'OpenAI API key' && openAiApiKey && prompt) {
     const openai = new OpenAI({
@@ -271,6 +269,43 @@ export const openAiStream = async ({
       );
     }
   }
+  // Create "Accept" and "Reject" buttons
+  const diffContainer = document.querySelector('.diff-container');
+  const acceptButton = document.createElement('button');
+  acceptButton.textContent = 'Accept';
+  acceptButton.style.backgroundColor = 'lightblue';
+  acceptButton.style.borderRadius = '5px';
+  acceptButton.style.border = '1px solid darkblue';
+  acceptButton.style.maxWidth = '100px';
+  acceptButton.style.minHeight = '25px';
+  acceptButton.style.marginRight = '10px';
+  acceptButton.addEventListener('click', () => {
+    const modifiedCode = diffEditor!.getModel()!.modified.getValue();
+    activeCell.model.sharedModel.source = modifiedCode;
+    commands.execute('notebook:run-cell');
+    activeCell.node.removeChild(parentContainer);
+  });
+
+  const rejectButton = document.createElement('button');
+  rejectButton.textContent = 'Reject';
+  rejectButton.style.backgroundColor = 'lightblue';
+  rejectButton.style.borderRadius = '5px';
+  rejectButton.style.border = '1px solid darkblue';
+  rejectButton.style.maxWidth = '100px';
+  rejectButton.style.minHeight = '25px';
+  rejectButton.style.marginRight = '10px';
+  rejectButton.addEventListener('click', () => {
+    activeCell.node.removeChild(parentContainer);
+    activeCell.model.sharedModel.source = oldCode;
+  });
+  const diffButtonsContainer = document.createElement('div');
+  diffButtonsContainer.style.marginTop = '10px';
+  diffButtonsContainer.style.marginLeft = '70px';
+  diffButtonsContainer.style.display = 'flex';
+  diffButtonsContainer.style.flexDirection = 'row';
+  diffContainer!.appendChild(diffButtonsContainer);
+  diffButtonsContainer!.appendChild(acceptButton!);
+  diffButtonsContainer!.appendChild(rejectButton!);
 };
 
 export const openaiEmbeddings = async (
