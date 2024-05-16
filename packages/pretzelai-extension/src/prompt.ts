@@ -29,14 +29,19 @@ export function generatePrompt(
   userInput: string,
   oldCode: string,
   topSimilarities: string[],
-  isEdit: boolean = false,
-  isError: boolean = false
+  selectedCode: string = '',
+  traceback: string = ''
 ): string {
-  if (isEdit) {
-    return generatePromptEditPartial(userInput, oldCode, topSimilarities);
+  if (selectedCode) {
+    return generatePromptEditPartial(
+      userInput,
+      selectedCode,
+      oldCode,
+      topSimilarities
+    );
   }
-  if (isError) {
-    return generatePromptErrorFix(userInput, oldCode, topSimilarities);
+  if (traceback) {
+    return generatePromptErrorFix(traceback, oldCode, topSimilarities);
   }
   return generatePromptNewAndFullEdit(userInput, '', topSimilarities);
 }
@@ -73,18 +78,24 @@ Based on the above, return ONLY executable python code, no backticks.`;
 
 function generatePromptEditPartial(
   userInput: string,
+  selectedCode: string,
   oldCode: string,
   topSimilarities: string[]
 ): string {
   return `The user has selected the following code chunk in the current Jupyter notebook cell (pay attention to the indents and newlines):
 \`\`\`
-${oldCode}
+${selectedCode}
 \`\`\`
 
 The user wants to edit this code with the following instruction:
 """
 ${userInput}
 """
+
+This selected code is a small code chunk inside a larger code chunk. ONLY FOR YOUR REFERENCE, the larger code chunk is as follows:
+\`\`\`
+${oldCode}
+\`\`\`
 
 ${
   topSimilarities.length > 0

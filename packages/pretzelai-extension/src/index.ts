@@ -247,11 +247,11 @@ const extension: JupyterFrontEndPlugin<void> = {
         cellModel.id
       );
       const prompt = generatePrompt(
-        traceback,
+        '',
         originalCode,
         topSimilarities,
-        false,
-        true
+        '',
+        traceback
       );
 
       console.log(prompt);
@@ -577,7 +577,6 @@ const extension: JupyterFrontEndPlugin<void> = {
             let userInput = inputField.value;
             if (userInput !== '') {
               const { extractedCode } = getSelectedCode();
-              const codeToUse = extractedCode ? extractedCode : oldCode;
               parentContainer.removeChild(inputContainer);
               let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
               const renderEditor = (gen: string) => {
@@ -638,7 +637,10 @@ const extension: JupyterFrontEndPlugin<void> = {
                   }
                 );
                 diffEditor.setModel({
-                  original: monaco.editor.createModel(codeToUse, 'python'),
+                  original: monaco.editor.createModel(
+                    extractedCode ? extractedCode : oldCode,
+                    'python'
+                  ),
                   modified: monaco.editor.createModel('', 'python')
                 });
 
@@ -771,9 +773,9 @@ const extension: JupyterFrontEndPlugin<void> = {
                     );
                     const prompt = generatePrompt(
                       userInput,
-                      codeToUse,
+                      oldCode,
                       topSimilarities,
-                      extractedCode ? true : false
+                      extractedCode
                     );
                     posthog.capture('prompt', { property: userInput });
                     renderEditor('');
@@ -820,8 +822,9 @@ const extension: JupyterFrontEndPlugin<void> = {
                   headers: {
                     'Content-Type': 'application/json'
                   },
+                  // TODO: New handle extractedCode
                   body: JSON.stringify({
-                    oldCode: codeToUse,
+                    oldCode,
                     userInput,
                     topSimilarities
                   })
@@ -878,9 +881,9 @@ const extension: JupyterFrontEndPlugin<void> = {
                   const deploymentId = azureDeploymentName;
                   const prompt = generatePrompt(
                     userInput,
-                    codeToUse,
+                    oldCode,
                     topSimilarities,
-                    extractedCode ? true : false
+                    extractedCode
                   );
 
                   const result = await client.getCompletions(deploymentId, [
