@@ -32,3 +32,36 @@ export const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
 
 export const isSetsEqual = (xs: Set<any>, ys: Set<any>) =>
   xs.size === ys.size && [...xs].every(x => ys.has(x));
+
+export const createEditorComponents = (
+  parentContainer: HTMLElement,
+  diffEditorContainer: HTMLElement,
+  monaco: any,
+  oldCode: string
+) => {
+  // generate the editor components
+  // first, top level container to hold all diff related items
+  const diffContainer = document.createElement('div');
+  diffContainer.style.marginTop = '10px';
+  diffContainer.style.display = 'flex';
+  diffContainer.style.flexDirection = 'column';
+  parentContainer.appendChild(diffContainer);
+
+  diffContainer.appendChild(diffEditorContainer);
+
+  // finally, the diff editor itself
+  const currentTheme =
+    document.body.getAttribute('data-jp-theme-light') === 'true'
+      ? 'vs'
+      : 'vs-dark';
+  const diffEditor = monaco.editor.createDiffEditor(diffEditorContainer, {
+    readOnly: true,
+    theme: currentTheme,
+    renderSideBySide: false
+  });
+  diffEditor.setModel({
+    original: monaco.editor.createModel(oldCode, 'python'),
+    modified: monaco.editor.createModel('', 'python')
+  });
+  return diffEditor;
+};
