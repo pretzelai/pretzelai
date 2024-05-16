@@ -8,9 +8,9 @@
  */
 import { cosineSimilarity } from './utils';
 import { OpenAI } from 'openai';
-import { OpenAIClient } from '@azure/openai';
 import { Embeddings } from '@azure/openai/types/openai';
 import { renderEditor } from './utils';
+import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -150,7 +150,10 @@ export const openAiStream = async ({
   monaco,
   oldCode,
   userInput,
-  topSimilarities
+  topSimilarities,
+  azureBaseUrl,
+  azureApiKey,
+  deploymentId
 }: {
   aiService: string;
   openai?: OpenAI;
@@ -162,6 +165,9 @@ export const openAiStream = async ({
   oldCode: string;
   userInput?: string;
   topSimilarities?: string[];
+  azureBaseUrl?: string;
+  azureApiKey?: string;
+  deploymentId?: string;
 }): Promise<void> => {
   if (aiService === 'OpenAI API key' && openai && prompt) {
     const stream = await openai.chat.completions.create({
@@ -215,6 +221,29 @@ export const openAiStream = async ({
       console.log(diffEditor);
       renderEditor(
         chunk,
+        parentContainer,
+        diffEditorContainer,
+        diffEditor,
+        monaco,
+        oldCode
+      );
+    }
+  } else if (
+    aiService === 'Use Azure API' &&
+    prompt &&
+    azureBaseUrl &&
+    azureApiKey &&
+    deploymentId
+  ) {
+    const client = new OpenAIClient(
+      azureBaseUrl,
+      new AzureKeyCredential(azureApiKey)
+    );
+    const result = await client.getCompletions(deploymentId, [prompt]);
+
+    for (const choice of result.choices) {
+      renderEditor(
+        choice.text,
         parentContainer,
         diffEditorContainer,
         diffEditor,
