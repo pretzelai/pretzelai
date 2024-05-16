@@ -232,7 +232,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         embeddings,
         NUMBER_OF_SIMILAR_CELLS,
         aiClient,
-        'OpenAI API key',
+        aiService,
         cellModel.id
       );
       const prompt = generatePrompt(
