@@ -469,41 +469,43 @@ const extension: JupyterFrontEndPlugin<void> = {
           activeCell.node.appendChild(parentContainer);
 
           const handleSubmit = async (userInput: string) => {
-             const getSelectedCode = () => {
-            const selection = activeCell?.editor?.getSelection();
-            const cellCode = activeCell?.model.sharedModel.source;
-            let extractedCode = '';
-            if (
-              selection &&
-              (selection.start.line !== selection.end.line ||
-                selection.start.column !== selection.end.column)
-            ) {
-              const startLine = selection.start.line;
-              const endLine = selection.end.line;
-              const startColumn = selection.start.column;
-              const endColumn = selection.end.column;
-              for (let i = startLine; i <= endLine; i++) {
-                const lineContent = cellCode!.split('\n')[i];
-                if (lineContent !== undefined) {
-                  if (i === startLine && i === endLine) {
-                    extractedCode += lineContent.substring(
-                      startColumn,
-                      endColumn
-                    );
-                  } else if (i === startLine) {
-                    extractedCode += lineContent.substring(startColumn);
-                  } else if (i === endLine) {
-                    extractedCode += '\n' + lineContent.substring(0, endColumn);
-                  } else {
-                    extractedCode += '\n' + lineContent;
+            const getSelectedCode = () => {
+              const selection = activeCell?.editor?.getSelection();
+              const cellCode = activeCell?.model.sharedModel.source;
+              let extractedCode = '';
+              if (
+                selection &&
+                (selection.start.line !== selection.end.line ||
+                  selection.start.column !== selection.end.column)
+              ) {
+                const startLine = selection.start.line;
+                const endLine = selection.end.line;
+                const startColumn = selection.start.column;
+                const endColumn = selection.end.column;
+                for (let i = startLine; i <= endLine; i++) {
+                  const lineContent = cellCode!.split('\n')[i];
+                  if (lineContent !== undefined) {
+                    if (i === startLine && i === endLine) {
+                      extractedCode += lineContent.substring(
+                        startColumn,
+                        endColumn
+                      );
+                    } else if (i === startLine) {
+                      extractedCode += lineContent.substring(startColumn);
+                    } else if (i === endLine) {
+                      extractedCode +=
+                        '\n' + lineContent.substring(0, endColumn);
+                    } else {
+                      extractedCode += '\n' + lineContent;
+                    }
                   }
                 }
+                console.log('Extracted code:', extractedCode);
               }
-              console.log('Extracted code:', extractedCode);
-            }
-            // also return the selection
-            return { extractedCode: extractedCode.trimEnd(), selection };
-          };
+              // also return the selection
+              return { extractedCode: extractedCode.trimEnd(), selection };
+            };
+            const { extractedCode } = getSelectedCode();
             if (userInput !== '') {
               const variablePattern = /@(\w+)/g;
               let match;
