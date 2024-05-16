@@ -33,35 +33,64 @@ export const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
 export const isSetsEqual = (xs: Set<any>, ys: Set<any>) =>
   xs.size === ys.size && [...xs].every(x => ys.has(x));
 
-export const createEditorComponents = (
+export const renderEditor = (
+  gen: string,
   parentContainer: HTMLElement,
   diffEditorContainer: HTMLElement,
+  diffEditor: any,
   monaco: any,
   oldCode: string
 ) => {
-  // generate the editor components
-  // first, top level container to hold all diff related items
-  const diffContainer = document.createElement('div');
-  diffContainer.style.marginTop = '10px';
-  diffContainer.style.display = 'flex';
-  diffContainer.style.flexDirection = 'column';
-  parentContainer.appendChild(diffContainer);
+  try {
+    if (!diffEditor) {
+      const diffContainer = document.createElement('div');
+      diffContainer.style.marginTop = '10px';
+      diffContainer.style.display = 'flex';
+      diffContainer.style.flexDirection = 'column';
+      parentContainer.appendChild(diffContainer);
 
-  diffContainer.appendChild(diffEditorContainer);
+      diffContainer.appendChild(diffEditorContainer);
 
-  // finally, the diff editor itself
-  const currentTheme =
-    document.body.getAttribute('data-jp-theme-light') === 'true'
-      ? 'vs'
-      : 'vs-dark';
-  const diffEditor = monaco.editor.createDiffEditor(diffEditorContainer, {
-    readOnly: true,
-    theme: currentTheme,
-    renderSideBySide: false
-  });
-  diffEditor.setModel({
-    original: monaco.editor.createModel(oldCode, 'python'),
-    modified: monaco.editor.createModel('', 'python')
-  });
-  return diffEditor;
+      // finally, the diff editor itself
+      const currentTheme =
+        document.body.getAttribute('data-jp-theme-light') === 'true'
+          ? 'vs'
+          : 'vs-dark';
+      diffEditor = monaco.editor.createDiffEditor(diffEditorContainer, {
+        readOnly: true,
+        theme: currentTheme,
+        renderSideBySide: false
+      });
+      diffEditor.setModel({
+        original: monaco.editor.createModel(oldCode, 'python'),
+        modified: monaco.editor.createModel('', 'python')
+      });
+    }
+    const modifiedModel = diffEditor!.getModel()!.modified;
+    const endLineNumber = modifiedModel.getLineCount();
+
+    const heightPx =
+      (diffEditor!.getModel()!.original.getLineCount() +
+        modifiedModel.getLineCount()) *
+      19;
+    diffEditorContainer.style.height = heightPx + 'px';
+
+    diffEditor?.layout();
+    const endColumn = modifiedModel.getLineMaxColumn(endLineNumber);
+    modifiedModel.applyEdits([
+      {
+        range: new monaco.Range(
+          endLineNumber,
+          endColumn,
+          endLineNumber,
+          endColumn
+        ),
+        text: gen,
+        forceMoveMarkers: true
+      }
+    ]);
+    return diffEditor;
+  } catch (error) {
+    console.log('Error rendering editor:', error);
+  }
 };

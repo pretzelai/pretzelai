@@ -22,7 +22,7 @@ import * as monaco from 'monaco-editor';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { calculateHash, createEditorComponents, isSetsEqual } from './utils';
+import { calculateHash, isSetsEqual, renderEditor } from './utils';
 import {
   AiService,
   Embedding,
@@ -297,6 +297,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         const activeCell = notebookTracker.activeCell;
 
         let diffEditorContainer: HTMLElement = document.createElement('div');
+        let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
 
         const callingP = document.createElement('p');
         callingP.textContent = 'Calling AI Service...';
@@ -323,47 +324,6 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           const handleSubmit = async (userInput: string) => {
             if (userInput !== '') {
-              let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
-              const renderEditor = (gen: string) => {
-                try {
-                  if (!diffEditor) {
-                    diffEditor = createEditorComponents(
-                      parentContainer,
-                      diffEditorContainer,
-                      monaco,
-                      oldCode
-                    );
-                    console.log(diffEditor);
-                  }
-                  const modifiedModel = diffEditor!.getModel()!.modified;
-                  const endLineNumber = modifiedModel.getLineCount();
-
-                  const heightPx =
-                    (diffEditor!.getModel()!.original.getLineCount() +
-                      modifiedModel.getLineCount()) *
-                    19;
-                  diffEditorContainer.style.height = heightPx + 'px';
-
-                  diffEditor?.layout();
-                  const endColumn =
-                    modifiedModel.getLineMaxColumn(endLineNumber);
-                  modifiedModel.applyEdits([
-                    {
-                      range: new monaco.Range(
-                        endLineNumber,
-                        endColumn,
-                        endLineNumber,
-                        endColumn
-                      ),
-                      text: gen,
-                      forceMoveMarkers: true
-                    }
-                  ]);
-                } catch (error) {
-                  console.log('Error rendering editor:', error);
-                }
-              };
-
               const variablePattern = /@(\w+)/g;
               let match;
               let modifiedUserInput = userInput;
@@ -413,7 +373,14 @@ const extension: JupyterFrontEndPlugin<void> = {
                       topSimilarities
                     );
                     posthog.capture('prompt', { property: userInput });
-                    renderEditor('');
+                    diffEditor = renderEditor(
+                      '',
+                      parentContainer,
+                      diffEditorContainer,
+                      diffEditor,
+                      monaco,
+                      oldCode
+                    );
                     // diffButtonsContainer!.appendChild(callingP!);
                     const stream = await openai.chat.completions.create({
                       model: 'gpt-4-turbo-preview',
@@ -432,7 +399,14 @@ const extension: JupyterFrontEndPlugin<void> = {
                     // diffButtonsContainer!.removeChild(callingP!);
                     // diffButtonsContainer!.appendChild(generatingP!);
                     for await (const chunk of stream) {
-                      renderEditor(chunk.choices[0]?.delta?.content || '');
+                      renderEditor(
+                        chunk.choices[0]?.delta?.content || '',
+                        parentContainer,
+                        diffEditorContainer,
+                        diffEditor,
+                        monaco,
+                        oldCode
+                      );
                     }
                     // diffButtonsContainer!.removeChild(generatingP!);
                     // diffButtonsContainer!.appendChild(acceptButton!);
@@ -464,7 +438,14 @@ const extension: JupyterFrontEndPlugin<void> = {
                 };
                 posthog.capture('prompt', { property: userInput });
                 try {
-                  renderEditor('');
+                  diffEditor = renderEditor(
+                    '',
+                    parentContainer,
+                    diffEditorContainer,
+                    diffEditor,
+                    monaco,
+                    oldCode
+                  );
                   // diffButtonsContainer!.appendChild(callingP!);
                   const response = await fetch(
                     'https://wjwgjk52kb3trqnlqivqqyxm3i0glvof.lambda-url.eu-central-1.on.aws/',
@@ -481,7 +462,15 @@ const extension: JupyterFrontEndPlugin<void> = {
                       isReading = false;
                     }
                     const chunk = decoder.decode(value);
-                    renderEditor(chunk);
+                    console.log(diffEditor);
+                    renderEditor(
+                      chunk,
+                      parentContainer,
+                      diffEditorContainer,
+                      diffEditor,
+                      monaco,
+                      oldCode
+                    );
                   }
                   // diffButtonsContainer!.removeChild(generatingP!);
                   // diffButtonsContainer!.appendChild(acceptButton!);
@@ -513,7 +502,14 @@ const extension: JupyterFrontEndPlugin<void> = {
                   );
 
                   for (const choice of result.choices) {
-                    renderEditor(choice.text);
+                    renderEditor(
+                      choice.text,
+                      parentContainer,
+                      diffEditorContainer,
+                      diffEditor,
+                      monaco,
+                      oldCode
+                    );
                   }
                 } catch (error) {
                   activeCell.model.sharedModel.source = `# Error: ${error}\n${oldCode}`;
@@ -605,7 +601,10 @@ const extension: JupyterFrontEndPlugin<void> = {
                         marginTop: '10px',
                         marginRight: '10px'
                       }}
-                      onClick={() => handleSubmit(inputValue)}
+                      onClick={() => {
+                        setIsVisible(false);
+                        handleSubmit(inputValue);
+                      }}
                       disabled={isSubmitDisabled}
                     >
                       Submit
