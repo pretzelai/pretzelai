@@ -83,30 +83,32 @@ function generatePromptEditPartial(
   oldCode: string,
   topSimilarities: string[]
 ): string {
-  return `The user has selected the following code chunk in the current Jupyter notebook cell (pay attention to the indents and newlines):
+  return `The user has selected the following code chunk in the CURRENT Jupyter notebook cell (pay attention to the indents and newlines):
 \`\`\`
 ${selectedCode}
 \`\`\`
 
-The user wants to edit this code with the following instruction:
+The user wants to modify this code with the following instruction:
 """
 ${userInput}
 """
 
-This selected code is a small code chunk inside a larger code chunk. ONLY FOR YOUR REFERENCE, the larger code chunk is as follows:
+CONTEXT
+This highlighted code is a small code chunk inside a larger code chunk. FOR YOUR REFERENCE, the larger code chunk is here:
 \`\`\`
 ${oldCode}
 \`\`\`
 
 ${
   topSimilarities.length > 0
-    ? `Also, the following code chunks in the notebook may be relevant:\n---\n${topSimilarities.join(
-        '\n---\n'
-      )}\n---\n`
+    ? `The following code chunks were also found in the notebook and may be relevant:\n\`\`\`\n${topSimilarities.join(
+        '\n```\n\n```\n'
+      )}\n\`\`\`\n`
     : ''
 }
+END CONTEXT
 
-Generate new code according to the user's instructions. Remember, the selected code is a small chunk inside a larger code chunk. So, returned code MUST have the correct indentation and newlines - it will replace the old code and the resulting code MUST BE RUNNABLE and NO BACKTICKS.`;
+INSTRUCTION: Modify the highlighted code according to the user's instructions. VERY IMPORTANT - ONLY MODIFY THE HIGHLIGHTED CODE!!! Returned code MUST have the correct indentation and newlines - it will replace the old code and the resulting code MUST BE RUNNABLE and NO BACKTICKS.`;
 }
 
 function generatePromptErrorFix(
