@@ -269,6 +269,21 @@ export const openAiStream = async ({
       );
     }
   }
+  setTimeout(async () => {
+    const changes = diffEditor.getLineChanges();
+    let totalLines = oldCode.split('\n').length;
+    if (changes) {
+      changes.forEach((c: any) => {
+        const modified =
+          c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
+
+        totalLines += modified;
+      });
+    }
+    const heightPx = totalLines * 19;
+    diffEditorContainer.style.height = heightPx + 'px';
+    diffEditor?.layout();
+  }, 500);
   // Create "Accept" and "Reject" buttons
   const diffContainer = document.querySelector('.diff-container');
   const acceptButton = document.createElement('button');
@@ -279,16 +294,13 @@ export const openAiStream = async ({
   acceptButton.style.maxWidth = '100px';
   acceptButton.style.minHeight = '25px';
   acceptButton.style.marginRight = '10px';
-  acceptButton.addEventListener('click', () => {
-    posthog.capture('Accept', {
-      event_type: 'click',
-      method: 'accept'
-    });
+  const handleAccept = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
     commands.execute('notebook:run-cell');
     activeCell.node.removeChild(parentContainer);
-  });
+  };
+  acceptButton.addEventListener('click', handleAccept);
 
   const rejectButton = document.createElement('button');
   rejectButton.textContent = 'Reject';
@@ -298,22 +310,31 @@ export const openAiStream = async ({
   rejectButton.style.maxWidth = '100px';
   rejectButton.style.minHeight = '25px';
   rejectButton.style.marginRight = '10px';
-  rejectButton.addEventListener('click', () => {
-    posthog.capture('Reject', {
-      event_type: 'click',
-      method: 'reject'
-    });
+  const handleReject = () => {
     activeCell.node.removeChild(parentContainer);
     activeCell.model.sharedModel.source = oldCode;
-  });
+  };
+  rejectButton.addEventListener('click', handleReject);
   const diffButtonsContainer = document.createElement('div');
   diffButtonsContainer.style.marginTop = '10px';
   diffButtonsContainer.style.marginLeft = '70px';
   diffButtonsContainer.style.display = 'flex';
   diffButtonsContainer.style.flexDirection = 'row';
+  diffButtonsContainer.tabIndex = 0; // Make the container focusable
+  diffButtonsContainer.style.outline = 'none'; // Remove blue border when focused
   diffContainer!.appendChild(diffButtonsContainer);
   diffButtonsContainer!.appendChild(acceptButton!);
   diffButtonsContainer!.appendChild(rejectButton!);
+  diffButtonsContainer.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleAccept();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      handleReject();
+    }
+  });
+  diffButtonsContainer.focus();
 };
 
 export const openaiEmbeddings = async (
