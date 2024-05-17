@@ -82,19 +82,11 @@ export const renderEditor = (
         forceMoveMarkers: true
       }
     ]);
-
     const newCode = modifiedModel.getValue();
-    const oldLines = oldCode.split('\n');
-    const newLines = newCode.split('\n');
-    const commonLines = oldLines.filter(line => newLines.includes(line)).length;
-    let totalLines = oldLines.length + newLines.length - commonLines;
-    if (!oldCode) {
-      totalLines++;
-    }
-    const heightPx = totalLines * 19;
+    const heightPx =
+      oldCode.split('\n').length + newCode.split('\n').length * 19;
     diffEditorContainer.style.height = heightPx + 'px';
     diffEditor?.layout();
-
     return diffEditor;
   } catch (error) {
     console.log('Error rendering editor:', error);
