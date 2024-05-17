@@ -235,7 +235,6 @@ export const openAiStream = async ({
         isReading = false;
       }
       const chunk = decoder.decode(value);
-      console.log(diffEditor);
       renderEditor(
         chunk,
         parentContainer,
@@ -268,6 +267,18 @@ export const openAiStream = async ({
         oldCode
       );
     }
+  }
+  // Handle occasional responsde with backticks
+  const newCode = diffEditor.getModel().modified.getValue();
+  if (newCode.split('```').length === 3) {
+    renderEditor(
+      newCode.split('```')[1],
+      parentContainer,
+      diffEditorContainer,
+      diffEditor,
+      monaco,
+      oldCode
+    );
   }
   setTimeout(async () => {
     const changes = diffEditor.getLineChanges();
