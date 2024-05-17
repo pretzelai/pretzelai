@@ -269,6 +269,18 @@ export const openAiStream = async ({
       );
     }
   }
+  // Handle occasional responsde with backticks
+  const newCode = diffEditor.getModel().modified.getValue();
+  if (newCode.split('```').length === 3) {
+    renderEditor(
+      newCode.split('```')[1],
+      parentContainer,
+      diffEditorContainer,
+      diffEditor,
+      monaco,
+      oldCode
+    );
+  }
   setTimeout(async () => {
     const changes = diffEditor.getLineChanges();
     let totalLines = oldCode.split('\n').length;
