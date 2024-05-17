@@ -488,7 +488,6 @@ const extension: JupyterFrontEndPlugin<void> = {
             }
           }
         }
-        console.log('Extracted code:', extractedCode);
       }
       // also return the selection
       return { extractedCode: extractedCode.trimEnd(), selection };
@@ -680,7 +679,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   diffEditorContainer,
                   diffEditor,
                   monaco,
-                  extractedCode ? extractedCode : oldCode
+                  oldCode
                 );
                 openAiStream({
                   aiService,

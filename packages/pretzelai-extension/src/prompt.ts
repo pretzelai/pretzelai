@@ -86,20 +86,23 @@ function generatePromptEditPartial(
   topSimilarities: string[]
 ): string {
   return `The user has selected the following code chunk in the CURRENT Jupyter notebook cell (pay attention to the indents and newlines):
+SELECTED CODE START
 \`\`\`
 ${selectedCode}
 \`\`\`
+SELECTED CODE END
 
-The user wants to modify this code with the following instruction:
-"""
-${userInput}
-"""
-
-CONTEXT
-This highlighted code is a small code chunk inside a larger code chunk. FOR YOUR REFERENCE, the larger code chunk is here:
+This code is part of the following larger code chunk
+FULL CODE CHUNK START
 \`\`\`
 ${oldCode}
 \`\`\`
+FULL CODE CHUNK END
+
+The user wants to modify the SELECTED CODE ONLY (IMPORTANT) with the following instruction:
+"""
+${userInput}
+"""
 
 ${
   topSimilarities.length > 0
@@ -108,9 +111,8 @@ ${
       )}\n\`\`\`\n`
     : ''
 }
-END CONTEXT
 
-INSTRUCTION: Modify the highlighted code according to the user's instructions. VERY IMPORTANT - ONLY MODIFY THE HIGHLIGHTED CODE!!! Returned code MUST have the correct indentation and newlines - it will replace the old code and the resulting code MUST BE RUNNABLE and NO BACKTICKS.`;
+INSTRUCTION: Modify the SELECTED CODE (AND ONLY THE SELECTED CODE) according to the user's instructions. Return FULL CODE CHUNK but with the selected code modified.`;
 }
 
 function generatePromptErrorFix(
