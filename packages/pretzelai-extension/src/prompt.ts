@@ -300,7 +300,13 @@ export const openAiStream = async ({
     commands.execute('notebook:run-cell');
     activeCell.node.removeChild(parentContainer);
   };
-  acceptButton.addEventListener('click', handleAccept);
+  acceptButton.addEventListener('click', () => {
+    posthog.capture('Accept', {
+      event_type: 'click',
+      method: 'accept'
+    });
+    handleAccept();
+  });
 
   const rejectButton = document.createElement('button');
   rejectButton.textContent = 'Reject';
@@ -314,7 +320,13 @@ export const openAiStream = async ({
     activeCell.node.removeChild(parentContainer);
     activeCell.model.sharedModel.source = oldCode;
   };
-  rejectButton.addEventListener('click', handleReject);
+  rejectButtonEdi.addEventListener('click', () => {
+    posthog.capture('Reject', {
+      event_type: 'click',
+      method: 'reject'
+    });
+    handleReject();
+  });
   const diffButtonsContainer = document.createElement('div');
   diffButtonsContainer.style.marginTop = '10px';
   diffButtonsContainer.style.marginLeft = '70px';
