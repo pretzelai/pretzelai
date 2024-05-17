@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /*
  * Copyright (c) Pretzel AI GmbH.
  * This file is part of the Pretzel project and is licensed under the
