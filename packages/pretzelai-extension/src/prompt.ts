@@ -332,7 +332,7 @@ export const openAiStream = async ({
     activeCell.node.removeChild(parentContainer);
     activeCell.model.sharedModel.source = oldCode;
   };
-  rejectButtonEdi.addEventListener('click', () => {
+  rejectButton.addEventListener('click', () => {
     posthog.capture('Reject', {
       event_type: 'click',
       method: 'reject'
