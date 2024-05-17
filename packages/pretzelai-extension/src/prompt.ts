@@ -11,6 +11,7 @@ import { OpenAI } from 'openai';
 import { Embeddings } from '@azure/openai/types/openai';
 import { renderEditor } from './utils';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
+import posthog from 'posthog-js';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -44,7 +45,7 @@ export function generatePrompt(
   if (traceback) {
     return generatePromptErrorFix(traceback, oldCode, topSimilarities);
   }
-  return generatePromptNewAndFullEdit(userInput, '', topSimilarities);
+  return generatePromptNewAndFullEdit(userInput, oldCode, topSimilarities);
 }
 
 function generatePromptNewAndFullEdit(
@@ -235,7 +236,6 @@ export const openAiStream = async ({
         isReading = false;
       }
       const chunk = decoder.decode(value);
-      console.log(diffEditor);
       renderEditor(
         chunk,
         parentContainer,
@@ -280,6 +280,10 @@ export const openAiStream = async ({
   acceptButton.style.minHeight = '25px';
   acceptButton.style.marginRight = '10px';
   acceptButton.addEventListener('click', () => {
+    posthog.capture('Accept', {
+      event_type: 'click',
+      method: 'accept'
+    });
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
     commands.execute('notebook:run-cell');
@@ -295,6 +299,10 @@ export const openAiStream = async ({
   rejectButton.style.minHeight = '25px';
   rejectButton.style.marginRight = '10px';
   rejectButton.addEventListener('click', () => {
+    posthog.capture('Reject', {
+      event_type: 'click',
+      method: 'reject'
+    });
     activeCell.node.removeChild(parentContainer);
     activeCell.model.sharedModel.source = oldCode;
   });

@@ -38,18 +38,15 @@ import { IOutputModel } from '@jupyterlab/rendermime';
 import { initSplashScreen } from './splashScreen';
 
 function initializePosthog(cookiesDisabled: boolean) {
-  if (!cookiesDisabled) {
-    posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
-      // eslint-disable-next-line camelcase
-      api_host: 'https://d2yfaqny8nshvd.cloudfront.net'
-    });
-  } else {
-    posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
-      // eslint-disable-next-line camelcase
-      api_host: 'https://d2yfaqny8nshvd.cloudfront.net',
-      persistence: 'memory'
-    });
-  }
+  posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
+    api_host: 'https://d2yfaqny8nshvd.cloudfront.net',
+    persistence: cookiesDisabled ? 'memory' : 'localStorage+cookie',
+    autocapture: false,
+    capture_pageview: false,
+    capture_pageleave: false,
+    mask_all_text: true,
+    disable_session_recording: true
+  });
 }
 
 const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
@@ -82,6 +79,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureDeploymentName = '';
     let azureApiKey = '';
     let aiClient: OpenAI | OpenAIClient | null;
+    let posthogPromptTelemetry: boolean = true;
 
     const showSplashScreen = async (consent: string) => {
       if (!consent) {
@@ -104,10 +102,12 @@ const extension: JupyterFrontEndPlugin<void> = {
         const aiServiceSetting = settings.get('aiService').composite;
         aiService = (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
 
+        // get settings from telemetrySettings
         const posthogCookieConsent = settings.get('posthogCookieConsent')
           .composite as string;
+        posthogPromptTelemetry = settings.get('posthogPromptTelemetry')
+          .composite as boolean;
 
-        console.log('posthogCookieConsent', posthogCookieConsent);
         initializePosthog(posthogCookieConsent === 'No');
         updateFunc?.();
         loadAIClient();
@@ -220,6 +220,10 @@ const extension: JupyterFrontEndPlugin<void> = {
       button.style.cursor = 'pointer';
       cellNode.appendChild(button);
       button.onclick = () => {
+        posthog.capture('Fix Error with AI', {
+          event_type: 'click',
+          method: 'fix_error'
+        });
         const existingButton = cellNode.querySelector('.fix-error-button');
         if (existingButton) {
           existingButton.remove();
@@ -567,6 +571,11 @@ const extension: JupyterFrontEndPlugin<void> = {
             if (event.key === 'Escape') {
               // TODO: this doesn't work - the Escape key isn't being captured
               // but every other key press is being captured
+              posthog.capture('Remove via Escape', {
+                event_type: 'keypress',
+                event_value: 'esc',
+                method: 'remove'
+              });
               event.preventDefault(); // Prevent any default behavior
               // Shift focus back to the editor of the active cell
               const activeCell = notebookTracker.activeCell;
@@ -578,6 +587,11 @@ const extension: JupyterFrontEndPlugin<void> = {
             if (event.key === 'Enter') {
               event.preventDefault();
               if (!submitButton.disabled) {
+                posthog.capture('Submit via Enter', {
+                  event_type: 'keypress',
+                  event_value: 'enter',
+                  method: 'submit'
+                });
                 handleSubmit(inputField.value);
               }
             }
@@ -606,6 +620,10 @@ const extension: JupyterFrontEndPlugin<void> = {
           submitButton.style.marginTop = '10px';
           submitButton.style.marginRight = '10px';
           submitButton.addEventListener('click', () => {
+            posthog.capture('Submit via Click', {
+              event_type: 'click',
+              method: 'submit'
+            });
             handleSubmit(inputField.value);
           });
           inputFieldButtonsContainer.appendChild(submitButton);
@@ -621,6 +639,10 @@ const extension: JupyterFrontEndPlugin<void> = {
           removeButton.style.marginTop = '10px';
           inputFieldButtonsContainer.appendChild(removeButton);
           removeButton.addEventListener('click', () => {
+            posthog.capture('Remove via Click', {
+              event_type: 'click',
+              method: 'remove'
+            });
             activeCell.node.removeChild(parentContainer);
           });
 
@@ -644,7 +666,13 @@ const extension: JupyterFrontEndPlugin<void> = {
                   topSimilarities,
                   extractedCode
                 );
-                posthog.capture('prompt', { property: userInput });
+
+                // if posthogPromptTelemetry is true, capture the prompt
+                if (posthogPromptTelemetry) {
+                  posthog.capture('prompt', { property: userInput });
+                } else {
+                  posthog.capture('prompt', { property: 'no_telemetry' });
+                }
                 diffEditor = renderEditor(
                   '',
                   parentContainer,

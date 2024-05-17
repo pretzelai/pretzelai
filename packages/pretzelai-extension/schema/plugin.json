@@ -56,6 +56,11 @@
       "type": "string",
       "title": "Cookie Consent",
       "default": ""
+    },
+    "posthogPromptTelemetry": {
+      "type": "boolean",
+      "title": "Prompt Telemetry",
+      "default": true
     }
   },
   "additionalProperties": false

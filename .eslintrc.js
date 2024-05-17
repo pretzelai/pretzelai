@@ -155,7 +155,10 @@ module.exports = {
           'UNSAFE_componentWillUpdate',
           'UNSAFE_componentWillReceiveProps',
           'user_expressions'
-        ]
+        ],
+        ignoreGlobals: true,
+        ignoreImports: true,
+        properties: 'never'
       }
     ],
     'id-match': ['error', '^[a-zA-Z_]+[a-zA-Z0-9_]*$'], // https://certitude.consulting/blog/en/invisible-backdoor/
