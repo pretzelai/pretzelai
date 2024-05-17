@@ -203,21 +203,6 @@ export const openAiStream = async ({
         oldCode
       );
     }
-    setTimeout(async () => {
-      const changes = diffEditor.getLineChanges();
-      let totalLines = oldCode.split('\n').length;
-      if (changes) {
-        changes.forEach((c: any) => {
-          const modified =
-            c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
-
-          totalLines += modified;
-        });
-      }
-      const heightPx = totalLines * 19;
-      diffEditorContainer.style.height = heightPx + 'px';
-      diffEditor?.layout();
-    }, 500);
   } else if (aiService === 'Use Pretzel AI Server') {
     const response = await fetch(
       'https://wjwgjk52kb3trqnlqivqqyxm3i0glvof.lambda-url.eu-central-1.on.aws/',
@@ -284,6 +269,21 @@ export const openAiStream = async ({
       );
     }
   }
+  setTimeout(async () => {
+    const changes = diffEditor.getLineChanges();
+    let totalLines = oldCode.split('\n').length;
+    if (changes) {
+      changes.forEach((c: any) => {
+        const modified =
+          c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
+
+        totalLines += modified;
+      });
+    }
+    const heightPx = totalLines * 19;
+    diffEditorContainer.style.height = heightPx + 'px';
+    diffEditor?.layout();
+  }, 500);
   // Create "Accept" and "Reject" buttons
   const diffContainer = document.querySelector('.diff-container');
   const acceptButton = document.createElement('button');
