@@ -60,7 +60,15 @@ export const renderEditor = (
       diffEditor = monaco.editor.createDiffEditor(diffEditorContainer, {
         readOnly: true,
         theme: currentTheme,
-        renderSideBySide: false
+        renderSideBySide: false,
+        minimap: { enabled: false },
+        overviewRulerBorder: false,
+        overviewRulerLanes: 0,
+        scrollbar: {
+          vertical: 'hidden',
+          horizontal: 'hidden',
+          handleMouseWheel: false
+        }
       });
       diffEditor.setModel({
         original: monaco.editor.createModel(oldCode, 'python'),
