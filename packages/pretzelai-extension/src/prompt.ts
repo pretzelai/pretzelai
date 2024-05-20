@@ -160,7 +160,8 @@ export const openAiStream = async ({
   azureApiKey,
   deploymentId,
   activeCell,
-  commands
+  commands,
+  statusElement
 }: {
   aiService: string;
   openAiApiKey?: string;
@@ -176,7 +177,9 @@ export const openAiStream = async ({
   deploymentId?: string;
   activeCell: any;
   commands: any;
+  statusElement: HTMLElement;
 }): Promise<void> => {
+  statusElement.textContent = 'Calling AI service...';
   if (aiService === 'OpenAI API key' && openAiApiKey && prompt) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
@@ -197,6 +200,7 @@ export const openAiStream = async ({
       ],
       stream: true
     });
+    statusElement.textContent = 'Generating code...';
     for await (const chunk of stream) {
       renderEditor(
         chunk.choices[0]?.delta?.content || '',
@@ -233,6 +237,7 @@ export const openAiStream = async ({
     const reader = response!.body!.getReader();
     const decoder = new TextDecoder('utf-8');
     let isReading = true;
+    statusElement.textContent = 'Generating code...';
     while (isReading) {
       const { done, value } = await reader.read();
       if (done) {
@@ -260,7 +265,7 @@ export const openAiStream = async ({
       new AzureKeyCredential(azureApiKey)
     );
     const result = await client.getCompletions(deploymentId, [prompt]);
-
+    statusElement.textContent = 'Generating code...';
     for (const choice of result.choices) {
       renderEditor(
         choice.text,
@@ -364,6 +369,7 @@ export const openAiStream = async ({
     }
   });
   diffButtonsContainer.focus();
+  statusElement.textContent = '';
 };
 
 export const openaiEmbeddings = async (
