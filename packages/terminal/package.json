@@ -1,0 +1,76 @@
+{
+  "name": "@jupyterlab/terminal",
+  "version": "4.2.0-rc.0",
+  "description": "JupyterLab - Terminal Emulator Widget",
+  "homepage": "https://github.com/pretzelai/pretzelai",
+  "bugs": {
+    "url": "https://github.com/pretzelai/pretzelai/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pretzelai/pretzelai.git"
+  },
+  "license": "BSD-3-Clause",
+  "author": "Project Jupyter",
+  "sideEffects": [
+    "style/*.css",
+    "style/index.js"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "style": "style/index.css",
+  "directories": {
+    "lib": "lib/"
+  },
+  "files": [
+    "lib/*.d.ts",
+    "lib/*.js.map",
+    "lib/*.js",
+    "style/*.css",
+    "style/index.js",
+    "src/**/*.{ts,tsx}"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "build:test": "tsc --build tsconfig.test.json",
+    "clean": "rimraf lib && rimraf tsconfig.tsbuildinfo",
+    "test": "jest",
+    "test:cov": "jest --collect-coverage",
+    "test:debug": "node --inspect-brk ../../node_modules/.bin/jest --runInBand",
+    "test:debug:watch": "node --inspect-brk ../../node_modules/.bin/jest --runInBand --watch",
+    "watch": "tsc -b --watch"
+  },
+  "dependencies": {
+    "@jupyterlab/apputils": "^4.3.0-rc.0",
+    "@jupyterlab/services": "^7.2.0-rc.0",
+    "@jupyterlab/translation": "^4.2.0-rc.0",
+    "@lumino/coreutils": "^2.1.2",
+    "@lumino/domutils": "^2.0.1",
+    "@lumino/messaging": "^2.0.1",
+    "@lumino/widgets": "^2.3.2",
+    "@xterm/addon-canvas": "~0.7.0",
+    "@xterm/addon-fit": "~0.10.0",
+    "@xterm/addon-web-links": "~0.11.0",
+    "@xterm/addon-webgl": "~0.18.0",
+    "@xterm/xterm": "~5.5.0"
+  },
+  "devDependencies": {
+    "@jupyterlab/testing": "^4.2.0-rc.0",
+    "@types/jest": "^29.2.0",
+    "canvas": "^2.11.2",
+    "jest": "^29.2.0",
+    "rimraf": "~5.0.5",
+    "typescript": "~5.1.6"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "jupyterlab": {
+    "extraStyles": {
+      "@xterm/xterm": [
+        "css/xterm.css"
+      ]
+    }
+  },
+  "styleModule": "style/index.js"
+}

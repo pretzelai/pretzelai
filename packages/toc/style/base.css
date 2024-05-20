@@ -1,0 +1,117 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+| Table of Contents
+|----------------------------------------------------------------------------*/
+
+:root {
+  --jp-private-toc-active-width: 4px;
+}
+
+.jp-TableOfContents {
+  display: flex;
+  flex-direction: column;
+  background: var(--jp-layout-color1);
+  color: var(--jp-ui-font-color1);
+  font-size: var(--jp-ui-font-size1);
+  height: 100%;
+}
+
+.jp-TableOfContents-placeholder {
+  text-align: center;
+}
+
+.jp-TableOfContents-placeholderContent {
+  color: var(--jp-content-font-color2);
+  padding: 8px;
+}
+
+.jp-TableOfContents-placeholderContent > h3 {
+  margin-bottom: var(--jp-content-heading-margin-bottom);
+}
+
+.jp-TableOfContents .jp-SidePanel-content {
+  overflow-y: auto;
+}
+
+.jp-TableOfContents-tree {
+  margin: 4px;
+}
+
+.jp-TableOfContents ol {
+  list-style-type: none;
+}
+
+/* stylelint-disable-next-line selector-max-type */
+.jp-TableOfContents li > ol {
+  /* Align left border with triangle icon center */
+  padding-left: 11px;
+}
+
+.jp-TableOfContents-content {
+  /* left margin for the active heading indicator */
+  margin: 0 0 0 var(--jp-private-toc-active-width);
+  padding: 0;
+  background-color: var(--jp-layout-color1);
+}
+
+.jp-tocItem {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.jp-tocItem-heading {
+  display: flex;
+  cursor: pointer;
+}
+
+.jp-tocItem-heading:hover {
+  background-color: var(--jp-layout-color2);
+}
+
+.jp-tocItem-content {
+  display: block;
+  padding: 4px 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+}
+
+.jp-tocItem-collapser {
+  height: 20px;
+  margin: 2px 2px 0;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.jp-tocItem-collapser:hover {
+  background-color: var(--jp-layout-color3);
+}
+
+/* Active heading indicator */
+
+.jp-tocItem-heading::before {
+  content: ' ';
+  background: transparent;
+  width: var(--jp-private-toc-active-width);
+  height: 24px;
+  position: absolute;
+  left: 0;
+  border-radius: var(--jp-border-radius);
+}
+
+.jp-tocItem-heading.jp-tocItem-active::before {
+  background-color: var(--jp-brand-color1);
+}
+
+.jp-tocItem-heading:hover.jp-tocItem-active::before {
+  background: var(--jp-brand-color0);
+  opacity: 1;
+}

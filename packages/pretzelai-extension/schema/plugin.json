@@ -1,0 +1,67 @@
+{
+  "title": "Pretzel AI Settings",
+  "description": "Configure the settings for Pretzel: The AI extension for JupyterLab. Select the AI service you want to use (OpenAI API key, Use Pretzel AI Server or Use Azure API). Then, provide the necessary API keys and URLs based on the AI service you choose to use.",
+  "type": "object",
+  "properties": {
+    "aiService": {
+      "type": "string",
+      "title": "AI Service",
+      "description": "Select the AI service to use for AI operations.",
+      "enum": [
+        "OpenAI API key",
+        "Use Pretzel AI Server",
+        "Use Azure API"
+      ],
+      "default": "Use Pretzel AI Server"
+    },
+    "openAiSettings": {
+      "type": "object",
+      "title": "OpenAI Settings",
+      "properties": {
+        "openAiApiKey": {
+          "type": "string",
+          "title": "API Key",
+          "default": ""
+        },
+        "openAiBaseUrl": {
+          "type": "string",
+          "title": "Base URL",
+          "description": "(Optional) If your company has an OpenAI service, enter the URL for your company's OpenAI service (e.g., https://api.openai.com/v1/).",
+          "default": ""
+        }
+      }
+    },
+    "azureSettings": {
+      "type": "object",
+      "title": "Azure OpenAI Settings",
+      "properties": {
+        "azureBaseUrl": {
+          "type": "string",
+          "title": "Base URL",
+          "default": ""
+        },
+        "azureDeploymentName": {
+          "type": "string",
+          "title": "Deployment Name",
+          "default": ""
+        },
+        "azureApiKey": {
+          "type": "string",
+          "title": "API Key",
+          "default": ""
+        }
+      }
+    },
+    "posthogCookieConsent": {
+      "type": "string",
+      "title": "Cookie Consent",
+      "default": ""
+    },
+    "posthogPromptTelemetry": {
+      "type": "boolean",
+      "title": "Prompt Telemetry",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

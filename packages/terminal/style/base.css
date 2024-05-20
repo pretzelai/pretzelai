@@ -1,0 +1,25 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+.jp-Terminal {
+  min-width: 240px;
+  min-height: 120px;
+}
+
+.jp-Terminal-body {
+  padding: 8px;
+}
+
+[data-term-theme='inherit'] .xterm .xterm-screen canvas {
+  border: 1px solid var(--jp-layout-color0);
+}
+
+[data-term-theme='light'] .xterm .xterm-screen canvas {
+  border: 1px solid #fff;
+}
+
+[data-term-theme='dark'] .xterm .xterm-screen canvas {
+  border: 1px solid #000;
+}

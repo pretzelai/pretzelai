@@ -1,0 +1,31 @@
+{
+  "extends": "../../tsconfigbase",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src"
+  },
+  "include": ["src/*"],
+  "references": [
+    {
+      "path": "../application"
+    },
+    {
+      "path": "../codeeditor"
+    },
+    {
+      "path": "../codemirror"
+    },
+    {
+      "path": "../settingregistry"
+    },
+    {
+      "path": "../statusbar"
+    },
+    {
+      "path": "../translation"
+    },
+    {
+      "path": "../ui-components"
+    }
+  ]
+}

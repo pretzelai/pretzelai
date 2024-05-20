@@ -1,0 +1,140 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+/*
+ * Mozilla scrollbar styling
+ */
+
+/* use standard opaque scrollbars for most nodes */
+[data-jp-theme-scrollbars='true'] {
+  scrollbar-color: rgb(var(--jp-scrollbar-thumb-color))
+    var(--jp-scrollbar-background-color);
+}
+
+/* for code nodes, use a transparent style of scrollbar. These selectors
+ * will match lower in the tree, and so will override the above */
+[data-jp-theme-scrollbars='true'] .CodeMirror-hscrollbar,
+[data-jp-theme-scrollbars='true'] .CodeMirror-vscrollbar {
+  scrollbar-color: rgba(var(--jp-scrollbar-thumb-color), 0.5) transparent;
+}
+
+/* tiny scrollbar */
+
+.jp-scrollbar-tiny {
+  scrollbar-color: rgba(var(--jp-scrollbar-thumb-color), 0.5) transparent;
+  scrollbar-width: thin;
+}
+
+/* tiny scrollbar */
+
+.jp-scrollbar-tiny::-webkit-scrollbar,
+.jp-scrollbar-tiny::-webkit-scrollbar-corner {
+  background-color: transparent;
+  height: 4px;
+  width: 4px;
+}
+
+.jp-scrollbar-tiny::-webkit-scrollbar-thumb {
+  background: rgba(var(--jp-scrollbar-thumb-color), 0.5);
+}
+
+.jp-scrollbar-tiny::-webkit-scrollbar-track:horizontal {
+  border-left: 0 solid transparent;
+  border-right: 0 solid transparent;
+}
+
+.jp-scrollbar-tiny::-webkit-scrollbar-track:vertical {
+  border-top: 0 solid transparent;
+  border-bottom: 0 solid transparent;
+}
+
+/*
+ * Lumino
+ */
+
+.lm-ScrollBar[data-orientation='horizontal'] {
+  min-height: 16px;
+  max-height: 16px;
+  min-width: 45px;
+  border-top: 1px solid #a0a0a0;
+}
+
+.lm-ScrollBar[data-orientation='vertical'] {
+  min-width: 16px;
+  max-width: 16px;
+  min-height: 45px;
+  border-left: 1px solid #a0a0a0;
+}
+
+.lm-ScrollBar-button {
+  background-color: #f0f0f0;
+  background-position: center center;
+  min-height: 15px;
+  max-height: 15px;
+  min-width: 15px;
+  max-width: 15px;
+}
+
+.lm-ScrollBar-button:hover {
+  background-color: #dadada;
+}
+
+.lm-ScrollBar-button.lm-mod-active {
+  background-color: #cdcdcd;
+}
+
+.lm-ScrollBar-track {
+  background: #f0f0f0;
+}
+
+.lm-ScrollBar-thumb {
+  background: #cdcdcd;
+}
+
+.lm-ScrollBar-thumb:hover {
+  background: #bababa;
+}
+
+.lm-ScrollBar-thumb.lm-mod-active {
+  background: #a0a0a0;
+}
+
+.lm-ScrollBar[data-orientation='horizontal'] .lm-ScrollBar-thumb {
+  height: 100%;
+  min-width: 15px;
+  border-left: 1px solid #a0a0a0;
+  border-right: 1px solid #a0a0a0;
+}
+
+.lm-ScrollBar[data-orientation='vertical'] .lm-ScrollBar-thumb {
+  width: 100%;
+  min-height: 15px;
+  border-top: 1px solid #a0a0a0;
+  border-bottom: 1px solid #a0a0a0;
+}
+
+.lm-ScrollBar[data-orientation='horizontal']
+  .lm-ScrollBar-button[data-action='decrement'] {
+  background-image: var(--jp-icon-caret-left);
+  background-size: 17px;
+}
+
+.lm-ScrollBar[data-orientation='horizontal']
+  .lm-ScrollBar-button[data-action='increment'] {
+  background-image: var(--jp-icon-caret-right);
+  background-size: 17px;
+}
+
+.lm-ScrollBar[data-orientation='vertical']
+  .lm-ScrollBar-button[data-action='decrement'] {
+  background-image: var(--jp-icon-caret-up);
+  background-size: 17px;
+}
+
+.lm-ScrollBar[data-orientation='vertical']
+  .lm-ScrollBar-button[data-action='increment'] {
+  background-image: var(--jp-icon-caret-down);
+  background-size: 17px;
+}

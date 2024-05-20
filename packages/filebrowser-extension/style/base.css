@@ -1,0 +1,13 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+#filebrowser.jp-mod-restoring .jp-DirListing-content {
+  display: none;
+}
+
+.jp-FileBrowser-filterBox {
+  padding: 0;
+  flex: 0 0 auto;
+}

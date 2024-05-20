@@ -1,0 +1,386 @@
+/*-----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+
+/*-----------------------------------------------------------------------------
+| Variables
+|----------------------------------------------------------------------------*/
+
+:root {
+  --jp-private-filebrowser-button-height: 28px;
+  --jp-private-filebrowser-button-width: 48px;
+}
+
+.jp-FileBrowser .jp-SidePanel-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.jp-FileBrowser-toolbar.jp-Toolbar {
+  border-bottom: none;
+  height: auto;
+  margin: 8px 12px 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.jp-FileBrowser-toolbar.jp-Toolbar::part(positioning-region) {
+  row-gap: 12px;
+}
+
+.jp-FileBrowser-Panel {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.jp-BreadCrumbs {
+  flex: 0 0 auto;
+  margin: 8px 12px;
+}
+
+.jp-BreadCrumbs-item {
+  margin: 0 2px;
+  padding: 0 2px;
+  border-radius: var(--jp-border-radius);
+  cursor: pointer;
+}
+
+.jp-BreadCrumbs-item:hover {
+  background-color: var(--jp-layout-color2);
+}
+
+.jp-BreadCrumbs-item:first-child {
+  margin-left: 0;
+}
+
+.jp-BreadCrumbs-item.jp-mod-dropTarget {
+  background-color: var(--jp-brand-color2);
+  opacity: 0.7;
+}
+
+/*-----------------------------------------------------------------------------
+| Buttons
+|----------------------------------------------------------------------------*/
+
+.jp-FileBrowser-toolbar > .jp-Toolbar-item {
+  flex: 0 0 auto;
+  padding-left: 0;
+  align-items: center;
+  height: unset;
+}
+
+.jp-FileBrowser-toolbar > .jp-Toolbar-item .jp-ToolbarButtonComponent {
+  width: 40px;
+}
+
+/*-----------------------------------------------------------------------------
+| Other styles
+|----------------------------------------------------------------------------*/
+
+.jp-FileDialog.jp-mod-conflict input {
+  color: var(--jp-error-color1);
+}
+
+.jp-FileDialog .jp-new-name-title {
+  margin-top: 12px;
+}
+
+.jp-LastModified-hidden {
+  display: none;
+}
+
+.jp-FileSize-hidden {
+  display: none;
+}
+
+.jp-FileBrowser .lm-AccordionPanel > h3:first-child {
+  display: none;
+}
+
+.jp-FileBrowser-toolbar > .jp-FileBrowser-filterBox {
+  width: 100%;
+}
+
+.jp-Open-Dialog > .jp-FileBrowser {
+  min-height: 200px;
+}
+
+.jp-Open-Dialog-label {
+  overflow: visible;
+}
+
+/*-----------------------------------------------------------------------------
+| DirListing
+|----------------------------------------------------------------------------*/
+
+.jp-DirListing {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  outline: 0;
+}
+
+.jp-DirListing-header {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  overflow: hidden;
+  border-top: var(--jp-border-width) solid var(--jp-border-color2);
+  border-bottom: var(--jp-border-width) solid var(--jp-border-color1);
+  box-shadow: var(--jp-toolbar-box-shadow);
+  z-index: 2;
+}
+
+.jp-DirListing-headerItem {
+  padding: 4px 12px 2px;
+  font-weight: 500;
+}
+
+.jp-DirListing-headerItem:hover {
+  background: var(--jp-layout-color2);
+}
+
+.jp-DirListing-headerItem.jp-id-name {
+  flex: 1 1 126px;
+}
+
+.jp-DirListing-headerItem.jp-id-modified {
+  flex: 1 0 70px;
+  border-left: var(--jp-border-width) solid var(--jp-border-color2);
+  text-align: right;
+  /* stylelint-disable */
+  container-type: inline-size;
+  /* stylelint-enable */
+}
+
+/**
+ * Use container queries (not yet supported by our version of stylelint)
+ * to display either a small or large header for the last-modified column.
+ */
+/* stylelint-disable */
+@container (max-width: 300px) {
+  /* stylelint-enable */
+  .jp-DirListing-headerItem.jp-id-modified
+    > .jp-DirListing-headerItemText.jp-DirListing-headerItemText-small {
+    display: inline;
+  }
+
+  .jp-DirListing-headerItem.jp-id-modified
+    > .jp-DirListing-headerItemText.jp-DirListing-headerItemText-large {
+    display: none;
+  }
+}
+
+/* stylelint-disable */
+@container (min-width: 300px) {
+  /* stylelint-enable */
+  .jp-DirListing-headerItem.jp-id-modified
+    > .jp-DirListing-headerItemText.jp-DirListing-headerItemText-small {
+    display: none;
+  }
+
+  .jp-DirListing-headerItem.jp-id-modified
+    > .jp-DirListing-headerItemText.jp-DirListing-headerItemText-large {
+    display: inline;
+  }
+}
+
+.jp-DirListing-headerItem.jp-id-filesize {
+  flex: 0 0 75px;
+  border-left: var(--jp-border-width) solid var(--jp-border-color2);
+  text-align: right;
+}
+
+.jp-id-narrow {
+  display: none;
+  flex: 0 0 5px;
+  padding: 4px;
+  border-left: var(--jp-border-width) solid var(--jp-border-color2);
+  text-align: right;
+  color: var(--jp-border-color2);
+}
+
+.jp-DirListing-narrow .jp-id-narrow {
+  display: block;
+}
+
+.jp-DirListing-narrow .jp-id-modified,
+.jp-DirListing-narrow .jp-DirListing-itemModified {
+  display: none;
+}
+
+.jp-DirListing-headerItem.jp-mod-selected {
+  font-weight: 600;
+}
+
+/* increase specificity to override bundled default */
+.jp-DirListing-content {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  overflow: auto;
+  background-color: var(--jp-layout-color1);
+}
+
+.jp-DirListing-content mark {
+  color: var(--jp-ui-font-color0);
+  background-color: transparent;
+  font-weight: bold;
+}
+
+.jp-DirListing-content .jp-DirListing-item.jp-mod-selected mark {
+  color: var(--jp-ui-inverse-font-color0);
+}
+
+/* Style the directory listing content when a user drops a file to upload */
+.jp-DirListing.jp-mod-native-drop .jp-DirListing-content {
+  outline: 5px dashed rgba(128, 128, 128, 0.5);
+  outline-offset: -10px;
+  cursor: copy;
+}
+
+.jp-DirListing-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 12px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.jp-DirListing-checkboxWrapper {
+  /* Increases hit area of checkbox. */
+  padding: 4px;
+}
+
+.jp-DirListing-header
+  .jp-DirListing-checkboxWrapper
+  + .jp-DirListing-headerItem {
+  padding-left: 4px;
+}
+
+.jp-DirListing-content .jp-DirListing-checkboxWrapper {
+  position: relative;
+  left: -4px;
+  margin: -4px 0 -4px -8px;
+}
+
+.jp-DirListing-checkboxWrapper.jp-mod-visible {
+  visibility: visible;
+}
+
+/* For devices that support hovering, hide checkboxes until hovered, selected...
+*/
+@media (hover: hover) {
+  .jp-DirListing-checkboxWrapper {
+    visibility: hidden;
+  }
+
+  .jp-DirListing-item:hover .jp-DirListing-checkboxWrapper,
+  .jp-DirListing-item.jp-mod-selected .jp-DirListing-checkboxWrapper {
+    visibility: visible;
+  }
+}
+
+.jp-DirListing-item[data-is-dot] {
+  opacity: 75%;
+}
+
+.jp-DirListing-item.jp-mod-selected {
+  color: var(--jp-ui-inverse-font-color1);
+  background: var(--jp-brand-color1);
+}
+
+.jp-DirListing-item.jp-mod-dropTarget {
+  background: var(--jp-brand-color3);
+}
+
+.jp-DirListing-item:hover:not(.jp-mod-selected) {
+  background: var(--jp-layout-color2);
+}
+
+.jp-DirListing-itemIcon {
+  flex: 0 0 20px;
+  margin-right: 4px;
+}
+
+.jp-DirListing-itemText {
+  flex: 1 1 106px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+.jp-DirListing-item:has(.jp-DirListing-itemText:focus-visible) {
+  /* Targeting `.jp-DirListing-itemText` specifically to avoid an extra outline
+  when it gets replaced with `jp-DirListing-editor` when editing the file name */
+  outline-width: 2px;
+  outline-color: var(--jp-inverse-layout-color1);
+  outline-style: solid;
+  outline-offset: -4px;
+}
+
+.jp-DirListing-item.jp-mod-selected:focus-within {
+  outline-color: var(--jp-layout-color1);
+}
+
+.jp-DirListing-item > .jp-DirListing-itemText:focus {
+  outline: 0;
+}
+
+.jp-DirListing-itemModified {
+  flex: 1 0 83px;
+  text-align: right;
+}
+
+.jp-DirListing-itemFileSize {
+  flex: 0 0 90px;
+  text-align: right;
+}
+
+.jp-DirListing-editor {
+  flex: 1 0 64px;
+  outline: none;
+  border: none;
+  color: var(--jp-ui-font-color1);
+  background-color: var(--jp-layout-color1);
+}
+
+.jp-DirListing-item.jp-mod-running .jp-DirListing-itemIcon::before {
+  color: var(--jp-success-color1);
+  content: '\25CF';
+  font-size: 8px;
+  position: absolute;
+  left: -8px;
+}
+
+.jp-DirListing-item.jp-mod-running.jp-mod-selected
+  .jp-DirListing-itemIcon::before {
+  color: var(--jp-ui-inverse-font-color1);
+}
+
+.jp-DirListing-item.lm-mod-drag-image,
+.jp-DirListing-item.jp-mod-selected.lm-mod-drag-image {
+  font-size: var(--jp-ui-font-size1);
+  padding-left: 4px;
+  margin-left: 4px;
+  width: 160px;
+  background-color: var(--jp-ui-inverse-font-color2);
+  box-shadow: var(--jp-elevation-z2);
+  border-radius: 0;
+  color: var(--jp-ui-font-color1);
+  transform: translateX(-40%) translateY(-58%);
+}
+
+.jp-Document {
+  min-width: 120px;
+  min-height: 120px;
+  outline: none;
+}
