@@ -433,11 +433,11 @@ const extension: JupyterFrontEndPlugin<void> = {
             }
           })
           .catch(async error => {
-            createEmbeddings(
-              [],
-              notebook!.model!.sharedModel.cells,
-              embeddingsPath
-            );
+            app.serviceManager.contents.save(embeddingsPath, {
+              type: 'file',
+              format: 'text',
+              content: JSON.stringify([])
+            });
           });
         // Temporary solution to keep refreshing hashes in non blocking thread
         setTimeout(getEmbeddings, 1000);
