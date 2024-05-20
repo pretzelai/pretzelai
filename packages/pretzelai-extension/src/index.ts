@@ -687,7 +687,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   diffEditorContainer,
                   diffEditor,
                   monaco,
-                  oldCode: extractedCode ? extractedCode : oldCode,
+                  oldCode,
                   // OpenAI API
                   openAiApiKey,
                   openAiBaseUrl,
