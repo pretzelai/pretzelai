@@ -6,7 +6,7 @@ requires = ["hatchling>=1.21.1"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pretzel"
+name = "pretzelai"
 description = "Pretzel is a fork of JupyterLab that improves the user experience of the JupyterLab computational environment."
 readme = "README.md"
 license = { file = "LICENSE" }
