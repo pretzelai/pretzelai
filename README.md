@@ -1,4 +1,4 @@
-# [Pretezel](https://withpretzel.com)
+# [Pretzel](https://withpretzel.com)
 
 Pretzel is a fork of Jupyter. We aim to improve Jupyter's capabilities.
 
