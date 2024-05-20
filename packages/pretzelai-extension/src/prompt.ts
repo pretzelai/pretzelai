@@ -152,6 +152,7 @@ export const openAiStream = async ({
   openAiBaseUrl,
   prompt,
   parentContainer,
+  inputContainer,
   diffEditorContainer,
   diffEditor,
   monaco,
@@ -167,6 +168,7 @@ export const openAiStream = async ({
   openAiBaseUrl?: string;
   prompt?: string;
   parentContainer: HTMLElement;
+  inputContainer: Node | null;
   diffEditorContainer: HTMLElement;
   diffEditor: any;
   monaco: any;
@@ -344,6 +346,45 @@ export const openAiStream = async ({
     });
     handleReject();
   });
+
+  const editPromptButton = document.createElement('button');
+  if (inputContainer) {
+    editPromptButton.textContent = 'Edit Prompt';
+    editPromptButton.style.backgroundColor = 'lightgreen';
+    editPromptButton.style.borderRadius = '5px';
+    editPromptButton.style.border = '1px solid darkgreen';
+    editPromptButton.style.maxWidth = '100px';
+    editPromptButton.style.minHeight = '25px';
+    editPromptButton.style.marginRight = '10px';
+
+    editPromptButton.addEventListener('click', () => {
+      posthog.capture('Edit Prompt', {
+        event_type: 'click',
+        method: 'edit_prompt'
+      });
+      // Remove the parent container
+      parentContainer.remove();
+      commands.execute('pretzelai:replace-code');
+
+      const newParentContainer = document.querySelector(
+        '.pretzelParentContainerAI'
+      );
+      const newInputField = (newParentContainer as HTMLElement).querySelector(
+        '.pretzelInputField'
+      ) as HTMLTextAreaElement;
+      if (newInputField) {
+        const oldInputField = (inputContainer as HTMLElement).querySelector(
+          '.pretzelInputField'
+        ) as HTMLTextAreaElement;
+        if (oldInputField) {
+          const oldInputText = oldInputField.value;
+          newInputField.value = oldInputText;
+        }
+        newInputField.focus();
+      }
+    });
+  }
+
   const diffButtonsContainer = document.createElement('div');
   diffButtonsContainer.style.marginTop = '10px';
   diffButtonsContainer.style.marginLeft = '70px';
@@ -354,6 +395,9 @@ export const openAiStream = async ({
   diffContainer!.appendChild(diffButtonsContainer);
   diffButtonsContainer!.appendChild(acceptButton!);
   diffButtonsContainer!.appendChild(rejectButton!);
+  if (inputContainer) {
+    diffButtonsContainer!.appendChild(editPromptButton!);
+  }
   diffButtonsContainer.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
       event.preventDefault();

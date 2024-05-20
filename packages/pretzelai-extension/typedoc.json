@@ -3,7 +3,7 @@
     "../../typedoc.base.json"
   ],
   "entryPoints": [
-    "src/index.tsx"
+    "src/index.ts"
   ],
   "name": "pretzelai-extension"
 }

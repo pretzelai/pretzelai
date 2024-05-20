@@ -324,6 +324,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         openAiBaseUrl,
         prompt,
         parentContainer,
+        inputContainer: null,
         diffEditorContainer,
         diffEditor,
         monaco,
@@ -722,6 +723,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   diffEditor,
                   monaco,
                   oldCode,
+                  inputContainer,
                   // OpenAI API
                   openAiApiKey,
                   openAiBaseUrl,
