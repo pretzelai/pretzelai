@@ -289,10 +289,12 @@ export const openAiStream = async ({
     let totalLines = oldCode.split('\n').length;
     if (changes) {
       changes.forEach((c: any) => {
-        const modified =
-          c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
+        if (c.modifiedEndLineNumber >= c.modifiedStartLineNumber) {
+          const modified =
+            c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
 
-        totalLines += modified;
+          totalLines += modified;
+        }
       });
     }
     const heightPx = totalLines * 19;
