@@ -202,7 +202,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       cellNode: HTMLElement,
       cellModel: CodeCellModel
     ) {
-      // Remove existing button if any
+      // Remove existing button if any for case with multiple errors multiple buttons
       const existingButton = cellNode.querySelector('.fix-error-button');
       if (existingButton) {
         existingButton.remove();
@@ -235,8 +235,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
 
     function addAskAIButton(cellNode: HTMLElement) {
-      // Remove existing button if any
-      const existingButton = cellNode.querySelector('.pretzel-ai-button');
+      // Hide button from non focused cells
+      const existingButton = document.querySelector('.pretzel-ai-button');
       if (existingButton) {
         existingButton.remove();
       }
@@ -255,7 +255,6 @@ const extension: JupyterFrontEndPlugin<void> = {
       button.style.borderRadius = '4px';
       button.style.cursor = 'pointer';
       button.style.zIndex = '1000';
-
       cellNode.appendChild(button);
 
       button.onclick = () => {
