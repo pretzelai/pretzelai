@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab/pretzelai-extension",
-  "version": "0.2.3",
+  "version": "0.2.2",
   "description": "AI code completion",
   "keywords": [
     "jupyter",

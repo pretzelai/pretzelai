@@ -2256,7 +2256,7 @@ __metadata:
     "@jupyterlab/notebook-extension": ~4.2.0
     "@jupyterlab/pdf-extension": ~4.2.0
     "@jupyterlab/pluginmanager-extension": ~4.2.0
-    "@jupyterlab/pretzelai-extension": ~0.2.3
+    "@jupyterlab/pretzelai-extension": ~0.2.2
     "@jupyterlab/rendermime-extension": ~4.2.0
     "@jupyterlab/running-extension": ~4.2.0
     "@jupyterlab/settingeditor-extension": ~4.2.0
@@ -4181,7 +4181,7 @@ __metadata:
     "@jupyterlab/pdf-extension": ^4.2.0
     "@jupyterlab/pluginmanager": ^4.2.0
     "@jupyterlab/pluginmanager-extension": ^4.2.0
-    "@jupyterlab/pretzelai-extension": ^0.2.3
+    "@jupyterlab/pretzelai-extension": ^0.2.2
     "@jupyterlab/property-inspector": ^4.2.0
     "@jupyterlab/rendermime": ^4.2.0
     "@jupyterlab/rendermime-extension": ^4.2.0
@@ -4473,7 +4473,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/pretzelai-extension@^0.2.3, @jupyterlab/pretzelai-extension@workspace:packages/pretzelai-extension, @jupyterlab/pretzelai-extension@~0.2.3":
+"@jupyterlab/pretzelai-extension@^0.2.2, @jupyterlab/pretzelai-extension@workspace:packages/pretzelai-extension, @jupyterlab/pretzelai-extension@~0.2.2":
   version: 0.0.0-use.local
   resolution: "@jupyterlab/pretzelai-extension@workspace:packages/pretzelai-extension"
   dependencies:

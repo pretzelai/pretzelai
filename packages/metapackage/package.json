@@ -105,7 +105,7 @@
     "@jupyterlab/pdf-extension": "^4.2.0",
     "@jupyterlab/pluginmanager": "^4.2.0",
     "@jupyterlab/pluginmanager-extension": "^4.2.0",
-    "@jupyterlab/pretzelai-extension": "^0.2.3",
+    "@jupyterlab/pretzelai-extension": "^0.2.2",
     "@jupyterlab/property-inspector": "^4.2.0",
     "@jupyterlab/rendermime": "^4.2.0",
     "@jupyterlab/rendermime-extension": "^4.2.0",
