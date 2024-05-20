@@ -202,7 +202,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       cellNode: HTMLElement,
       cellModel: CodeCellModel
     ) {
-      // Remove existing button if any
+      // Remove existing button if any for case with multiple errors multiple buttons
       const existingButton = cellNode.querySelector('.fix-error-button');
       if (existingButton) {
         existingButton.remove();
@@ -235,8 +235,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
 
     function addAskAIButton(cellNode: HTMLElement) {
-      // Remove existing button if any
-      const existingButton = cellNode.querySelector('.pretzel-ai-button');
+      // Hide button from non focused cells
+      const existingButton = document.querySelector('.pretzel-ai-button');
       if (existingButton) {
         existingButton.remove();
       }
@@ -255,7 +255,6 @@ const extension: JupyterFrontEndPlugin<void> = {
       button.style.borderRadius = '4px';
       button.style.cursor = 'pointer';
       button.style.zIndex = '1000';
-
       cellNode.appendChild(button);
 
       button.onclick = () => {
@@ -285,6 +284,11 @@ const extension: JupyterFrontEndPlugin<void> = {
         traceback = traceback.toString();
       }
       const originalCode = cellModel.sharedModel.source;
+      let activeCell = notebookTracker.activeCell!;
+      const statusElement = document.createElement('p');
+      statusElement.style.marginLeft = '70px';
+      statusElement.textContent = 'Calculating embeddings...';
+      activeCell.node.appendChild(statusElement);
 
       const topSimilarities = await getTopSimilarities(
         originalCode,
@@ -303,7 +307,6 @@ const extension: JupyterFrontEndPlugin<void> = {
       );
       let diffEditorContainer: HTMLElement = document.createElement('div');
       let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
-      let activeCell = notebookTracker.activeCell!;
 
       const parentContainer = document.createElement('div');
       parentContainer.classList.add('pretzelParentContainerAI');
@@ -333,7 +336,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         azureApiKey,
         deploymentId: azureDeploymentName,
         activeCell,
-        commands
+        commands,
+        statusElement
       })
         .then(() => {
           // clear output of the cell
@@ -434,11 +438,11 @@ const extension: JupyterFrontEndPlugin<void> = {
             }
           })
           .catch(async error => {
-            createEmbeddings(
-              [],
-              notebook!.model!.sharedModel.cells,
-              embeddingsPath
-            );
+            app.serviceManager.contents.save(embeddingsPath, {
+              type: 'file',
+              format: 'text',
+              content: JSON.stringify([])
+            });
           });
         // Temporary solution to keep refreshing hashes in non blocking thread
         setTimeout(getEmbeddings, 1000);
@@ -564,11 +568,6 @@ const extension: JupyterFrontEndPlugin<void> = {
         let diffEditorContainer: HTMLElement = document.createElement('div');
         let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
 
-        const callingP = document.createElement('p');
-        callingP.textContent = 'Calling AI Service...';
-        const generatingP = document.createElement('p');
-        generatingP.textContent = 'Generating code...';
-
         if (activeCell) {
           // Cmd K twice should toggle the box
           const existingDiv = activeCell.node.querySelector(
@@ -583,6 +582,11 @@ const extension: JupyterFrontEndPlugin<void> = {
           }
 
           const oldCode = activeCell.model.sharedModel.source;
+
+          const statusElement = document.createElement('p');
+          statusElement.textContent = '';
+          statusElement.style.marginLeft = '70px';
+          activeCell.node.appendChild(statusElement);
 
           // Create a parent container for all dynamically created elements
           const parentContainer = document.createElement('div');
@@ -684,6 +688,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           const handleSubmit = async (userInput: string) => {
             parentContainer.removeChild(inputContainer);
             const { extractedCode } = getSelectedCode();
+            statusElement.textContent = 'Calculating embeddings...';
             if (userInput !== '') {
               userInput = await processTaggedVariables(userInput);
               try {
@@ -733,7 +738,8 @@ const extension: JupyterFrontEndPlugin<void> = {
                   azureBaseUrl,
                   deploymentId: azureDeploymentName,
                   activeCell,
-                  commands
+                  commands,
+                  statusElement
                 });
               } catch (error) {
                 activeCell.node.removeChild(parentContainer);
