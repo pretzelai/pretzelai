@@ -323,6 +323,7 @@ export const openAiStream = async ({
     activeCell.model.sharedModel.source = modifiedCode;
     commands.execute('notebook:run-cell');
     activeCell.node.removeChild(parentContainer);
+    statusElement.remove();
   };
   acceptButton.addEventListener('click', () => {
     posthog.capture('Accept', {
@@ -343,6 +344,7 @@ export const openAiStream = async ({
   const handleReject = () => {
     activeCell.node.removeChild(parentContainer);
     activeCell.model.sharedModel.source = oldCode;
+    statusElement.remove();
   };
   rejectButton.addEventListener('click', () => {
     posthog.capture('Reject', {

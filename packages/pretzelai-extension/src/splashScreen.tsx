@@ -70,16 +70,21 @@ function createSplashScreen() {
         background-color: transparent;
         color: black;
       }
+
+      .splash-content a {
+        color: #1a0dab;
+        text-decoration: underline;
+      }
     </style>
     <div class="splash-content">
-      <h1>Welcome to Pretzel AI</h1>
+      <h1>Welcome to Pretzel</h1>
       <p>How to use:</p>
       <ul>
-        <li>Press <strong>${keyCombination}</strong> and type in your prompt</li>
-        <li>Use the <strong>@variable</strong> syntax to refer to dataframes and variables in the notebook</li>
+        <li>When in a cell, press <strong>${keyCombination}</strong> and type in your prompt</li>
+        <li>You can use <strong>@variable</strong> syntax in the prompt to refer to dataframes and variables in memory</li>
         <li>Press the <strong>"Fix Error with AI"</strong> button to automatically fix errors</li>
         <li>Go to <strong>Settings > Settings Editor</strong> and search for Pretzel AI to customize which AI model is used</li>
-        <li>See more usage instructions <a href="https://pretzel.ai/docs" target="_blank">on our website</a></li>
+        <li>See more usage instructions <a href="https://github.com/pretzelai/pretzelai#readme" target="_blank">in our README</a></li>
       </ul>
       <p>To better understand how users are using the new AI codegen features, we collect anonymized telemetry strictly related to the AI features. We also collect the AI prompt but it can be disabled in Pretzel AI Settings.</p>
       <p>We use cookies to make sure we remember you between browser sessions. Do you consent to the use of cookies for this purpose?</p>

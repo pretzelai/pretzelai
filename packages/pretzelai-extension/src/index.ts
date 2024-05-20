@@ -248,11 +248,14 @@ const extension: JupyterFrontEndPlugin<void> = {
       button.style.fontSize = '12px';
       button.className = 'pretzel-ai-button';
       button.style.position = 'absolute';
-      button.style.top = '12px';
+      button.style.top = '10px';
       button.style.right = '190px';
-      button.style.padding = '2px 10px';
-      button.style.backgroundColor = '#007bff';
-      button.style.color = 'white';
+      button.style.padding = '2px 10px 3px 10px';
+      button.style.backgroundColor = 'rgb(84 157 235)';
+      button.style.color =
+        document.body.getAttribute('data-jp-theme-light') === 'true'
+          ? 'white'
+          : 'rgba(0, 0, 0, 0.8)';
       button.style.border = 'none';
       button.style.borderRadius = '4px';
       button.style.cursor = 'pointer';
@@ -575,9 +578,21 @@ const extension: JupyterFrontEndPlugin<void> = {
           const existingDiv = activeCell.node.querySelector(
             '.pretzelParentContainerAI'
           );
+          // this code is repeated with the removeHandler
           if (existingDiv) {
             // If so, delete that div
             existingDiv.remove();
+            // Switch focus back to the Jupyter cell
+            posthog.capture('Remove via Cmd K', {
+              event_type: 'keypress',
+              event_value: 'Cmd+k',
+              method: 'remove'
+            });
+            const statusElements = activeCell.node.querySelectorAll(
+              'p[style="margin-left: 70px;"]'
+            );
+            statusElements.forEach(element => element.remove());
+
             // Switch focus back to the Jupyter cell
             activeCell!.editor!.focus();
             return;
@@ -638,11 +653,6 @@ const extension: JupyterFrontEndPlugin<void> = {
             }
           });
 
-          const callingP = document.createElement('p');
-          callingP.textContent = 'Calling AI Service...';
-          const generatingP = document.createElement('p');
-          generatingP.textContent = 'Generating code...';
-
           const inputFieldButtonsContainer = document.createElement('div');
           inputFieldButtonsContainer.style.marginTop = '10px';
           inputFieldButtonsContainer.style.display = 'flex';
@@ -679,13 +689,22 @@ const extension: JupyterFrontEndPlugin<void> = {
           removeButton.style.minHeight = '25px';
           removeButton.style.marginTop = '10px';
           inputFieldButtonsContainer.appendChild(removeButton);
-          removeButton.addEventListener('click', () => {
+          const removeHandler = () => {
             posthog.capture('Remove via Click', {
               event_type: 'click',
               method: 'remove'
             });
             activeCell.node.removeChild(parentContainer);
-          });
+            const statusElements = activeCell.node.querySelectorAll(
+              'p[style="margin-left: 70px;"]'
+            );
+            statusElements.forEach(element => element.remove());
+
+            // Switch focus back to the Jupyter cell
+            activeCell!.editor!.focus();
+          };
+
+          removeButton.addEventListener('click', removeHandler);
 
           const handleSubmit = async (userInput: string) => {
             parentContainer.removeChild(inputContainer);
