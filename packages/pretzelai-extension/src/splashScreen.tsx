@@ -4,7 +4,7 @@ let settingRegistry: ISettingRegistry;
 
 async function handleConsent(consent: string) {
   await settingRegistry.set(
-    '@jupyterlab/pretzelai-extension:plugin',
+    '@jupyterlab/apputils-extension:notification',
     'posthogCookieConsent',
     consent
   );

@@ -38,10 +38,10 @@ import { OutputAreaModel } from '@jupyterlab/outputarea';
 import { IOutputModel } from '@jupyterlab/rendermime';
 import { initSplashScreen } from './splashScreen';
 
-function initializePosthog(cookiesDisabled: boolean) {
+function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
     api_host: 'https://d2yfaqny8nshvd.cloudfront.net',
-    persistence: cookiesDisabled ? 'memory' : 'localStorage+cookie',
+    persistence: cookiesEnabled ? 'localStorage+cookie' : 'memory',
     autocapture: false,
     capture_pageview: false,
     capture_pageleave: false,
@@ -83,7 +83,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let posthogPromptTelemetry: boolean = true;
 
     const showSplashScreen = async (consent: string) => {
-      if (!consent) {
+      if (consent === 'None') {
         initSplashScreen(settingRegistry);
       }
     };
@@ -102,14 +102,16 @@ const extension: JupyterFrontEndPlugin<void> = {
 
         const aiServiceSetting = settings.get('aiService').composite;
         aiService = (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
-
-        // get settings from telemetrySettings
-        const posthogCookieConsent = settings.get('posthogCookieConsent')
-          .composite as string;
         posthogPromptTelemetry = settings.get('posthogPromptTelemetry')
           .composite as boolean;
 
-        initializePosthog(posthogCookieConsent === 'No');
+        const cookieSettings = await settingRegistry.load(
+          '@jupyterlab/apputils-extension:notification'
+        );
+        const posthogCookieConsent = cookieSettings.get('posthogCookieConsent')
+          .composite as string;
+
+        initializePosthog(posthogCookieConsent === 'Yes');
         updateFunc?.();
         loadAIClient();
         showSplashScreen(posthogCookieConsent);

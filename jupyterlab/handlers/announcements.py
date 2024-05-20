@@ -19,8 +19,8 @@ from tornado import httpclient, web
 from jupyterlab._version import __version__
 
 ISO8601_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-JUPYTERLAB_LAST_RELEASE_URL = "https://pypi.org/pypi/jupyterlab/json"
-JUPYTERLAB_RELEASE_URL = "https://github.com/jupyterlab/jupyterlab/releases/tag/v"
+JUPYTERLAB_LAST_RELEASE_URL = "https://pypi.org/pypi/pretzelai/json"
+JUPYTERLAB_RELEASE_URL = "https://github.com/pretzelai/pretzelai/releases/tag/v"
 
 
 def format_datetime(dt_str: str):
