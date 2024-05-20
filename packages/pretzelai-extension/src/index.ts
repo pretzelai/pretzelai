@@ -182,6 +182,7 @@ const extension: JupyterFrontEndPlugin<void> = {
             );
           }
         });
+        addAskAIButton(cell.node);
       }
     });
 
@@ -230,6 +231,39 @@ const extension: JupyterFrontEndPlugin<void> = {
           existingButton.remove();
         }
         handleFixError(cellModel);
+      };
+    }
+
+    function addAskAIButton(cellNode: HTMLElement) {
+      // Remove existing button if any
+      const existingButton = cellNode.querySelector('.pretzel-ai-button');
+      if (existingButton) {
+        existingButton.remove();
+      }
+
+      const button = document.createElement('button');
+      button.textContent = 'Ask AI';
+      button.style.fontSize = '12px';
+      button.className = 'pretzel-ai-button';
+      button.style.position = 'absolute';
+      button.style.top = '12px';
+      button.style.right = '220px';
+      button.style.padding = '2px 10px';
+      button.style.backgroundColor = '#007bff';
+      button.style.color = 'white';
+      button.style.border = 'none';
+      button.style.borderRadius = '4px';
+      button.style.cursor = 'pointer';
+      button.style.zIndex = '1000';
+
+      cellNode.appendChild(button);
+
+      button.onclick = () => {
+        posthog.capture('Ask AI', {
+          event_type: 'click',
+          method: 'ask_ai'
+        });
+        commands.execute('pretzelai:replace-code');
       };
     }
 
