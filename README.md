@@ -81,3 +81,29 @@ Just as with OpenAI settings, you can also use Azure hosted models if you select
 
 The original Jupyter documentation is available [here](https://jupyter.org/) and
 the Jupyterlab README is available [here](https://github.com/jupyterlab/jupyterlab).
+
+## FAQ
+
+**Q.** What happened to the old version of Pretzel AI - the visual, in-browser data manipulation tool?
+
+**A.** It's available in the [`pretzelai_visual` folder here](https://github.com/pretzelai/pretzelai/tree/main/pretzelai_visual). Please see [this PR] (https://github.com/pretzelai/pretzelai/pull/76) for more info.
+
+**Q.** What AI model does Pretzel use?
+**A.** We currently use GPT-4o and it's been good so far. We will keep experimenting with the model, prompts and parameters to keep improving the code-gen experience.
+
+**Q.** What about feature X?
+**A.** There's a ton we want to build. Please [open an issue](https://github.com/pretzelai/pretzelai/issues) and tell us what you want us to build!
+
+**Q.** Where's the roadmap?
+**A.** There's so many features we'd like to build! But, there's just two of us and so, we're collecting feedback about what would be most helpful. As a result, we don't have a concrete roadmap just yet. We'd love your help with this! Please open an issue or just send us an email with your feedback!
+
+**Q.** What's the deal with the license?
+**A.** Our goal with building Pretzel is to make an amazing data tool that free for both individuals and companies to use. That said, we are a 2 person startup - and we don't want
+some third party to just take our code and sell a hosted version of it without giving back to the community. Jupyter code is licensed as BSD-3 and if we keep our new code BSD-3 licensed, there would be no way to stop a company from doing this. As a result, we went with the AGPLv3 license for all the new code. This ensures that if someone else does want
+to take our code and sell it, they have to open-source all of their modifications under AGPLv3 as well
+
+**Q.** My company is worried about using an AGPLv3 licensed tool. What can I do?
+**A.** The AGPL specified that ONLY IF you're modifying Pretzel AND redistributing it to the public, then you need to share the modified code. If you're simply using it as a tool in your company (even with modifications), the AGPL DOES NOT ask you to share your code. Still, if AGPL is an issue for you, please contact us and we can figure out what works.
+
+**Q.** I'm worried about a "rug-pull" - that you will re-license the code to be under a paid license in the future? OR, how are you planning on making money?
+**A.** We're planning on selling a hosted version of the tool to companies to make money. This hosted version will probably have some company specific features that individuals don't want or need such as data access controls, connectors for data sources, integration with GitHub, hosted and shareable dashboard, scalable compute for large jobs etc. We will not retroactively make Pretzel's individual version paid.
