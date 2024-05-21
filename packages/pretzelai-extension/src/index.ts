@@ -72,7 +72,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Go To: Settings > Settings Editor > Pretzel AI Settings to configure';
 
     const placeHolderEnabled =
-      'Ask AI. Use @variableName to reference defined variables and dataframes';
+      'Ask AI. Use @variable_name to reference defined variables and dataframes. Shift + Enter for new line.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let aiService: AiService = 'Use Pretzel AI Server';
@@ -426,8 +426,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       if (notebook?.model) {
         const currentNotebookPath = notebook.context.path;
         const embeddingsPath =
-          currentNotebookPath.replace('.ipynb', '') + '_embeddings.json';
-
+          './.embeddings/' +
+          currentNotebookPath.replace('.ipynb', '_embeddings.json');
         app.serviceManager.contents
           .get(embeddingsPath)
           .then(file => {
@@ -541,6 +541,28 @@ const extension: JupyterFrontEndPlugin<void> = {
       const variablePattern = /@(\w+)/g;
       let match;
       let modifiedUserInput = userInput;
+      // find all code that starts with `import` in the notebook
+      const imports =
+        notebookTracker.currentWidget!.model!.sharedModel.cells.filter(cell =>
+          cell.source.split('\n').some(line => line.includes('import'))
+        );
+      const importsCode = imports
+        .map(cell =>
+          cell.source
+            .split('\n')
+            .filter(line => line.trim().includes('import'))
+            .join('\n')
+        )
+        .join('\n');
+
+      modifiedUserInput += `The following imports are already present in the notebook:\n${importsCode}\n`;
+
+      // call getVariableValue to get the list of globals() from python
+      const getVarsCode = `[var for var in globals() if not var.startswith('_') and not callable(globals()[var]) and var not in ['In', 'Out']]`;
+      const listVars = await getVariableValue(getVarsCode);
+
+      modifiedUserInput += `The following variables exist in memory of the notebook kernel:\n${listVars}\n`;
+
       while ((match = variablePattern.exec(userInput)) !== null) {
         try {
           const variableName = match[1];

@@ -54,29 +54,39 @@ function generatePromptNewAndFullEdit(
   oldCode: string,
   topSimilarities: string[]
 ): string {
-  return `The user wants to do the following:
+  return `The user is in a Jupyter notebook cell wants to write code to do the following:
 """
 ${userInput}
 """
 
 ${
   oldCode
-    ? `The following code already exists in the notebook cell:
-"""
+    ? `The notebook cell already has the following code in it:
+\`\`\`
 ${oldCode}
-"""
-
+\`\`\`
 `
     : ''
 }
+
 ${
   topSimilarities.length > 0
-    ? `We also have the following matching code chunks in the notebook\n---\n${topSimilarities.join(
-        '\n---\n'
-      )}\n---\n`
+    ? `
+OTHER CODE CELLS START
+The following code cells also exist in the notebook and may be relevant:\n\`\`\`\n${topSimilarities.join(
+        '\n```\n\n```\n'
+      )}\n\`\`\`\n
+OTHER CODE CELLS END`
     : ''
 }
-Based on the above, return ONLY executable python code, no backticks.`;
+
+INSTRUCTION: Write code according to the user's instructions. Pay close attention to user instructions and WRITE MINIMAL CODE - for eg, CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES. Return ONLY executable python code, no backticks.
+${
+  topSimilarities.length > 0
+    ? `The code in OTHER CODE CELLS already exists in the notebook - DO NOT REWRITE this code since it's already there. **ONLY REFER TO THIS CODE IF IT's RELEVANT TO USER INSTRUCTION**`
+    : ''
+}
+`;
 }
 
 function generatePromptEditPartial(
@@ -132,18 +142,16 @@ ${traceback}
 
 ${
   topSimilarities.length > 0
-    ? `We also have the following related code chunks in the notebook\n---\n${topSimilarities.join(
-        '\n---\n'
-      )}\n---\n`
+    ? `The following code chunks were also found in the notebook and may be relevant:\n\`\`\`\n${topSimilarities.join(
+        '\n```\n\n```\n'
+      )}\n\`\`\`\n`
     : ''
 }
 
-Based on the above, your instructions are:
 
-- If the error is in the CURRENT cell, fix the error and return ONLY correct, executable python code, no backticks, no comments.
-- Else if the error is NOT in the CURRENT Jupyter Notebook cell, add a comment at the top explaining this and add just enough code in the CURRENT cell to fix the error.
-- Else If you don't have enough context to fix the error, just reply with existing code and a comment at the top explaining why you cannot generate fixed code.
-`;
+INSTRUCTION:
+- Fix the error and return ONLY correct, executable python code, no backticks, NO COMMENTS.
+- If the error is NOT in the CURRENT Jupyter Notebook cell: add a comment at the top explaining this and add just enough code in the CURRENT cell to fix the error.`;
 }
 
 export const openAiStream = async ({
@@ -477,6 +485,7 @@ export const getTopSimilarities = async (
 
 export const systemPrompt =
   'You are a helpful assistant that helps users write python code in Jupyter notebook cells. ' +
-  'You are helping the user write new code and edit old code in Jupyter notebooks. ' +
-  'You write code exactly as if an expert python user would write, reusing existing variables and functions as needed. ' +
-  'You respond with the clean, good quality, working python code only, NO BACKTICKS.';
+  'You are helping the user write new code, edit old code in Jupyter and fix errors in Jupyter notebooks. ' +
+  'You write code exactly as if an expert python programmer would write. KEEP existing comments and documentation.' +
+  'You respond with the clean, amazing quality, minimal working python code only, NO BACKTICKS. \n' +
+  'Take a deep breath and think step-by-step. ';
