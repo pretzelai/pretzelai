@@ -7,6 +7,7 @@ import glob
 import json
 import os
 import subprocess
+import sys
 
 from hatch_jupyter_builder import npm_builder
 from packaging.version import Version
@@ -36,4 +37,6 @@ def builder(target_name, version, *args, **kwargs):
     if Version(npm_version) != Version(py_version):
         msg = "Version mismatch, please run `npm run prepare:python-release`"
         msg += f"; NPM {npm_version} / Python {py_version}"
-        raise ValueError(msg)
+        # write to stdout but don't use print because it's not compatible with hatchling
+        sys.stdout.write(msg)
+        sys.stdout.write("\n")

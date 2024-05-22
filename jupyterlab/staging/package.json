@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab/application-top",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "private": true,
   "license": "BSD-3-Clause",
   "scripts": {
@@ -354,9 +354,7 @@
       "react-dom",
       "yjs"
     ],
-    "linkedPackages": {
-      "@jupyterlab/pretzelai-extension": "../../packages/pretzelai-extension"
-    },
+    "linkedPackages": {},
     "staticDir": "../static"
   }
 }
