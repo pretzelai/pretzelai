@@ -12,10 +12,7 @@
  * @module pretzelai-extension
  */
 
-import {
-  JupyterFrontEnd,
-  JupyterFrontEndPlugin
-} from '@jupyterlab/application';
+import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { IIOPubMessage } from '@jupyterlab/services/lib/kernel/messages';
@@ -24,19 +21,15 @@ import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import { calculateHash, isSetsEqual, renderEditor } from './utils';
-import {
-  AiService,
-  Embedding,
-  generatePrompt,
-  getTopSimilarities,
-  openaiEmbeddings,
-  openAiStream
-} from './prompt';
+import { ServerConnection } from '@jupyterlab/services';
+
+import { AiService, Embedding, generatePrompt, getTopSimilarities, openaiEmbeddings, openAiStream } from './prompt';
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
 import { OutputAreaModel } from '@jupyterlab/outputarea';
 import { IOutputModel } from '@jupyterlab/rendermime';
 import { initSplashScreen } from './splashScreen';
+import { URLExt } from '@jupyterlab/coreutils';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -81,6 +74,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureApiKey = '';
     let aiClient: OpenAI | OpenAIClient | null;
     let posthogPromptTelemetry: boolean = true;
+    // const serverSettings = ServerConnection.makeSettings();
 
     const showSplashScreen = async (consent: string) => {
       if (consent === 'None') {
@@ -102,14 +96,10 @@ const extension: JupyterFrontEndPlugin<void> = {
 
         const aiServiceSetting = settings.get('aiService').composite;
         aiService = (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
-        posthogPromptTelemetry = settings.get('posthogPromptTelemetry')
-          .composite as boolean;
+        posthogPromptTelemetry = settings.get('posthogPromptTelemetry').composite as boolean;
 
-        const cookieSettings = await settingRegistry.load(
-          '@jupyterlab/apputils-extension:notification'
-        );
-        const posthogCookieConsent = cookieSettings.get('posthogCookieConsent')
-          .composite as string;
+        const cookieSettings = await settingRegistry.load('@jupyterlab/apputils-extension:notification');
+        const posthogCookieConsent = cookieSettings.get('posthogCookieConsent').composite as string;
 
         initializePosthog(posthogCookieConsent === 'Yes');
         updateFunc?.();
@@ -128,10 +118,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           dangerouslyAllowBrowser: true
         });
       } else if (aiService === 'Use Azure API') {
-        aiClient = new OpenAIClient(
-          azureBaseUrl,
-          new AzureKeyCredential(azureApiKey)
-        );
+        aiClient = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
       } else {
         aiClient = null;
       }
@@ -142,26 +129,20 @@ const extension: JupyterFrontEndPlugin<void> = {
     settingRegistry.pluginChanged.connect((sender, plugin) => {
       if (plugin === extension.id) {
         const updateFunc = async () => {
-          const submitButton = document.querySelector(
-            '.pretzelInputSubmitButton'
-          );
+          const submitButton = document.querySelector('.pretzelInputSubmitButton');
           const inputField = document.querySelector('.pretzelInputField');
 
           if (submitButton) {
             if (
               (aiService === 'OpenAI API key' && openAiApiKey) ||
               aiService === 'Use Pretzel AI Server' ||
-              (aiService === 'Use Azure API' &&
-                azureBaseUrl &&
-                azureDeploymentName &&
-                azureApiKey)
+              (aiService === 'Use Azure API' && azureBaseUrl && azureDeploymentName && azureApiKey)
             ) {
               (submitButton as HTMLInputElement).disabled = false;
               (inputField as HTMLInputElement).placeholder = placeHolderEnabled;
             } else {
               (submitButton as HTMLInputElement).disabled = true;
-              (inputField as HTMLInputElement).placeholder =
-                placeholderDisabled;
+              (inputField as HTMLInputElement).placeholder = placeholderDisabled;
             }
           }
         };
@@ -177,9 +158,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           const errorOutput = findErrorOutput(outputs);
           if (errorOutput) {
             addFixErrorButton(
-              cell.node.querySelector(
-                '.jp-RenderedText.jp-mod-trusted.jp-OutputArea-output'
-              ) as HTMLElement,
+              cell.node.querySelector('.jp-RenderedText.jp-mod-trusted.jp-OutputArea-output') as HTMLElement,
               codeCellModel
             );
           }
@@ -188,9 +167,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     });
 
-    function findErrorOutput(
-      outputs: OutputAreaModel
-    ): IOutputModel | undefined {
+    function findErrorOutput(outputs: OutputAreaModel): IOutputModel | undefined {
       for (let i = 0; i < outputs.length; i++) {
         const output = outputs.get(i);
         if (output.type === 'error') {
@@ -200,10 +177,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       return undefined;
     }
 
-    function addFixErrorButton(
-      cellNode: HTMLElement,
-      cellModel: CodeCellModel
-    ) {
+    function addFixErrorButton(cellNode: HTMLElement, cellModel: CodeCellModel) {
       // Remove existing button if any for case with multiple errors multiple buttons
       const existingButton = cellNode.querySelector('.fix-error-button');
       if (existingButton) {
@@ -253,9 +227,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       button.style.padding = '2px 10px 3px 10px';
       button.style.backgroundColor = 'rgb(84 157 235)';
       button.style.color =
-        document.body.getAttribute('data-jp-theme-light') === 'true'
-          ? 'white'
-          : 'rgba(0, 0, 0, 0.8)';
+        document.body.getAttribute('data-jp-theme-light') === 'true' ? 'white' : 'rgba(0, 0, 0, 0.8)';
       button.style.border = 'none';
       button.style.borderRadius = '4px';
       button.style.cursor = 'pointer';
@@ -303,13 +275,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         aiService,
         cellModel.id
       );
-      const prompt = generatePrompt(
-        '',
-        originalCode,
-        topSimilarities,
-        '',
-        traceback
-      );
+      const prompt = generatePrompt('', originalCode, topSimilarities, '', traceback);
       let diffEditorContainer: HTMLElement = document.createElement('div');
       let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
 
@@ -317,14 +283,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       parentContainer.classList.add('pretzelParentContainerAI');
       activeCell.node.appendChild(parentContainer);
 
-      diffEditor = renderEditor(
-        '',
-        parentContainer,
-        diffEditorContainer,
-        diffEditor,
-        monaco,
-        originalCode
-      );
+      diffEditor = renderEditor('', parentContainer, diffEditorContainer, diffEditor, monaco, originalCode);
 
       openAiStream({
         aiService,
@@ -355,11 +314,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let embeddings: Embedding[];
 
-    async function createEmbeddings(
-      embeddingsJSON: Embedding[],
-      cells: any[],
-      path: string
-    ) {
+    async function createEmbeddings(embeddingsJSON: Embedding[], cells: any[], path: string) {
       embeddings = embeddingsJSON;
       const newEmbeddingsArray: Embedding[] = [];
       const promises = cells
@@ -371,11 +326,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               const hash = await calculateHash(cell.source);
               if (hash !== embeddings[index].hash) {
                 try {
-                  const response = await openaiEmbeddings(
-                    cell.source,
-                    aiService,
-                    aiClient
-                  );
+                  const response = await openaiEmbeddings(cell.source, aiService, aiClient);
                   newEmbeddingsArray.push({
                     id: cell.id,
                     source: cell.source,
@@ -390,11 +341,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               }
             } else {
               try {
-                const response = await openaiEmbeddings(
-                  cell.source,
-                  aiService,
-                  aiClient
-                );
+                const response = await openaiEmbeddings(cell.source, aiService, aiClient);
                 const hash = await calculateHash(cell.source);
                 newEmbeddingsArray.push({
                   id: cell.id,
@@ -421,34 +368,53 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
 
     // Function to print the source of all cells once the notebook is defined
-    function getEmbeddings() {
+    async function getEmbeddings() {
       const notebook = notebookTracker.currentWidget;
       if (notebook?.model) {
         const currentNotebookPath = notebook.context.path;
-        const embeddingsPath =
-          './.embeddings/' +
-          currentNotebookPath.replace('.ipynb', '_embeddings.json');
-        app.serviceManager.contents
-          .get(embeddingsPath)
-          .then(file => {
-            try {
-              const embJSON = JSON.parse(file.content);
-              createEmbeddings(
-                embJSON,
-                notebook!.model!.sharedModel.cells,
-                embeddingsPath
-              );
-            } catch (error) {
-              console.error('Error parsing embeddings JSON:', error);
+        const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
+        const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+        const embeddingsFolderName = '.embeddings';
+        const embeddingsPath = currentDir + '/' + embeddingsFolderName + '/' + notebookName + '_embeddings.json';
+        const newDirPath = currentDir + '/' + embeddingsFolderName;
+
+        // check if file exists via ServerConnection
+        const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', embeddingsPath);
+        const response = await ServerConnection.makeRequest(
+          requestUrl,
+          { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+          app.serviceManager.serverSettings
+        );
+        if (response.ok) {
+          const file = await app.serviceManager.contents.get(embeddingsPath);
+          try {
+            const embJSON = JSON.parse(file.content);
+            createEmbeddings(embJSON, notebook!.model!.sharedModel.cells, embeddingsPath);
+          } catch (error) {
+            console.error('Error parsing embeddings JSON:', error);
+          }
+        } else {
+          // create directory. if already exists, this code does nothing
+          const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', newDirPath);
+          const init = {
+            method: 'PUT',
+            body: JSON.stringify({ type: 'directory', path: newDirPath }),
+            headers: { 'Content-Type': 'application/json' }
+          };
+          try {
+            const response = await ServerConnection.makeRequest(requestUrl, init, app.serviceManager.serverSettings);
+            if (!response.ok) {
+              throw new Error(`Error creating directory: ${response}`);
             }
-          })
-          .catch(async error => {
-            app.serviceManager.contents.save(embeddingsPath, {
+            await app.serviceManager.contents.save(embeddingsPath, {
               type: 'file',
               format: 'text',
               content: JSON.stringify([])
             });
-          });
+          } catch (error) {
+            console.error('Error creating embeddings:', error);
+          }
+        }
         // Temporary solution to keep refreshing hashes in non blocking thread
         setTimeout(getEmbeddings, 1000);
       } else {
@@ -457,9 +423,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
     getEmbeddings();
 
-    async function getVariableValue(
-      variableName: string
-    ): Promise<string | null> {
+    async function getVariableValue(variableName: string): Promise<string | null> {
       const notebook = notebookTracker.currentWidget;
       if (notebook && notebook.sessionContext.session?.kernel) {
         const kernel = notebook.sessionContext.session.kernel;
@@ -472,20 +436,17 @@ const extension: JupyterFrontEndPlugin<void> = {
           let variableValue: string | null = null;
 
           // Registering a message hook to intercept messages
-          kernel.registerMessageHook(
-            executeRequest.msg.header.msg_id,
-            (msg: IIOPubMessage) => {
-              if (
-                msg.header.msg_type === 'stream' &&
-                // @ts-expect-error tserror
-                msg.content.name === 'stdout'
-              ) {
-                // @ts-expect-error tserror
-                variableValue = msg.content.text.trim();
-              }
-              return true;
+          kernel.registerMessageHook(executeRequest.msg.header.msg_id, (msg: IIOPubMessage) => {
+            if (
+              msg.header.msg_type === 'stream' &&
+              // @ts-expect-error tserror
+              msg.content.name === 'stdout'
+            ) {
+              // @ts-expect-error tserror
+              variableValue = msg.content.text.trim();
             }
-          );
+            return true;
+          });
 
           // Await the completion of the execute request
           const reply = await executeRequest.done;
@@ -511,8 +472,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       let extractedCode = '';
       if (
         selection &&
-        (selection.start.line !== selection.end.line ||
-          selection.start.column !== selection.end.column)
+        (selection.start.line !== selection.end.line || selection.start.column !== selection.end.column)
       ) {
         const startLine = selection.start.line;
         const endLine = selection.end.line;
@@ -540,12 +500,12 @@ const extension: JupyterFrontEndPlugin<void> = {
     async function processTaggedVariables(userInput: string): Promise<string> {
       const variablePattern = /@(\w+)/g;
       let match;
-      let modifiedUserInput = userInput;
-      // find all code that starts with `import` in the notebook
-      const imports =
-        notebookTracker.currentWidget!.model!.sharedModel.cells.filter(cell =>
-          cell.source.split('\n').some(line => line.includes('import'))
-        );
+      let modifiedUserInput = 'USER INSTRUCTION START\n' + userInput + '\nUSER INSTRUCTION END\n\n';
+
+      // add context of imports and existing variables in the notebook
+      const imports = notebookTracker.currentWidget!.model!.sharedModel.cells.filter(cell =>
+        cell.source.split('\n').some(line => line.includes('import'))
+      );
       const importsCode = imports
         .map(cell =>
           cell.source
@@ -555,35 +515,41 @@ const extension: JupyterFrontEndPlugin<void> = {
         )
         .join('\n');
 
-      modifiedUserInput += `The following imports are already present in the notebook:\n${importsCode}\n`;
+      modifiedUserInput += `ADDITIONAL CONTEXT\n\nThe following imports are already present in the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
 
       // call getVariableValue to get the list of globals() from python
       const getVarsCode = `[var for var in globals() if not var.startswith('_') and not callable(globals()[var]) and var not in ['In', 'Out']]`;
       const listVars = await getVariableValue(getVarsCode);
 
-      modifiedUserInput += `The following variables exist in memory of the notebook kernel:\n${listVars}\n`;
+      modifiedUserInput += `The following variables exist in memory of the notebook kernel:\n\`\`\`\n${listVars}\n\`\`\`\n`;
 
+      let variablesProcessed: string[] = [];
       while ((match = variablePattern.exec(userInput)) !== null) {
+        const variableName = match[1];
+        if (variablesProcessed.includes(variableName)) {
+          continue;
+        }
+        variablesProcessed.push(variableName);
         try {
-          const variableName = match[1];
           // get value of var using the getVariableValue function
           const variableType = await getVariableValue(`type(${variableName})`);
 
           // check if variableType is dataframe
           // if it is, get columns and add to modifiedUserInput
           if (variableType?.includes('DataFrame')) {
-            const variableColumns = await getVariableValue(
-              `${variableName}.columns`
-            );
-            modifiedUserInput += `\n${variableName} is a dataframe with the following columns: ${variableColumns}\n`;
+            const variableColumns = await getVariableValue(`${variableName}.columns`);
+            modifiedUserInput += `\n\`${variableName}\` is a dataframe with the following columns: \`${variableColumns}\`\n`;
           } else if (variableType) {
             const variableValue = await getVariableValue(variableName);
-            modifiedUserInput += `\nPrinting ${variableName} in Python returns the string ${variableValue}\n`;
+            modifiedUserInput += `\nPrinting \`${variableName}\` in Python returns \`${variableValue}\`\n`;
           }
+          // replace the @variable in userInput with `variable`
+          modifiedUserInput = modifiedUserInput.replace(`@${variableName}`, `\`${variableName}\``);
         } catch (error) {
-          console.error(`Error accessing variable ${match[1]}:`, error);
+          console.error(`Error accessing variable ${variableName}:`, error);
         }
       }
+      modifiedUserInput += `\nEND ADDITIONAL CONTEXT\n`;
       return modifiedUserInput;
     }
 
@@ -597,9 +563,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
         if (activeCell) {
           // Cmd K twice should toggle the box
-          const existingDiv = activeCell.node.querySelector(
-            '.pretzelParentContainerAI'
-          );
+          const existingDiv = activeCell.node.querySelector('.pretzelParentContainerAI');
           // this code is repeated with the removeHandler
           if (existingDiv) {
             // If so, delete that div
@@ -610,9 +574,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               event_value: 'Cmd+k',
               method: 'remove'
             });
-            const statusElements = activeCell.node.querySelectorAll(
-              'p[style="margin-left: 70px;"]'
-            );
+            const statusElements = activeCell.node.querySelectorAll('p[style="margin-left: 70px;"]');
             statusElements.forEach(element => element.remove());
 
             // Switch focus back to the Jupyter cell
@@ -717,9 +679,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               method: 'remove'
             });
             activeCell.node.removeChild(parentContainer);
-            const statusElements = activeCell.node.querySelectorAll(
-              'p[style="margin-left: 70px;"]'
-            );
+            const statusElements = activeCell.node.querySelectorAll('p[style="margin-left: 70px;"]');
             statusElements.forEach(element => element.remove());
 
             // Switch focus back to the Jupyter cell
@@ -743,12 +703,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   aiService,
                   activeCell.model.id
                 );
-                const prompt = generatePrompt(
-                  userInput,
-                  oldCode,
-                  topSimilarities,
-                  extractedCode
-                );
+                const prompt = generatePrompt(userInput, oldCode, topSimilarities, extractedCode);
 
                 // if posthogPromptTelemetry is true, capture the prompt
                 if (posthogPromptTelemetry) {
@@ -756,14 +711,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                 } else {
                   posthog.capture('prompt', { property: 'no_telemetry' });
                 }
-                diffEditor = renderEditor(
-                  '',
-                  parentContainer,
-                  diffEditorContainer,
-                  diffEditor,
-                  monaco,
-                  oldCode
-                );
+                diffEditor = renderEditor('', parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
                 openAiStream({
                   aiService,
                   parentContainer,

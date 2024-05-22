@@ -16,10 +16,7 @@ import posthog from 'posthog-js';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
-export type AiService =
-  | 'OpenAI API key'
-  | 'Use Pretzel AI Server'
-  | 'Use Azure API';
+export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Use Azure API';
 
 export type Embedding = {
   id: string;
@@ -36,12 +33,7 @@ export function generatePrompt(
   traceback: string = ''
 ): string {
   if (selectedCode) {
-    return generatePromptEditPartial(
-      userInput,
-      selectedCode,
-      oldCode,
-      topSimilarities
-    );
+    return generatePromptEditPartial(userInput, selectedCode, oldCode, topSimilarities);
   }
   if (traceback) {
     return generatePromptErrorFix(traceback, oldCode, topSimilarities);
@@ -49,15 +41,9 @@ export function generatePrompt(
   return generatePromptNewAndFullEdit(userInput, oldCode, topSimilarities);
 }
 
-function generatePromptNewAndFullEdit(
-  userInput: string,
-  oldCode: string,
-  topSimilarities: string[]
-): string {
+function generatePromptNewAndFullEdit(userInput: string, oldCode: string, topSimilarities: string[]): string {
   return `The user is in a Jupyter notebook cell wants to write code to do the following:
-"""
 ${userInput}
-"""
 
 ${
   oldCode
@@ -110,9 +96,7 @@ ${oldCode}
 FULL CODE CHUNK END
 
 The user wants to modify the SELECTED CODE ONLY (IMPORTANT) with the following instruction:
-"""
 ${userInput}
-"""
 
 ${
   topSimilarities.length > 0
@@ -122,14 +106,10 @@ ${
     : ''
 }
 
-INSTRUCTION: Modify the SELECTED CODE (AND ONLY THE SELECTED CODE) according to the user's instructions. Return FULL CODE CHUNK but with the selected code modified.`;
+INSTRUCTION: Modify the SELECTED CODE (AND ONLY THE SELECTED CODE) according to the user's instructions. WRITE MINIMAL CODE - for eg, CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES. Return FULL CODE CHUNK but with the selected code modified.`;
 }
 
-function generatePromptErrorFix(
-  traceback: string,
-  oldCode: string,
-  topSimilarities: string[]
-): string {
+function generatePromptErrorFix(traceback: string, oldCode: string, topSimilarities: string[]): string {
   return `The user ran the following code in the current Jupyter notebook cell:
 
 ---
@@ -222,28 +202,25 @@ export const openAiStream = async ({
       );
     }
   } else if (aiService === 'Use Pretzel AI Server') {
-    const response = await fetch(
-      'https://wjwgjk52kb3trqnlqivqqyxm3i0glvof.lambda-url.eu-central-1.on.aws/',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ]
-        })
-      }
-    );
+    const response = await fetch('https://wjwgjk52kb3trqnlqivqqyxm3i0glvof.lambda-url.eu-central-1.on.aws/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
+    });
     const reader = response!.body!.getReader();
     const decoder = new TextDecoder('utf-8');
     let isReading = true;
@@ -254,50 +231,20 @@ export const openAiStream = async ({
         isReading = false;
       }
       const chunk = decoder.decode(value);
-      renderEditor(
-        chunk,
-        parentContainer,
-        diffEditorContainer,
-        diffEditor,
-        monaco,
-        oldCode
-      );
+      renderEditor(chunk, parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
     }
-  } else if (
-    aiService === 'Use Azure API' &&
-    prompt &&
-    azureBaseUrl &&
-    azureApiKey &&
-    deploymentId
-  ) {
-    const client = new OpenAIClient(
-      azureBaseUrl,
-      new AzureKeyCredential(azureApiKey)
-    );
+  } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
+    const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
     const result = await client.getCompletions(deploymentId, [prompt]);
     statusElement.textContent = 'Generating code...';
     for (const choice of result.choices) {
-      renderEditor(
-        choice.text,
-        parentContainer,
-        diffEditorContainer,
-        diffEditor,
-        monaco,
-        oldCode
-      );
+      renderEditor(choice.text, parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
     }
   }
   // Handle occasional responsde with backticks
   const newCode = diffEditor.getModel().modified.getValue();
   if (newCode.split('```').length === 3) {
-    renderEditor(
-      newCode.split('```')[1],
-      parentContainer,
-      diffEditorContainer,
-      diffEditor,
-      monaco,
-      oldCode
-    );
+    renderEditor(newCode.split('```')[1], parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
   }
   setTimeout(async () => {
     const changes = diffEditor.getLineChanges();
@@ -305,8 +252,7 @@ export const openAiStream = async ({
     if (changes) {
       changes.forEach((c: any) => {
         if (c.modifiedEndLineNumber >= c.modifiedStartLineNumber) {
-          const modified =
-            c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
+          const modified = c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
 
           totalLines += modified;
         }
@@ -381,9 +327,7 @@ export const openAiStream = async ({
       parentContainer.remove();
       commands.execute('pretzelai:replace-code');
 
-      const newParentContainer = document.querySelector(
-        '.pretzelParentContainerAI'
-      );
+      const newParentContainer = document.querySelector('.pretzelParentContainerAI');
       const newInputField = (newParentContainer as HTMLElement).querySelector(
         '.pretzelInputField'
       ) as HTMLTextAreaElement;
@@ -433,18 +377,15 @@ export const openaiEmbeddings = async (
 ): Promise<OpenAI.Embeddings.CreateEmbeddingResponse | Embeddings> => {
   if (aiService === 'Use Pretzel AI Server') {
     return (await (
-      await fetch(
-        'https://e7l46ifvcg6qrbuinytg7u535y0denki.lambda-url.eu-central-1.on.aws/',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            source: source
-          })
-        }
-      )
+      await fetch('https://e7l46ifvcg6qrbuinytg7u535y0denki.lambda-url.eu-central-1.on.aws/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          source: source
+        })
+      })
     ).json()) as OpenAI.Embeddings.CreateEmbeddingResponse;
   } else if (aiService === 'OpenAI API key') {
     return await (aiClient as OpenAI).embeddings.create({
@@ -452,10 +393,7 @@ export const openaiEmbeddings = async (
       input: source
     });
   } else if (aiService === 'Use Azure API') {
-    return await (aiClient as OpenAIClient).getEmbeddings(
-      'text-embedding-ada-002',
-      [source]
-    );
+    return await (aiClient as OpenAIClient).getEmbeddings('text-embedding-ada-002', [source]);
   } else {
     throw new Error('Invalid AI service');
   }

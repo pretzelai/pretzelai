@@ -55,7 +55,10 @@ from .handlers.announcements import (
 )
 from .handlers.build_handler import Builder, BuildHandler, build_path
 from .handlers.error_handler import ErrorHandler
-from .handlers.extension_manager_handler import ExtensionHandler, extensions_handler_path
+from .handlers.extension_manager_handler import (
+    ExtensionHandler,
+    extensions_handler_path,
+)
 from .handlers.plugin_manager_handler import PluginHandler, plugins_handler_path
 
 DEV_NOTE = """You're running JupyterLab from source.
@@ -921,6 +924,8 @@ class LabApp(NotebookConfigShimMixin, LabServerApp):
     def initialize(self, argv=None):
         """Subclass because the ExtensionApp.initialize() method does not take arguments"""
         super().initialize()
+        # to be able to make hidden folders
+        self.serverapp.contents_manager.allow_hidden = True
         if self.collaborative:
             try:
                 import jupyter_collaboration  # noqa
