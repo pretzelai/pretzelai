@@ -395,7 +395,11 @@ const extension: JupyterFrontEndPlugin<void> = {
           }
         } else {
           // create directory. if already exists, this code does nothing
-          const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', newDirPath);
+          const requestUrl = URLExt.join(
+            app.serviceManager.serverSettings.baseUrl,
+            'api/contents',
+            encodeURIComponent(newDirPath)
+          );
           const init = {
             method: 'PUT',
             body: JSON.stringify({ type: 'directory', path: newDirPath }),
