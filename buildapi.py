@@ -38,5 +38,4 @@ def builder(target_name, version, *args, **kwargs):
         msg = "Version mismatch, please run `npm run prepare:python-release`"
         msg += f"; NPM {npm_version} / Python {py_version}"
         # write to stdout but don't use print because it's not compatible with hatchling
-        sys.stdout.write(msg)
-        sys.stdout.write("\n")
+        sys.stdout.write(msg + "\n")
