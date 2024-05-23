@@ -138,6 +138,7 @@ export const openAiStream = async ({
   aiService,
   openAiApiKey,
   openAiBaseUrl,
+  openAiModel,
   prompt,
   parentContainer,
   inputContainer,
@@ -155,6 +156,7 @@ export const openAiStream = async ({
   aiService: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
+  openAiModel?: string;
   prompt?: string;
   parentContainer: HTMLElement;
   inputContainer: Node | null;
@@ -170,14 +172,14 @@ export const openAiStream = async ({
   statusElement: HTMLElement;
 }): Promise<void> => {
   statusElement.textContent = 'Calling AI service...';
-  if (aiService === 'OpenAI API key' && openAiApiKey && prompt) {
+  if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
       baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
     });
     const stream = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: openAiModel,
       messages: [
         {
           role: 'system',
@@ -405,7 +407,8 @@ export const getTopSimilarities = async (
   numberOfSimilarities: number,
   aiClient: OpenAI | OpenAIClient | null,
   aiService: AiService,
-  cellId: string
+  cellId: string,
+  codeMatchThreshold: number
 ): Promise<string[]> => {
   const response = await openaiEmbeddings(userInput, aiService, aiClient);
   const userInputEmbedding = response.data[0].embedding; // same API for openai and azure
@@ -416,6 +419,7 @@ export const getTopSimilarities = async (
       index
     }));
   return similarities
+    .filter(e => e.value > codeMatchThreshold)
     .sort((a, b) => b.value - a.value)
     .slice(0, numberOfSimilarities)
     .map(e => embeddings[e.index].source);

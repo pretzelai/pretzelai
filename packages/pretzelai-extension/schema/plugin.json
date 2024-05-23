@@ -26,8 +26,19 @@
         "openAiBaseUrl": {
           "type": "string",
           "title": "Base URL",
-          "description": "(Optional) If your company has an OpenAI service, enter the URL for your company's OpenAI service (e.g., https://api.openai.com/v1/).",
+          "description": "(Optional) If your company uses OpenAI Enterprise, enter the URL for your company's OpenAI service (e.g., https://api.openai.com/v1/).",
           "default": ""
+        },
+        "openAiModel": {
+          "type": "string",
+          "title": "OpenAI Model",
+          "description": "Select the OpenAI model to be used for AI completions. Only works with your OpenAI API key.",
+          "enum": [
+            "gpt-4o",
+            "gpt-4-turbo",
+            "gpt-3.5-turbo"
+          ],
+          "default": "gpt-4o"
         }
       }
     },
@@ -51,6 +62,14 @@
           "default": ""
         }
       }
+    },
+    "codeMatchThreshold": {
+      "type": "number",
+      "title": "Code Match Threshold",
+      "description": "The threshold for code similarity matching, between 0 and 100. High values result in only highly similar code being matched.",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 35
     },
     "posthogPromptTelemetry": {
       "type": "boolean",

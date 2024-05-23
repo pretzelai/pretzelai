@@ -68,13 +68,14 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Ask AI. Use @variable_name to reference defined variables and dataframes. Shift + Enter for new line.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
+    let openAiModel = '';
     let aiService: AiService = 'Use Pretzel AI Server';
     let azureBaseUrl = '';
     let azureDeploymentName = '';
     let azureApiKey = '';
     let aiClient: OpenAI | OpenAIClient | null;
     let posthogPromptTelemetry: boolean = true;
-    // const serverSettings = ServerConnection.makeSettings();
+    let codeMatchThreshold: number;
 
     const showSplashScreen = async (consent: string) => {
       if (consent === 'None') {
@@ -88,6 +89,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         const openAiSettings = settings.get('openAiSettings').composite as any;
         openAiApiKey = openAiSettings?.openAiApiKey || '';
         openAiBaseUrl = openAiSettings?.openAiBaseUrl || '';
+        openAiModel = openAiSettings?.openAiModel;
 
         const azureSettings = settings.get('azureSettings').composite as any;
         azureBaseUrl = azureSettings?.azureBaseUrl || '';
@@ -97,6 +99,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         const aiServiceSetting = settings.get('aiService').composite;
         aiService = (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
         posthogPromptTelemetry = settings.get('posthogPromptTelemetry').composite as boolean;
+        codeMatchThreshold = (settings.get('codeMatchThreshold').composite as number) / 100;
 
         const cookieSettings = await settingRegistry.load('@jupyterlab/apputils-extension:notification');
         const posthogCookieConsent = cookieSettings.get('posthogCookieConsent').composite as string;
@@ -273,7 +276,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         NUMBER_OF_SIMILAR_CELLS,
         aiClient,
         aiService,
-        cellModel.id
+        cellModel.id,
+        codeMatchThreshold
       );
       const prompt = generatePrompt('', originalCode, topSimilarities, '', traceback);
       let diffEditorContainer: HTMLElement = document.createElement('div');
@@ -289,6 +293,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         aiService,
         openAiApiKey,
         openAiBaseUrl,
+        openAiModel,
         prompt,
         parentContainer,
         inputContainer: null,
@@ -705,7 +710,8 @@ const extension: JupyterFrontEndPlugin<void> = {
                   NUMBER_OF_SIMILAR_CELLS,
                   aiClient,
                   aiService,
-                  activeCell.model.id
+                  activeCell.model.id,
+                  codeMatchThreshold
                 );
                 const prompt = generatePrompt(userInput, oldCode, topSimilarities, extractedCode);
 
@@ -727,6 +733,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   // OpenAI API
                   openAiApiKey,
                   openAiBaseUrl,
+                  openAiModel,
                   prompt,
                   // Azure API
                   azureApiKey,
