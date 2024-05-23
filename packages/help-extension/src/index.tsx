@@ -26,8 +26,6 @@ import {
   CommandToolbarButton,
   copyrightIcon,
   IFrame,
-  jupyterIcon,
-  jupyterlabWordmarkIcon,
   refreshIcon,
   Toolbar
 } from '@jupyterlab/ui-components';
@@ -90,38 +88,60 @@ const about: JupyterFrontEndPlugin<void> = {
     const category = trans.__('Help');
 
     commands.addCommand(CommandIDs.about, {
-      label: trans.__('About %1', app.name),
+      label: trans.__('About Pretzel'),
       execute: () => {
         // Create the header of the about dialog
-        const versionNumber = trans.__('Version %1', app.version);
-        const versionInfo = (
-          <span className="jp-About-version-info">
-            <span className="jp-About-version">{versionNumber}</span>
-          </span>
-        );
         const title = (
-          <span className="jp-About-header">
-            <jupyterIcon.react margin="7px 9.5px" height="auto" width="58px" />
-            <div className="jp-About-header-info">
-              <jupyterlabWordmarkIcon.react height="auto" width="196px" />
-              {versionInfo}
-            </div>
-          </span>
+          <div>
+            <h2>{trans.__('Pretzel is a fork of JupyterLab')}</h2>
+          </div>
         );
+        // const title = (
+        //   <span className="jp-About-header">
+        //     <div>
+        //       <p>Pretzel is a fork of JupyterLab</p>
+        //     </div>
+        //     <jupyterIcon.react margin="7px 9.5px" height="auto" width="58px" />
+        //     <div className="jp-About-header-info">
+        //       <jupyterlabWordmarkIcon.react height="auto" width="196px" />
+        //       {versionInfo}
+        //     </div>
+        //   </span>
+        // );
 
         // Create the body of the about dialog
         const jupyterURL = 'https://jupyter.org/about.html';
         const contributorsURL =
           'https://github.com/jupyterlab/jupyterlab/graphs/contributors';
+        const pretzelDocsURL =
+          'https://github.com/pretzelai/pretzelai?tab=readme-ov-file';
+        const pretzelContributorsURL =
+          'https://github.com/pretzelai/pretzelai/blob/main/PRETZEL_CONTRIBUTORS';
         const externalLinks = (
           <span className="jp-About-externalLinks">
+            <a
+              href={pretzelDocsURL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="jp-Button-flat"
+            >
+              {trans.__('Learn more about Pretzel')}
+            </a>
+            <a
+              href={pretzelContributorsURL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="jp-Button-flat"
+            >
+              {trans.__('CONTRIBUTOR LIST PRETZEL')}
+            </a>
             <a
               href={contributorsURL}
               target="_blank"
               rel="noopener noreferrer"
               className="jp-Button-flat"
             >
-              {trans.__('CONTRIBUTOR LIST')}
+              {trans.__('CONTRIBUTOR LIST JUPYTER')}
             </a>
             <a
               href={jupyterURL}
@@ -136,6 +156,14 @@ const about: JupyterFrontEndPlugin<void> = {
         const copyright = (
           <span className="jp-About-copyright">
             {trans.__('© 2015-2023 Project Jupyter Contributors')}
+            <br />
+            {trans.__('© 2024 Pretzel AI GmbH and contributors.')}
+            <br />
+            {trans.__('Please see the ')}
+            <a href="https://github.com/pretzelai/pretzelai?tab=readme-ov-file">
+              {trans.__('GitHub Repo LICENSE')}
+            </a>{' '}
+            {trans.__('for more information.')}
           </span>
         );
         const body = (

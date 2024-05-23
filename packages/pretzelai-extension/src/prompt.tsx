@@ -13,6 +13,8 @@ import { Embeddings } from '@azure/openai/types/openai';
 import { renderEditor } from './utils';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
+import * as React from 'react';
+import { Dialog, showDialog } from '@jupyterlab/apputils';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -264,8 +266,31 @@ export const openAiStream = async ({
     diffEditorContainer.style.height = heightPx + 'px';
     diffEditor?.layout();
   }, 500);
-  // Create "Accept" and "Reject" buttons
+  // Create "Accept and Run", "Accept", and "Reject" buttons
   const diffContainer = document.querySelector('.diff-container');
+  const acceptAndRunButton = document.createElement('button');
+  acceptAndRunButton.textContent = 'Accept and Run';
+  acceptAndRunButton.style.backgroundColor = 'lightblue';
+  acceptAndRunButton.style.borderRadius = '5px';
+  acceptAndRunButton.style.border = '1px solid darkblue';
+  acceptAndRunButton.style.maxWidth = '120px';
+  acceptAndRunButton.style.minHeight = '25px';
+  acceptAndRunButton.style.marginRight = '10px';
+  const handleAcceptAndRun = () => {
+    const modifiedCode = diffEditor!.getModel()!.modified.getValue();
+    activeCell.model.sharedModel.source = modifiedCode;
+    commands.execute('notebook:run-cell');
+    activeCell.node.removeChild(parentContainer);
+    statusElement.remove();
+  };
+  acceptAndRunButton.addEventListener('click', () => {
+    posthog.capture('Accept and Run', {
+      event_type: 'click',
+      method: 'accept_and_run'
+    });
+    handleAcceptAndRun();
+  });
+
   const acceptButton = document.createElement('button');
   acceptButton.textContent = 'Accept';
   acceptButton.style.backgroundColor = 'lightblue';
@@ -277,7 +302,6 @@ export const openAiStream = async ({
   const handleAccept = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
-    commands.execute('notebook:run-cell');
     activeCell.node.removeChild(parentContainer);
     statusElement.remove();
   };
@@ -346,6 +370,54 @@ export const openAiStream = async ({
     });
   }
 
+  const infoIcon = document.createElement('img');
+  infoIcon.src = `data:image/svg+xml;utf8,<svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.529 9.988a2.502 2.502 0 1 1 5 .191A2.441 2.441 0 0 1 12 12.582V14m-.01 3.008H12M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+</svg>`;
+  infoIcon.style.marginLeft = '-5px';
+  infoIcon.style.marginTop = '5px';
+  infoIcon.style.cursor = 'pointer';
+  infoIcon.style.width = '16px';
+  infoIcon.style.height = '16px';
+  infoIcon.addEventListener('click', () => {
+    const richTextBody = (
+      <div>
+        <p>
+          <b>
+            Accept and Run (shortcut: <u>Shift + Enter</u>)
+          </b>
+          : Will put the code in current Jupyter cell AND run it.
+        </p>
+        <p>
+          <b>
+            Accept (shortcut: <u>Enter</u>)
+          </b>
+          : Will put the code in current Jupyter cell but WILL NOT run it.
+        </p>
+        <p>
+          <b>Reject</b>: Will reject the generated code. Your cell will return to the state it was before.
+        </p>
+        <p>
+          <b>Edit Prompt</b>: Go back to writing the editing your initial prompt.
+        </p>
+        <p>
+          See more in the README <a href="https://github.com/pretzelai/pretzelai?tab=readme-ov-file#usage">here</a>.
+        </p>
+      </div>
+    );
+
+    showDialog({
+      title: 'Using AI Features',
+      body: richTextBody,
+      buttons: [
+        Dialog.createButton({
+          label: 'Close',
+          className: 'jp-About-button jp-mod-reject jp-mod-styled'
+        })
+      ]
+    });
+  });
+
   const diffButtonsContainer = document.createElement('div');
   diffButtonsContainer.style.marginTop = '10px';
   diffButtonsContainer.style.marginLeft = '70px';
@@ -354,15 +426,20 @@ export const openAiStream = async ({
   diffButtonsContainer.tabIndex = 0; // Make the container focusable
   diffButtonsContainer.style.outline = 'none'; // Remove blue border when focused
   diffContainer!.appendChild(diffButtonsContainer);
+  diffButtonsContainer!.appendChild(acceptAndRunButton!);
   diffButtonsContainer!.appendChild(acceptButton!);
   diffButtonsContainer!.appendChild(rejectButton!);
   if (inputContainer) {
     diffButtonsContainer!.appendChild(editPromptButton!);
   }
+  diffButtonsContainer!.appendChild(infoIcon);
   diffButtonsContainer.addEventListener('keydown', event => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleAccept();
+    } else if (event.key === 'Enter' && event.shiftKey) {
+      event.preventDefault();
+      handleAcceptAndRun();
     } else if (event.key === 'Escape') {
       event.preventDefault();
       handleReject();
