@@ -84,26 +84,36 @@ the Jupyterlab README is available [here](https://github.com/jupyterlab/jupyterl
 
 ## FAQ
 
-**Q.** What happened to the old version of Pretzel AI - the visual, in-browser data manipulation tool?
+**Q.** _What happened to the old version of Pretzel AI - the visual, in-browser data manipulation tool?_
 
-**A.** It's available in the [`pretzelai_visual` folder here](https://github.com/pretzelai/pretzelai/tree/main/pretzelai_visual). Please see [this PR] (https://github.com/pretzelai/pretzelai/pull/76) for more info.
+**A.** It's available in the [`pretzelai_visual` folder here](https://github.com/pretzelai/pretzelai/tree/main/pretzelai_visual). Please see [this PR](https://github.com/pretzelai/pretzelai/pull/76) for more info.
 
-**Q.** What AI model does Pretzel use?
+**Q.** _What AI model does Pretzel use?_
+
 **A.** We currently use GPT-4o and it's been good so far. We will keep experimenting with the model, prompts and parameters to keep improving the code-gen experience.
 
-**Q.** What about feature X?
+**Q.** _What about feature X?_
+
 **A.** There's a ton we want to build. Please [open an issue](https://github.com/pretzelai/pretzelai/issues) and tell us what you want us to build!
 
-**Q.** Where's the roadmap?
+**Q.** _Where's the roadmap?_
+
 **A.** There's so many features we'd like to build! But, there's just two of us and so, we're collecting feedback about what would be most helpful. As a result, we don't have a concrete roadmap just yet. We'd love your help with this! Please open an issue or just send us an email with your feedback!
 
-**Q.** What's the deal with the license?
+**Q.** _What's the deal with the license?_
+
 **A.** Our goal with building Pretzel is to make an amazing data tool that free for both individuals and companies to use. That said, we are a 2 person startup - and we don't want
 some third party to just take our code and sell a hosted version of it without giving back to the community. Jupyter code is licensed as BSD-3 and if we keep our new code BSD-3 licensed, there would be no way to stop a company from doing this. As a result, we went with the AGPLv3 license for all the new code. This ensures that if someone else does want
-to take our code and sell it, they have to open-source all of their modifications under AGPLv3 as well
+to take our code and sell it, they have to open-source all of their modifications under AGPLv3 as well.
 
-**Q.** My company is worried about using an AGPLv3 licensed tool. What can I do?
+**Q.** _Why a fork of Jupyter? Why not contribute into Jupyter directly?_
+
+**A.** This deserves a longer answer but here's the short answer: We've set out to make the de-facto, modern, open-source data tool. Initially, we wanted to start from scratch. However, after talking to several data professionals, we realized it will be very hard to get people to switch to a new tool, no matter how good. The best way to get people to switch is to not have them switch at all. That's why we decided to fork Jupyter - for the near zero switching costs. Also, Jupyter is a mature product and we're shipping feature really fast - frankly, at the pace we're shipping features, the code we write won't be accepted in the Jupyter codebase. There are also many downsides to this decision - we've had to spend considerable time understanding the whole Jupyter ecosystem and multiple codebases, the complex release processes, the various APIs etc. However, we think this is the right decision for us.
+
+**Q.** _My company is worried about using an AGPLv3 licensed tool. What can I do?_
+
 **A.** The AGPL specified that ONLY IF you're modifying Pretzel AND redistributing it to the public, then you need to share the modified code. If you're simply using it as a tool in your company (even with modifications), the AGPL DOES NOT ask you to share your code. Still, if AGPL is an issue for you, please contact us and we can figure out what works.
 
-**Q.** I'm worried about a "rug-pull" - that you will re-license the code to be under a paid license in the future? OR, how are you planning on making money?
+**Q.** _I'm worried about a "rug-pull" - that you will re-license the code to be under a paid license in the future? OR, how are you planning on making money?_
+
 **A.** We're planning on selling a hosted version of the tool to companies to make money. This hosted version will probably have some company specific features that individuals don't want or need such as data access controls, connectors for data sources, integration with GitHub, hosted and shareable dashboard, scalable compute for large jobs etc. We will not retroactively make Pretzel's individual version paid.
