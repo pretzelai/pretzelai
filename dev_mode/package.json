@@ -26,7 +26,7 @@
     "@jupyterlab/application": "~4.2.0",
     "@jupyterlab/application-extension": "~4.2.0",
     "@jupyterlab/apputils": "~4.3.0",
-    "@jupyterlab/apputils-extension": "~4.2.0",
+    "@jupyterlab/apputils-extension": "file:../../packages/apputils-extension",
     "@jupyterlab/attachments": "~4.2.0",
     "@jupyterlab/cell-toolbar": "~4.2.0",
     "@jupyterlab/cell-toolbar-extension": "~4.2.0",
@@ -148,7 +148,7 @@
   "dependencies": {
     "@jupyterlab/application": "~4.2.0",
     "@jupyterlab/application-extension": "~4.2.0",
-    "@jupyterlab/apputils-extension": "~4.2.0",
+    "@jupyterlab/apputils-extension": "file:../../packages/apputils-extension",
     "@jupyterlab/cell-toolbar-extension": "~4.2.0",
     "@jupyterlab/celltags-extension": "~4.2.0",
     "@jupyterlab/codemirror-extension": "~4.2.0",
