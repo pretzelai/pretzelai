@@ -1,11 +1,16 @@
 # [Pretzel](https://withpretzel.com)
 
-Pretzel is a fork of Jupyter with the goal to improve Jupyter's capabilities.
+Pretzel is a fork of Jupyter with the goal to improve Jupyter's capabilities. As one of our first releases, we've added AI code generation, editing and error fixing to Jupyter.
 
-Switching to Pretzel from Jupyter is extremely easy. We use your existing Jupyter
-extensions, settings and keybindings.
+**TL;DR**
 
-We're building features such as:
+- Install Pretzel: `pip install pretzelai` then run `pretzel lab` to open the web interface
+- In any Jupyter cell, click “**Ask AI**” or press Cmd+K (Mac) / Ctrl+K (Linux/Windows) to prompt AI
+- Try our free hosted version: https://pretzelai.app
+
+Switching to Pretzel from Jupyter is extremely easy. We use your existing Jupyter extensions, settings and keybindings.
+
+Our roadmap includes building features such as:
 
 - Native AI features similar to [Cursor](https://cursor.sh/)
 - Frictionless realtime collaboration: pair-programming, comments, version history, etc.
@@ -37,7 +42,7 @@ Just as with Jupyter, you should see a URL to access the Pretzel interface.
 
 Bugs possible. To use the latest version of Pretzel:
 
-- Make sure Node.js is installed and is version 18 or above
+- Make sure Node.js is installed and is version 20
 - Clone and install the package
 
 ```
@@ -63,17 +68,31 @@ Just as with OpenAI settings, you can also use Azure hosted models if you select
 
 ## Usage
 
-- When in a cell, press `Cmd+K` (Mac)/`Ctrl+K` (Windows/Linux) to open AI prompting textbox to write your prompt
+**Adding code to an empty cell**
+
+- When in a cell, press `Cmd+K` (Mac) / `Ctrl+K` (Windows/Linux) to open AI prompting textbox and write your prompt
   - You can use `@variable` syntax to refer to variables and dataframes in memory. Press "Enter" to submit
 - You can accept/reject the response or edit your prompt if you want to re-submit with modifications
-- **Support for editing code**
-  - If there's existing code in a cell, you can instruct the AI to edit code
-  - Selecting some code in a cell only edits the selected code
-- **Fix errors with AI**: When there's an error, you'll see a button on top-right "Fix Error with AI"
+
+**Adding code in the middle of existing code**
+
+- Put your cursor either on an empty line or an existing line of code. Bring up the AI prompting text box with Cmd+K
+- Start your prompt with the word `inject` or `ij` (case-insensitive) - this tells the AI to only add new code and not edit the existing code in the cell
+- Code will be added one line below where your cursor was placed
+
+**Support for editing code**
+
+- If there's existing code in a cell, you can prompt the AI to edit the code
+- If you select/highlight some code in a cell, only the selected code will be edited
+
+**Fix errors with AI**
+
+- When there's an error, you'll see a button on top-right "**Fix Error with AI**". Click it
+- The AI will try to resolve the error even if it is in a different cell by adding the appropriate code
 
 ## Feedback, bugs and docs
 
-- Please report bugs here: https://github.com/pretzelai/pretzelai/issues/
+- Please report bugs here: https://github.com/pretzelai/pretzelai/issues
 - Have any feedback? Any complains? We'd love feedback: founders@withpretzel.com
 - Additional documentation will become available on our website by end of May!
 
@@ -90,7 +109,7 @@ the Jupyterlab README is available [here](https://github.com/jupyterlab/jupyterl
 
 **Q.** _What AI model does Pretzel use?_
 
-**A.** We currently use GPT-4o and it's been good so far. We will keep experimenting with the model, prompts and parameters to keep improving the code-gen experience.
+**A.** We currently use GPT-4o by default and it's been good so far. We also allow you to switch models in Pretzel Settings if you're using your own API key. We will keep experimenting with the model, prompts and parameters to keep improving the code-gen experience.
 
 **Q.** _What about feature X?_
 
@@ -102,17 +121,15 @@ the Jupyterlab README is available [here](https://github.com/jupyterlab/jupyterl
 
 **Q.** _What's the deal with the license?_
 
-**A.** Our goal with building Pretzel is to make an amazing data tool that free for both individuals and companies to use. That said, we are a 2 person startup - and we don't want
-some third party to just take our code and sell a hosted version of it without giving back to the community. Jupyter code is licensed as BSD-3 and if we keep our new code BSD-3 licensed, there would be no way to stop a company from doing this. As a result, we went with the AGPLv3 license for all the new code. This ensures that if someone else does want
-to take our code and sell it, they have to open-source all of their modifications under AGPLv3 as well.
+**A.** Our goal with building Pretzel is to make an amazing data tool that is free for both individuals and companies to use. That said, we are a two person startup - and we don't want some third party to just take our code and sell a hosted version of it without giving back to the community. Jupyter code is licensed as BSD-3 and if we keep our new code BSD-3 licensed, there would be no way to stop third-party from doing this. As a result, we went with the AGPLv3 license for all the new code. This ensures that if someone else does want to take our code and sell it (SaaS or otherwise), they have to open-source all of their modifications under AGPLv3 as well.
 
 **Q.** _Why a fork of Jupyter? Why not contribute into Jupyter directly?_
 
-**A.** This deserves a longer answer but here's the short answer: We've set out to make the de-facto, modern, open-source data tool. Initially, we wanted to start from scratch. However, after talking to several data professionals, we realized it will be very hard to get people to switch to a new tool, no matter how good. The best way to get people to switch is to not have them switch at all. That's why we decided to fork Jupyter - for the near zero switching costs. Also, Jupyter is a mature product and we're shipping feature really fast - frankly, at the pace we're shipping features, the code we write won't be accepted in the Jupyter codebase. There are also many downsides to this decision - we've had to spend considerable time understanding the whole Jupyter ecosystem and multiple codebases, the complex release processes, the various APIs etc. However, we think this is the right decision for us.
+**A.** This deserves a longer answer but here's the short answer: We've set out to make the **new** de-facto, modern, open-source data tool. Initially, we wanted to start from scratch. However, after talking to several data professionals, we realized it will be very hard to get people to switch to a new tool, no matter how good. The best way to get people to switch is to not have them switch at all. That's why we decided to fork Jupyter - for the near zero switching costs. Also, Jupyter is a mature product and we're shipping feature really fast - frankly, at the pace we're shipping features, the code we write won't be accepted into the Jupyter codebase 😅. There are also many downsides to this decision - we've had to spend considerable time understanding the whole Jupyter ecosystem and multiple codebases, the complex release processes, the various APIs etc. However, we think this is the right decision for us.
 
 **Q.** _My company is worried about using an AGPLv3 licensed tool. What can I do?_
 
-**A.** The AGPL specified that ONLY IF you're modifying Pretzel AND redistributing it to the public, then you need to share the modified code. If you're simply using it as a tool in your company (even with modifications), the AGPL DOES NOT ask you to share your code. Still, if AGPL is an issue for you, please contact us and we can figure out what works.
+**A.** The AGPL is a barrier ONLY IF you're modifying Pretzel AND redistributing it to the public. If you're simply using it as a tool in your company (even with modifications), the AGPL DOES NOT ask you to share your code. Still, if AGPL is an issue for you, please contact us, and we can figure out something that works.
 
 **Q.** _I'm worried about a "rug-pull" - that you will re-license the code to be under a paid license in the future? OR, how are you planning on making money?_
 
