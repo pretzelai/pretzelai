@@ -543,7 +543,7 @@ __metadata:
   dependencies:
     "@jupyterlab/application": ~4.2.0
     "@jupyterlab/application-extension": ~4.2.0
-    "@jupyterlab/apputils-extension": ~4.2.0
+    "@jupyterlab/apputils-extension": "file:../../packages/apputils-extension"
     "@jupyterlab/builder": ^4.2.0
     "@jupyterlab/buildutils": ^4.2.0
     "@jupyterlab/cell-toolbar-extension": ~4.2.0
@@ -646,23 +646,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyterlab/apputils-extension@npm:~4.2.0":
-  version: 4.2.1
-  resolution: "@jupyterlab/apputils-extension@npm:4.2.1"
+"@jupyterlab/apputils-extension@file:../../packages/apputils-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3A.":
+  version: 4.2.0
+  resolution: "@jupyterlab/apputils-extension@file:../../packages/apputils-extension#../../packages/apputils-extension::hash=410992&locator=%40jupyterlab%2Fapplication-top%40workspace%3A."
   dependencies:
-    "@jupyterlab/application": ^4.2.1
-    "@jupyterlab/apputils": ^4.3.1
-    "@jupyterlab/coreutils": ^6.2.1
-    "@jupyterlab/docregistry": ^4.2.1
-    "@jupyterlab/mainmenu": ^4.2.1
-    "@jupyterlab/rendermime-interfaces": ^3.10.1
-    "@jupyterlab/services": ^7.2.1
-    "@jupyterlab/settingregistry": ^4.2.1
-    "@jupyterlab/statedb": ^4.2.1
-    "@jupyterlab/statusbar": ^4.2.1
-    "@jupyterlab/translation": ^4.2.1
-    "@jupyterlab/ui-components": ^4.2.1
-    "@jupyterlab/workspaces": ^4.2.1
+    "@jupyterlab/application": ^4.2.0
+    "@jupyterlab/apputils": ^4.3.0
+    "@jupyterlab/coreutils": ^6.2.0
+    "@jupyterlab/docregistry": ^4.2.0
+    "@jupyterlab/mainmenu": ^4.2.0
+    "@jupyterlab/rendermime-interfaces": ^3.10.0
+    "@jupyterlab/services": ^7.2.0
+    "@jupyterlab/settingregistry": ^4.2.0
+    "@jupyterlab/statedb": ^4.2.0
+    "@jupyterlab/statusbar": ^4.2.0
+    "@jupyterlab/translation": ^4.2.0
+    "@jupyterlab/ui-components": ^4.2.0
+    "@jupyterlab/workspaces": ^4.2.0
     "@lumino/algorithm": ^2.0.1
     "@lumino/commands": ^2.3.0
     "@lumino/coreutils": ^2.1.2
@@ -673,7 +673,7 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
     react-toastify: ^9.0.8
-  checksum: fcb635890d38ccf8f49125a04af8e52bae4fc20886eacde922693fa30e7bee55cdc1a0debef455841e7069e8a2ede141e43db39e7ecd6369d2a14a6b57746865
+  checksum: ceaa282c11b0119386f16fbb57ec07932595c4f8945ae07e373eaa9f489f53d44b452507575abc67e47bbc971417cd2ff4b7592c1cb97007043388735b0568ff
   languageName: node
   linkType: hard
 
