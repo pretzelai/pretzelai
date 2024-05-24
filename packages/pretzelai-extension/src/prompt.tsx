@@ -112,15 +112,19 @@ INSTRUCTION: Modify the SELECTED CODE (AND ONLY THE SELECTED CODE) according to 
 }
 
 function generatePromptErrorFix(traceback: string, oldCode: string, topSimilarities: string[]): string {
-  return `The user ran the following code in the current Jupyter notebook cell:
-
----
+  return `The user ran the following code in the CURRENT Jupyter notebook cell:
+CURRENT CELL CODE START
+\`\`\`
 ${oldCode}
----
+\`\`\`
+CURRENT CELL CODE END
 
 Running the code produces the following traceback:
+TRACEBACK START
+\`\`\`
 ${traceback}
----
+\`\`\`
+TRACEBACK END
 
 ${
   topSimilarities.length > 0
@@ -130,10 +134,9 @@ ${
     : ''
 }
 
-
 INSTRUCTION:
-- Fix the error and return ONLY correct, executable python code, no backticks, NO COMMENTS.
-- If the error is NOT in the CURRENT Jupyter Notebook cell: add a comment at the top explaining this and add just enough code in the CURRENT cell to fix the error.`;
+- Fix the error and return ONLY correct, executable python code, NO BACKTICKS. DO NOT ADD ANY COMMENTS TO EXPLAIN FIX.
+- ONLY IF the error is in a DIFFERENT PART of the Jupyter Notebook: add a comment at the top explaining this and add AS LITTLE CODE AS POSSIBLE in the CURRENT cell to fix the error.`;
 }
 
 export const openAiStream = async ({
