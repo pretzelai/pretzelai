@@ -33,7 +33,7 @@
     "@jupyterlab/cells": "~4.2.0",
     "@jupyterlab/celltags-extension": "~4.2.0",
     "@jupyterlab/codeeditor": "~4.2.0",
-    "@jupyterlab/codemirror": "~4.2.0",
+    "@jupyterlab/codemirror": "file:../../packages/codemirror",
     "@jupyterlab/codemirror-extension": "file:../../packages/codemirror-extension",
     "@jupyterlab/completer": "~4.2.0",
     "@jupyterlab/completer-extension": "~4.2.0",
