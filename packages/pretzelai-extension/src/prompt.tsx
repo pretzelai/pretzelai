@@ -32,7 +32,8 @@ export function generatePrompt(
   oldCode: string,
   topSimilarities: string[],
   selectedCode: string = '',
-  traceback: string = ''
+  traceback: string = '',
+  isInject: boolean = false
 ): string {
   if (selectedCode) {
     return generatePromptEditPartial(userInput, selectedCode, oldCode, topSimilarities);
@@ -40,7 +41,36 @@ export function generatePrompt(
   if (traceback) {
     return generatePromptErrorFix(traceback, oldCode, topSimilarities);
   }
+  if (isInject) {
+    return generatePromptInject(userInput, oldCode, topSimilarities);
+  }
   return generatePromptNewAndFullEdit(userInput, oldCode, topSimilarities);
+}
+
+function generatePromptInject(userInput: string, oldCode: string, topSimilarities: string[]): string {
+  return `The user is in a Jupyter notebook cell that has the following code:
+EXISTING CODE START
+\`\`\`
+${oldCode}
+\`\`\`
+EXISTING CODE END
+
+
+The user wants to add some code in the middle of the existing code according to the following instructions:
+${userInput}
+
+${
+  topSimilarities.length > 0
+    ? `
+OTHER CODE CELLS START
+The following code cells also exist in the notebook in OTHER CELLS and may be relevant:\n\`\`\`\n${topSimilarities.join(
+        '\n```\n\n```\n'
+      )}\n\`\`\`\n
+OTHER CODE CELLS END`
+    : ''
+}
+
+INSTRUCTION: Add the new code according to the user's instructions. IMPORTANT!! The new code MUST BE WRITTEN BY REPLACING THE COMMENT "# INJECT NEW CODE HERE" in the EXISTING CODE. WRITE MINIMAL CODE - for eg, CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES. Return FULL CODE CHUNK by replacing the comment with the new code.`;
 }
 
 function generatePromptNewAndFullEdit(userInput: string, oldCode: string, topSimilarities: string[]): string {
@@ -68,7 +98,9 @@ OTHER CODE CELLS END`
     : ''
 }
 
-INSTRUCTION: Write code according to the user's instructions. Pay close attention to user instructions and WRITE MINIMAL CODE - for eg, CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES. Return ONLY executable python code, no backticks.
+INSTRUCTION: ${
+    oldCode ? 'Modify' : 'Write'
+  } code according to the user's instructions. Pay close attention to user instructions and WRITE MINIMAL CODE - for eg, CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES. DO NOT REMOVE COMMENTS OR EXISTING IMPORT STATEMENTS. Return ONLY executable python code, no backticks.
 ${
   topSimilarities.length > 0
     ? `The code in OTHER CODE CELLS already exists in the notebook - DO NOT REWRITE this code since it's already there. **ONLY REFER TO THIS CODE IF IT's RELEVANT TO USER INSTRUCTION**`
@@ -97,7 +129,7 @@ ${oldCode}
 \`\`\`
 FULL CODE CHUNK END
 
-The user wants to modify the SELECTED CODE ONLY (IMPORTANT) with the following instruction:
+The user wants to MODIFY the SELECTED CODE ONLY (IMPORTANT) with the following instruction:
 ${userInput}
 
 ${
@@ -135,7 +167,7 @@ ${
 }
 
 INSTRUCTION:
-- Fix the error and return ONLY correct, executable python code, NO BACKTICKS. DO NOT ADD ANY COMMENTS TO EXPLAIN FIX.
+- Fix the error and return ONLY correct, executable python code, NO BACKTICKS. DO NOT ADD ANY COMMENTS TO EXPLAIN YOUR FIX. DO NOT REMOVE EXISTING IMPORTS
 - ONLY IF the error is in a DIFFERENT PART of the Jupyter Notebook: add a comment at the top explaining this and add AS LITTLE CODE AS POSSIBLE in the CURRENT cell to fix the error.`;
 }
 
@@ -248,11 +280,24 @@ export const openAiStream = async ({
       renderEditor(choice.text, parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
     }
   }
-  // Handle occasional responsde with backticks
+  // Handle occasional responses with backticks
   const newCode = diffEditor.getModel().modified.getValue();
   if (newCode.split('```').length === 3) {
     renderEditor(newCode.split('```')[1], parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
   }
+
+  // if the string "# INJECT NEW CODE HERE" then replace it with empty string including the newline and renderEditor
+  if (newCode.includes('# INJECT NEW CODE HERE')) {
+    renderEditor(
+      newCode.replace('# INJECT NEW CODE HERE\n', '').replace('# INJECT NEW CODE HERE', ''),
+      parentContainer,
+      diffEditorContainer,
+      diffEditor,
+      monaco,
+      oldCode
+    );
+  }
+
   setTimeout(async () => {
     const changes = diffEditor.getLineChanges();
     let totalLines = oldCode.split('\n').length;

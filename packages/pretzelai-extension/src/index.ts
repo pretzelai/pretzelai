@@ -30,6 +30,7 @@ import { OutputAreaModel } from '@jupyterlab/outputarea';
 import { IOutputModel } from '@jupyterlab/rendermime';
 import { initSplashScreen } from './splashScreen';
 import { URLExt } from '@jupyterlab/coreutils';
+import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -591,7 +592,7 @@ const extension: JupyterFrontEndPlugin<void> = {
             return;
           }
 
-          const oldCode = activeCell.model.sharedModel.source;
+          let oldCode = activeCell.model.sharedModel.source;
 
           const statusElement = document.createElement('p');
           statusElement.textContent = '';
@@ -700,8 +701,18 @@ const extension: JupyterFrontEndPlugin<void> = {
           const handleSubmit = async (userInput: string) => {
             parentContainer.removeChild(inputContainer);
             const { extractedCode } = getSelectedCode();
+            const injectCodeComment = '# INJECT NEW CODE HERE';
+            let oldCodeInject = oldCode;
             statusElement.textContent = 'Calculating embeddings...';
             if (userInput !== '') {
+              const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
+              if (isInject && !extractedCode) {
+                userInput = userInput.replace(/inject/i, '').replace(/ij/i, '');
+                (activeCell!.editor! as CodeMirrorEditor).moveToEndAndNewIndentedLine();
+                activeCell!.editor!.replaceSelection!(injectCodeComment);
+                oldCodeInject = activeCell.model.sharedModel.source;
+                activeCell.model.sharedModel.source = oldCode;
+              }
               userInput = await processTaggedVariables(userInput);
               try {
                 const topSimilarities = await getTopSimilarities(
@@ -713,7 +724,15 @@ const extension: JupyterFrontEndPlugin<void> = {
                   activeCell.model.id,
                   codeMatchThreshold
                 );
-                const prompt = generatePrompt(userInput, oldCode, topSimilarities, extractedCode);
+
+                const prompt = generatePrompt(
+                  userInput,
+                  isInject ? oldCodeInject : oldCode,
+                  topSimilarities,
+                  extractedCode,
+                  '',
+                  isInject
+                );
 
                 // if posthogPromptTelemetry is true, capture the prompt
                 if (posthogPromptTelemetry) {

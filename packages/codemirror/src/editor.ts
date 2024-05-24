@@ -558,6 +558,23 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
     });
   }
 
+  moveToEndAndNewIndentedLine(): void {
+    const { state, dispatch } = this.editor;
+    const { main } = state.selection;
+    const line = state.doc.lineAt(main.head);
+    const endOfLinePos = line.to;
+
+    dispatch({
+      selection: { anchor: endOfLinePos },
+      scrollIntoView: true
+    });
+
+    insertNewlineAndIndent({
+      state: this.state,
+      dispatch: this.editor.dispatch
+    });
+  }
+
   /**
    * Execute a codemirror command on the editor.
    *
