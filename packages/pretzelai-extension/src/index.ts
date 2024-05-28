@@ -34,7 +34,7 @@ import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
-import { history, historyKeymap } from '@codemirror/commands';
+import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -70,7 +70,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Go To: Settings > Settings Editor > Pretzel AI Settings to configure';
 
     const placeHolderEnabled =
-      'Ask AI. Use @variable_name to reference defined variables and dataframes. Shift + Enter for new line.';
+      'Ask AI. Use @variable_name to reference defined variables and dataframes. Shift + Enter for new line. Enter to submit.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let openAiModel = '';
@@ -613,14 +613,15 @@ const extension: JupyterFrontEndPlugin<void> = {
           inputContainer.style.marginLeft = '70px';
           inputContainer.style.display = 'flex';
           inputContainer.style.flexDirection = 'column';
+          inputContainer.style.border = '1px solid #616161';
           parentContainer.appendChild(inputContainer);
 
           const inputField = document.createElement('div');
           inputField.classList.add('pretzelInputField');
-          inputContainer.appendChild(inputField);
+          const oldPrompt = activeCell.model.getMetadata('currentPrompt');
 
           const state = EditorState.create({
-            doc: '',
+            doc: oldPrompt || '',
             extensions: [
               markdown(),
               history({ newGroupDelay: 50 }),
@@ -628,16 +629,17 @@ const extension: JupyterFrontEndPlugin<void> = {
               placeholder(placeHolderEnabled)
             ]
           });
-
-          const view = new EditorView({
+          const inputView = new EditorView({
             state,
             parent: inputField
           });
-
-          view.dom.style.width = '100%';
-          view.dom.style.height = '100px';
-
-          view.dom.addEventListener('keydown', event => {
+          inputView.dom.style.width = '100%';
+          inputView.dom.style.height = '100px';
+          inputContainer.appendChild(inputField);
+          inputView.dispatch({
+            selection: { anchor: state.doc.length, head: state.doc.length }
+          });
+          inputView.dom.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
               posthog.capture('Remove via Escape', {
                 event_type: 'keypress',
@@ -650,15 +652,20 @@ const extension: JupyterFrontEndPlugin<void> = {
                 activeCell.editor.focus();
               }
             }
-            if (event.key === 'Enter' && event.shiftKey) {
+            if (event.key === 'Enter') {
               event.preventDefault();
-              if (!submitButton.disabled) {
+              if (event.shiftKey) {
+                // insert a new line
+                insertNewlineAndIndent({ state: inputView.state, dispatch: inputView.dispatch });
+              } else if (!submitButton.disabled) {
                 posthog.capture('Submit via Enter', {
                   event_type: 'keypress',
                   event_value: 'enter',
                   method: 'submit'
                 });
-                handleSubmit(view.state.doc.toString());
+                const currentPrompt = inputView.state.doc.toString();
+                activeCell.model.setMetadata('currentPrompt', currentPrompt);
+                handleSubmit(currentPrompt);
               }
             }
           });
@@ -668,7 +675,8 @@ const extension: JupyterFrontEndPlugin<void> = {
           inputFieldButtonsContainer.style.display = 'flex';
           inputFieldButtonsContainer.style.flexDirection = 'row';
           inputContainer.appendChild(inputFieldButtonsContainer);
-          inputField.focus();
+          // Move focus into the CodeMirror editor in inputField
+          inputView.focus();
 
           const submitButton = document.createElement('button');
           submitButton.classList.add('pretzelInputSubmitButton');
@@ -685,7 +693,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               event_type: 'click',
               method: 'submit'
             });
-            handleSubmit(view.state.doc.toString());
+            handleSubmit(inputView.state.doc.toString());
           });
           inputFieldButtonsContainer.appendChild(submitButton);
 

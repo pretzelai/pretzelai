@@ -397,24 +397,8 @@ export const openAiStream = async ({
         event_type: 'click',
         method: 'edit_prompt'
       });
-      // Remove the parent container
       parentContainer.remove();
       commands.execute('pretzelai:replace-code');
-
-      const newParentContainer = document.querySelector('.pretzelParentContainerAI');
-      const newInputField = (newParentContainer as HTMLElement).querySelector(
-        '.pretzelInputField'
-      ) as HTMLTextAreaElement;
-      if (newInputField) {
-        const oldInputField = (inputContainer as HTMLElement).querySelector(
-          '.pretzelInputField'
-        ) as HTMLTextAreaElement;
-        if (oldInputField) {
-          const oldInputText = oldInputField.value;
-          newInputField.value = oldInputText;
-        }
-        newInputField.focus();
-      }
     });
   }
 
