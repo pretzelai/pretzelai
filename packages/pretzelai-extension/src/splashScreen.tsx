@@ -1,6 +1,6 @@
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import * as React from 'react';
-import { Dialog, showDialog } from '@jupyterlab/apputils';
+import { Dialog } from '@jupyterlab/apputils';
 import '../style/index.css';
 
 let settingRegistry: ISettingRegistry;
