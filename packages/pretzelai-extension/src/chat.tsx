@@ -29,20 +29,34 @@ export function Chat(): JSX.Element {
     setInput('');
   };
 
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      onSend();
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
         {messages.map(message => (
           <Box key={message.id} sx={{ marginBottom: 2 }}>
             <Typography sx={{ fontWeight: 'bold' }} color={message.type === 'human' ? 'primary' : 'textSecondary'}>
-              {message.type === 'human' ? 'You' : 'Agent'}
+              {message.type === 'human' ? 'You' : 'Pretzel AI'}
             </Typography>
             <Typography>{message.body}</Typography>
           </Box>
         ))}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', padding: 1 }}>
-        <TextField value={input} onChange={e => setInput(e.target.value)} fullWidth placeholder="Type a message..." />
+        <TextField
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          fullWidth
+          placeholder="Type message to ask AI..."
+        />
         <IconButton onClick={onSend}>
           <SendIcon />
         </IconButton>
