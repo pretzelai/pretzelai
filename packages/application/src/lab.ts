@@ -205,32 +205,6 @@ export class JupyterLab extends JupyterFrontEnd<ILabShell> {
    * This introduces a slight delay to the command invocation, but no delay to user input.
    */
   protected evtKeydown(keyDownEvent: KeyboardEvent): void {
-    const target = keyDownEvent.target;
-
-    if (
-      target &&
-      'className' in keyDownEvent.target &&
-      (keyDownEvent.target as HTMLElement).className.includes(
-        'pretzelInputField'
-      )
-    ) {
-      if (
-        (keyDownEvent.metaKey || keyDownEvent.ctrlKey) &&
-        keyDownEvent.key === 'z'
-      ) {
-        keyDownEvent.preventDefault();
-        if (keyDownEvent.shiftKey) {
-          // Redo functionality
-          document.execCommand('redo', false, undefined);
-        } else {
-          // Undo functionality
-          document.execCommand('undo', false, undefined);
-        }
-
-        return;
-      }
-    }
-
     const permissionToExecute = new PromiseDelegate<boolean>();
 
     // Hold the execution of any keybinding until we know if this event would cause text insertion
@@ -246,7 +220,7 @@ export class JupyterLab extends JupyterFrontEnd<ILabShell> {
     // as there is no target to attach the `beforeinput` event listener; in that
     // case we just permit execution immediately (this may happen for programmatic
     // uses of keydown)
-
+    const target = keyDownEvent.target;
     if (!target) {
       return permissionToExecute.resolve(true);
     }

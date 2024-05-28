@@ -31,6 +31,10 @@ import { IOutputModel } from '@jupyterlab/rendermime';
 import { initSplashScreen } from './splashScreen';
 import { URLExt } from '@jupyterlab/coreutils';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
+import { EditorState } from '@codemirror/state';
+import { EditorView, keymap, placeholder } from '@codemirror/view';
+import { markdown } from '@codemirror/lang-markdown';
+import { history, historyKeymap } from '@codemirror/commands';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -611,30 +615,42 @@ const extension: JupyterFrontEndPlugin<void> = {
           inputContainer.style.flexDirection = 'column';
           parentContainer.appendChild(inputContainer);
 
-          const inputField = document.createElement('textarea');
+          const inputField = document.createElement('div');
           inputField.classList.add('pretzelInputField');
-          inputField.placeholder = placeHolderEnabled;
-          inputField.style.width = '100%';
-          inputField.style.height = '100px';
           inputContainer.appendChild(inputField);
-          inputField.addEventListener('keydown', event => {
+
+          const state = EditorState.create({
+            doc: '',
+            extensions: [
+              markdown(),
+              history({ newGroupDelay: 50 }),
+              keymap.of(historyKeymap),
+              placeholder(placeHolderEnabled)
+            ]
+          });
+
+          const view = new EditorView({
+            state,
+            parent: inputField
+          });
+
+          view.dom.style.width = '100%';
+          view.dom.style.height = '100px';
+
+          view.dom.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
-              // TODO: this doesn't work - the Escape key isn't being captured
-              // but every other key press is being captured
               posthog.capture('Remove via Escape', {
                 event_type: 'keypress',
                 event_value: 'esc',
                 method: 'remove'
               });
-              event.preventDefault(); // Prevent any default behavior
-              // Shift focus back to the editor of the active cell
+              event.preventDefault();
               const activeCell = notebookTracker.activeCell;
               if (activeCell && activeCell.editor) {
-                activeCell.editor.focus(); // Focus the editor of the active cell
+                activeCell.editor.focus();
               }
             }
-            // handle enter key press to trigger submit
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && event.shiftKey) {
               event.preventDefault();
               if (!submitButton.disabled) {
                 posthog.capture('Submit via Enter', {
@@ -642,7 +658,7 @@ const extension: JupyterFrontEndPlugin<void> = {
                   event_value: 'enter',
                   method: 'submit'
                 });
-                handleSubmit(inputField.value);
+                handleSubmit(view.state.doc.toString());
               }
             }
           });
@@ -669,7 +685,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               event_type: 'click',
               method: 'submit'
             });
-            handleSubmit(inputField.value);
+            handleSubmit(view.state.doc.toString());
           });
           inputFieldButtonsContainer.appendChild(submitButton);
 
