@@ -3,6 +3,8 @@ import { ReactWidget } from '@jupyterlab/apputils';
 import { cutIcon } from '@jupyterlab/ui-components';
 import { Box, IconButton, TextField, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import { chatAIStream } from './chatAIUtils';
+import { ChatCompletionMessage } from 'openai/resources';
 
 interface IMessage {
   id: string;
@@ -10,16 +12,31 @@ interface IMessage {
   type: 'agent' | 'human';
 }
 
-const mockMessages: IMessage[] = [
-  { id: '1', body: 'Hello, how can I assist you today?', type: 'agent' },
-  { id: '2', body: 'I have a question about machine learning.', type: 'human' }
-];
+const mockMessages: IMessage[] = [{ id: '1', body: 'Hello, how can I assist you today?', type: 'agent' }];
 
-export function Chat(): JSX.Element {
+interface IChatProps {
+  aiService: string;
+  openAiApiKey?: string;
+  openAiBaseUrl?: string;
+  openAiModel?: string;
+  azureBaseUrl?: string;
+  azureApiKey?: string;
+  deploymentId?: string;
+}
+
+export function Chat({
+  aiService,
+  openAiApiKey,
+  openAiBaseUrl,
+  openAiModel,
+  azureBaseUrl,
+  azureApiKey,
+  deploymentId
+}: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(mockMessages);
   const [input, setInput] = useState('');
 
-  const onSend = () => {
+  const onSend = async () => {
     const newMessage = {
       id: String(messages.length + 1),
       body: input,
@@ -27,6 +44,26 @@ export function Chat(): JSX.Element {
     };
     setMessages([...messages, newMessage as IMessage]);
     setInput('');
+
+    const formattedMessages = [
+      ...messages.map(msg => ({
+        role: msg.type === 'human' ? 'user' : 'assistant',
+        content: msg.body
+      })),
+      { role: 'user', content: input }
+    ];
+
+    await chatAIStream({
+      aiService,
+      openAiApiKey,
+      openAiBaseUrl,
+      openAiModel,
+      azureBaseUrl,
+      azureApiKey,
+      deploymentId,
+      renderChat,
+      messages: formattedMessages as ChatCompletionMessage[]
+    });
   };
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -36,6 +73,26 @@ export function Chat(): JSX.Element {
       event.preventDefault();
     }
   }
+
+  const renderChat = (chunk: string) => {
+    setMessages(prevMessages => {
+      const updatedMessages = [...prevMessages];
+      const lastMessage = updatedMessages[updatedMessages.length - 1];
+
+      if (lastMessage.type === 'human') {
+        const systemMessage = {
+          id: String(updatedMessages.length + 1),
+          body: chunk,
+          type: 'agent'
+        };
+        updatedMessages.push(systemMessage as IMessage);
+      } else if (lastMessage.type === 'agent') {
+        lastMessage.body += chunk;
+      }
+
+      return updatedMessages;
+    });
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -65,8 +122,8 @@ export function Chat(): JSX.Element {
   );
 }
 
-export function createChat(): ReactWidget {
-  const widget = ReactWidget.create(<Chat />);
+export function createChat(props: IChatProps): ReactWidget {
+  const widget = ReactWidget.create(<Chat {...props} />);
   widget.id = 'pretzelai::chat';
   widget.title.icon = cutIcon;
   widget.title.caption = 'Pretzel AI Chat'; // TODO: i18n

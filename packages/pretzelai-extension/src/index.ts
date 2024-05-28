@@ -59,9 +59,6 @@ const extension: JupyterFrontEndPlugin<void> = {
     notebookTracker: INotebookTracker,
     settingRegistry: ISettingRegistry
   ) => {
-    const sidePanel = createChat();
-
-    app.shell.add(sidePanel, 'right', { rank: 1000 });
     const { commands } = app;
     const command = 'pretzelai:replace-code';
     const placeholderDisabled =
@@ -113,6 +110,16 @@ const extension: JupyterFrontEndPlugin<void> = {
         updateFunc?.();
         loadAIClient();
         showSplashScreen(posthogCookieConsent);
+        const sidePanel = createChat({
+          aiService,
+          openAiApiKey,
+          openAiBaseUrl,
+          openAiModel,
+          azureBaseUrl,
+          azureApiKey,
+          deploymentId: azureDeploymentName
+        });
+        app.shell.add(sidePanel, 'right', { rank: 1000 });
       } catch (reason) {
         console.error('Failed to load settings for Pretzel', reason);
       }
