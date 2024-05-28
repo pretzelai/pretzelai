@@ -35,6 +35,7 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
+import '../style/index.css';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -69,7 +70,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       'You can also use the free Pretzel AI server.\n' +
       'Go To: Settings > Settings Editor > Pretzel AI Settings to configure';
 
-    const placeHolderEnabled =
+    const placeholderEnabled =
       'Ask AI. Use @variable_name to reference defined variables and dataframes. Shift + Enter for new line. Enter to submit.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
@@ -81,12 +82,26 @@ const extension: JupyterFrontEndPlugin<void> = {
     let aiClient: OpenAI | OpenAIClient | null;
     let posthogPromptTelemetry: boolean = true;
     let codeMatchThreshold: number;
+    let isAIEnabled: boolean = false;
 
     const showSplashScreen = async (consent: string) => {
       if (consent === 'None') {
         initSplashScreen(settingRegistry);
       }
     };
+
+    function setAIEnabled() {
+      // check to make sure we have all the settings set
+      if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel) {
+        isAIEnabled = true;
+      } else if (aiService === 'Use Azure API' && azureBaseUrl && azureDeploymentName && azureApiKey) {
+        isAIEnabled = true;
+      } else if (aiService === 'Use Pretzel AI Server') {
+        isAIEnabled = true;
+      } else {
+        isAIEnabled = false;
+      }
+    }
 
     async function loadSettings(updateFunc?: () => void) {
       try {
@@ -110,6 +125,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         const posthogCookieConsent = cookieSettings.get('posthogCookieConsent').composite as string;
 
         initializePosthog(posthogCookieConsent === 'Yes');
+        setAIEnabled();
         updateFunc?.();
         loadAIClient();
         showSplashScreen(posthogCookieConsent);
@@ -134,27 +150,19 @@ const extension: JupyterFrontEndPlugin<void> = {
     loadAIClient(); // first time load, later settings will trigger this
 
     // Listen for future changes in settings
-    settingRegistry.pluginChanged.connect((sender, plugin) => {
+    settingRegistry.pluginChanged.connect(async (sender, plugin) => {
       if (plugin === extension.id) {
+        const oldIsAIEnabled = isAIEnabled;
         const updateFunc = async () => {
-          const submitButton = document.querySelector('.pretzelInputSubmitButton');
-          const inputField = document.querySelector('.pretzelInputField');
-
-          if (submitButton) {
-            if (
-              (aiService === 'OpenAI API key' && openAiApiKey) ||
-              aiService === 'Use Pretzel AI Server' ||
-              (aiService === 'Use Azure API' && azureBaseUrl && azureDeploymentName && azureApiKey)
-            ) {
-              (submitButton as HTMLInputElement).disabled = false;
-              (inputField as HTMLInputElement).placeholder = placeHolderEnabled;
-            } else {
-              (submitButton as HTMLInputElement).disabled = true;
-              (inputField as HTMLInputElement).placeholder = placeholderDisabled;
+          if (oldIsAIEnabled !== isAIEnabled) {
+            const pretzelParentContainerAI = document.querySelector('.pretzelParentContainerAI');
+            if (pretzelParentContainerAI) {
+              pretzelParentContainerAI.remove();
             }
+            commands.execute('pretzelai:replace-code');
           }
         };
-        loadSettings(updateFunc);
+        await loadSettings(updateFunc);
       }
     });
 
@@ -186,7 +194,6 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
 
     function addFixErrorButton(cellNode: HTMLElement, cellModel: CodeCellModel) {
-      // Remove existing button if any for case with multiple errors multiple buttons
       const existingButton = cellNode.querySelector('.fix-error-button');
       if (existingButton) {
         existingButton.remove();
@@ -195,15 +202,6 @@ const extension: JupyterFrontEndPlugin<void> = {
       const button = document.createElement('button');
       button.textContent = 'Fix Error with AI';
       button.className = 'fix-error-button';
-      button.style.position = 'absolute';
-      button.style.top = '10px';
-      button.style.right = '10px';
-      button.style.padding = '5px 10px';
-      button.style.backgroundColor = '#007bff';
-      button.style.color = 'white';
-      button.style.border = 'none';
-      button.style.borderRadius = '4px';
-      button.style.cursor = 'pointer';
       cellNode.appendChild(button);
       button.onclick = () => {
         posthog.capture('Fix Error with AI', {
@@ -219,27 +217,14 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
 
     function addAskAIButton(cellNode: HTMLElement) {
-      // Hide button from non focused cells
-      const existingButton = document.querySelector('.pretzel-ai-button');
+      const existingButton = document.querySelector('.ask-ai-button');
       if (existingButton) {
         existingButton.remove();
       }
 
       const button = document.createElement('button');
       button.textContent = 'Ask AI';
-      button.style.fontSize = '12px';
-      button.className = 'pretzel-ai-button';
-      button.style.position = 'absolute';
-      button.style.top = '10px';
-      button.style.right = '190px';
-      button.style.padding = '2px 10px 3px 10px';
-      button.style.backgroundColor = 'rgb(84 157 235)';
-      button.style.color =
-        document.body.getAttribute('data-jp-theme-light') === 'true' ? 'white' : 'rgba(0, 0, 0, 0.8)';
-      button.style.border = 'none';
-      button.style.borderRadius = '4px';
-      button.style.cursor = 'pointer';
-      button.style.zIndex = '1000';
+      button.className = 'ask-ai-button';
       cellNode.appendChild(button);
 
       button.onclick = () => {
@@ -588,7 +573,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               event_value: 'Cmd+k',
               method: 'remove'
             });
-            const statusElements = activeCell.node.querySelectorAll('p[style="margin-left: 70px;"]');
+            const statusElements = activeCell.node.querySelectorAll('p.status-element');
             statusElements.forEach(element => element.remove());
 
             // Switch focus back to the Jupyter cell
@@ -599,8 +584,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           let oldCode = activeCell.model.sharedModel.source;
 
           const statusElement = document.createElement('p');
-          statusElement.textContent = '';
-          statusElement.style.marginLeft = '70px';
+          statusElement.className = 'status-element';
           activeCell.node.appendChild(statusElement);
 
           // Create a parent container for all dynamically created elements
@@ -609,11 +593,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           activeCell.node.appendChild(parentContainer);
           // Create an input field and append it below the cell
           const inputContainer = document.createElement('div');
-          inputContainer.style.marginTop = '10px';
-          inputContainer.style.marginLeft = '70px';
-          inputContainer.style.display = 'flex';
-          inputContainer.style.flexDirection = 'column';
-          inputContainer.style.border = '1px solid #616161';
+          inputContainer.className = 'input-container';
           parentContainer.appendChild(inputContainer);
 
           const inputField = document.createElement('div');
@@ -626,15 +606,15 @@ const extension: JupyterFrontEndPlugin<void> = {
               markdown(),
               history({ newGroupDelay: 50 }),
               keymap.of(historyKeymap),
-              placeholder(placeHolderEnabled)
+              isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
+              EditorView.lineWrapping,
+              EditorView.editable.of(isAIEnabled)
             ]
           });
           const inputView = new EditorView({
             state,
             parent: inputField
           });
-          inputView.dom.style.width = '100%';
-          inputView.dom.style.height = '100px';
           inputContainer.appendChild(inputField);
           inputView.dispatch({
             selection: { anchor: state.doc.length, head: state.doc.length }
@@ -671,9 +651,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           });
 
           const inputFieldButtonsContainer = document.createElement('div');
-          inputFieldButtonsContainer.style.marginTop = '10px';
-          inputFieldButtonsContainer.style.display = 'flex';
-          inputFieldButtonsContainer.style.flexDirection = 'row';
+          inputFieldButtonsContainer.className = 'input-field-buttons-container';
           inputContainer.appendChild(inputFieldButtonsContainer);
           // Move focus into the CodeMirror editor in inputField
           inputView.focus();
@@ -681,13 +659,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           const submitButton = document.createElement('button');
           submitButton.classList.add('pretzelInputSubmitButton');
           submitButton.textContent = 'Submit';
-          submitButton.style.backgroundColor = 'lightblue';
-          submitButton.style.borderRadius = '5px';
-          submitButton.style.border = '1px solid darkblue';
-          submitButton.style.maxWidth = '100px';
-          submitButton.style.minHeight = '25px';
-          submitButton.style.marginTop = '10px';
-          submitButton.style.marginRight = '10px';
+          submitButton.disabled = !isAIEnabled;
           submitButton.addEventListener('click', () => {
             posthog.capture('Submit via Click', {
               event_type: 'click',
@@ -697,15 +669,9 @@ const extension: JupyterFrontEndPlugin<void> = {
           });
           inputFieldButtonsContainer.appendChild(submitButton);
 
-          // write code to add a button the removed the inputField and submitButton
           const removeButton = document.createElement('button');
+          removeButton.className = 'remove-button';
           removeButton.textContent = 'Remove';
-          removeButton.style.backgroundColor = 'lightcoral';
-          removeButton.style.borderRadius = '5px';
-          removeButton.style.border = '1px solid darkred';
-          removeButton.style.maxWidth = '100px';
-          removeButton.style.minHeight = '25px';
-          removeButton.style.marginTop = '10px';
           inputFieldButtonsContainer.appendChild(removeButton);
           const removeHandler = () => {
             posthog.capture('Remove via Click', {
@@ -713,7 +679,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               method: 'remove'
             });
             activeCell.node.removeChild(parentContainer);
-            const statusElements = activeCell.node.querySelectorAll('p[style="margin-left: 70px;"]');
+            const statusElements = activeCell.node.querySelectorAll('p.status-element');
             statusElements.forEach(element => element.remove());
 
             // Switch focus back to the Jupyter cell
