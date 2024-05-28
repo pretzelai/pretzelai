@@ -9,8 +9,8 @@
     "module": "esnext",
     "moduleResolution": "node",
     "noEmitOnError": true,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
     "outDir": "lib",
@@ -19,9 +19,7 @@
     "strictNullChecks": true,
     "target": "ES2018"
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "references": [
     {
       "path": "../application"
