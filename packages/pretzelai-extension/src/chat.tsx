@@ -46,6 +46,11 @@ export function Chat({
     setInput('');
 
     const formattedMessages = [
+      {
+        role: 'system',
+        content:
+          'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis.'
+      },
       ...messages.map(msg => ({
         role: msg.type === 'human' ? 'user' : 'assistant',
         content: msg.body
