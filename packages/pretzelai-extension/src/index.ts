@@ -31,6 +31,7 @@ import { IOutputModel } from '@jupyterlab/rendermime';
 import { initSplashScreen } from './splashScreen';
 import { URLExt } from '@jupyterlab/coreutils';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
+import { createChat } from './chat';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -58,6 +59,9 @@ const extension: JupyterFrontEndPlugin<void> = {
     notebookTracker: INotebookTracker,
     settingRegistry: ISettingRegistry
   ) => {
+    const sidePanel = createChat();
+
+    app.shell.add(sidePanel, 'right', { rank: 1000 });
     const { commands } = app;
     const command = 'pretzelai:replace-code';
     const placeholderDisabled =
