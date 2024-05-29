@@ -131,6 +131,6 @@ export function createChat(props: IChatProps): ReactWidget {
   const widget = ReactWidget.create(<Chat {...props} />);
   widget.id = 'pretzelai::chat';
   widget.title.icon = cutIcon;
-  widget.title.caption = 'Pretzel AI Chat'; // TODO: i18n
+  widget.title.caption = 'Pretzel AI Chat';
   return widget;
 }
