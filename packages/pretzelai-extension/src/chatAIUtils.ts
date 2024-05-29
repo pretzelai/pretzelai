@@ -1,4 +1,29 @@
 import { OpenAI } from 'openai';
+import { ChatCompletionMessage } from 'openai/resources';
+
+export const CHAT_SYSTEM_MESSAGE =
+  'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown.';
+
+const generateChatPrompt = (
+  lastContent: string,
+  topSimilarities?: string[],
+  activeCellCode?: string,
+  selectedCode?: string
+) => {
+  return `${lastContent}
+${
+  selectedCode
+    ? 'My question is regarding this code: \n-----\n' + selectedCode + '\n-----\n'
+    : activeCellCode
+    ? 'The cell I am focused on is: \n-----\n' + activeCellCode + '\n-----\n'
+    : ''
+}
+${
+  topSimilarities
+    ? 'Cells containing related content are: \n-----\n' + topSimilarities.join('\n-----\n') + '\n-----\n'
+    : ''
+}`;
+};
 
 export const chatAIStream = async ({
   aiService,
@@ -9,7 +34,10 @@ export const chatAIStream = async ({
   azureApiKey,
   deploymentId,
   renderChat,
-  messages
+  messages,
+  topSimilarities,
+  activeCellCode,
+  selectedCode
 }: {
   aiService: string;
   openAiApiKey?: string;
@@ -20,7 +48,13 @@ export const chatAIStream = async ({
   deploymentId?: string;
   renderChat: (message: string) => void;
   messages: OpenAI.ChatCompletionMessage[];
+  topSimilarities: string[];
+  activeCellCode?: string;
+  selectedCode?: string;
 }): Promise<void> => {
+  const lastContent = messages[messages.length - 1].content as string;
+  const lastContentWithInjection = generateChatPrompt(lastContent, topSimilarities, activeCellCode, selectedCode);
+  const messagesWithInjection = [...messages.splice(-1), { role: 'user', content: lastContentWithInjection }];
   if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && messages) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
@@ -29,7 +63,7 @@ export const chatAIStream = async ({
     });
     const stream = await openai.chat.completions.create({
       model: openAiModel,
-      messages,
+      messages: messagesWithInjection as ChatCompletionMessage[],
       stream: true
     });
     for await (const chunk of stream) {
@@ -43,7 +77,7 @@ export const chatAIStream = async ({
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        messages
+        messages: messagesWithInjection
       })
     });
     const reader = response!.body!.getReader();

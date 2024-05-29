@@ -12,13 +12,16 @@ import { ReactWidget } from '@jupyterlab/apputils';
 import { cutIcon } from '@jupyterlab/ui-components';
 import { Box, IconButton, TextField, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { chatAIStream } from './chatAIUtils';
+import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { getSelectedCode } from './utils';
 import { RendermimeMarkdown } from './rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
+import { AiService, getTopSimilarities } from './prompt';
+import { OpenAI } from 'openai';
+import { OpenAIClient } from '@azure/openai';
 
 interface IMessage {
   id: string;
@@ -26,10 +29,10 @@ interface IMessage {
   role: 'user' | 'assistant' | 'system';
 }
 
-const mockMessages: IMessage[] = [{ id: '1', content: '## Hello, how can I assist you today?', role: 'assistant' }];
+const mockMessages: IMessage[] = [{ id: '1', content: 'Hello, how can I assist you today?', role: 'assistant' }];
 
 interface IChatProps {
-  aiService: string;
+  aiService: AiService;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   openAiModel?: string;
@@ -39,6 +42,8 @@ interface IChatProps {
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
+  aiClient: OpenAI | OpenAIClient | null;
+  codeMatchThreshold: number;
 }
 
 export function Chat({
@@ -51,7 +56,9 @@ export function Chat({
   deploymentId,
   notebookTracker,
   app,
-  rmRegistry
+  rmRegistry,
+  aiClient,
+  codeMatchThreshold
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(mockMessages);
   const [input, setInput] = useState('');
@@ -67,10 +74,7 @@ export function Chat({
 
     const file = await app.serviceManager.contents.get(embeddingsPath);
     const embeddings = JSON.parse(file.content);
-    const selectedCode = getSelectedCode(notebookTracker);
-    console.log(activeCellCode);
-    console.log(embeddings);
-    console.log(selectedCode);
+    const selectedCode = getSelectedCode(notebookTracker).extractedCode;
 
     const newMessage = {
       id: String(messages.length + 1),
@@ -83,8 +87,7 @@ export function Chat({
     const formattedMessages = [
       {
         role: 'system',
-        content:
-          'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis.'
+        content: CHAT_SYSTEM_MESSAGE
       },
       ...messages.map(msg => ({
         role: msg.role,
@@ -92,6 +95,16 @@ export function Chat({
       })),
       { role: 'user', content: input }
     ];
+
+    const topSimilarities = await getTopSimilarities(
+      input,
+      embeddings,
+      5,
+      aiClient,
+      aiService,
+      'no-match-id',
+      codeMatchThreshold
+    );
 
     await chatAIStream({
       aiService,
@@ -102,7 +115,10 @@ export function Chat({
       azureApiKey,
       deploymentId,
       renderChat,
-      messages: formattedMessages as ChatCompletionMessage[]
+      messages: formattedMessages as ChatCompletionMessage[],
+      topSimilarities,
+      activeCellCode,
+      selectedCode
     });
   };
 

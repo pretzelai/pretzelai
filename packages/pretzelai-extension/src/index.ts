@@ -77,7 +77,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureBaseUrl = '';
     let azureDeploymentName = '';
     let azureApiKey = '';
-    let aiClient: OpenAI | OpenAIClient | null;
+    let aiClient: OpenAI | OpenAIClient | null = null;
     let posthogPromptTelemetry: boolean = true;
     let codeMatchThreshold: number;
 
@@ -122,7 +122,9 @@ const extension: JupyterFrontEndPlugin<void> = {
           deploymentId: azureDeploymentName,
           notebookTracker,
           app,
-          rmRegistry
+          rmRegistry,
+          aiClient,
+          codeMatchThreshold
         });
         app.shell.add(sidePanel, 'right', { rank: 1000 });
       } catch (reason) {
