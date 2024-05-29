@@ -8,11 +8,11 @@ import { ChatCompletionMessage } from 'openai/resources';
 
 interface IMessage {
   id: string;
-  body: string;
-  type: 'agent' | 'human';
+  content: string;
+  role: 'user' | 'assistant' | 'system';
 }
 
-const mockMessages: IMessage[] = [{ id: '1', body: 'Hello, how can I assist you today?', type: 'agent' }];
+const mockMessages: IMessage[] = [{ id: '1', content: 'Hello, how can I assist you today?', role: 'assistant' }];
 
 interface IChatProps {
   aiService: string;
@@ -39,8 +39,8 @@ export function Chat({
   const onSend = async () => {
     const newMessage = {
       id: String(messages.length + 1),
-      body: input,
-      type: 'human'
+      content: input,
+      role: 'user'
     };
     setMessages([...messages, newMessage as IMessage]);
     setInput('');
@@ -52,8 +52,8 @@ export function Chat({
           'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis.'
       },
       ...messages.map(msg => ({
-        role: msg.type === 'human' ? 'user' : 'assistant',
-        content: msg.body
+        role: msg.role,
+        content: msg.content
       })),
       { role: 'user', content: input }
     ];
@@ -84,15 +84,15 @@ export function Chat({
       const updatedMessages = [...prevMessages];
       const lastMessage = updatedMessages[updatedMessages.length - 1];
 
-      if (lastMessage.type === 'human') {
-        const systemMessage = {
+      if (lastMessage.role === 'user') {
+        const aiMessage = {
           id: String(updatedMessages.length + 1),
-          body: chunk,
-          type: 'agent'
+          content: chunk,
+          role: 'assistant'
         };
-        updatedMessages.push(systemMessage as IMessage);
-      } else if (lastMessage.type === 'agent') {
-        lastMessage.body += chunk;
+        updatedMessages.push(aiMessage as IMessage);
+      } else if (lastMessage.role === 'assistant') {
+        lastMessage.content += chunk;
       }
 
       return updatedMessages;
@@ -104,10 +104,10 @@ export function Chat({
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
         {messages.map(message => (
           <Box key={message.id} sx={{ marginBottom: 2 }}>
-            <Typography sx={{ fontWeight: 'bold' }} color={message.type === 'human' ? 'primary' : 'textSecondary'}>
-              {message.type === 'human' ? 'You' : 'Pretzel AI'}
+            <Typography sx={{ fontWeight: 'bold' }} color={message.role === 'user' ? 'primary' : 'textSecondary'}>
+              {message.role === 'user' ? 'You' : 'Pretzel AI'}
             </Typography>
-            <Typography>{message.body}</Typography>
+            <Typography>{message.content}</Typography>
           </Box>
         ))}
       </Box>
