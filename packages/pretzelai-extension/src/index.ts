@@ -32,6 +32,7 @@ import { initSplashScreen } from './splashScreen';
 import { URLExt } from '@jupyterlab/coreutils';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { createChat } from './chat';
+import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -52,9 +53,10 @@ const NUMBER_OF_SIMILAR_CELLS = 3;
 const extension: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
-  requires: [ICommandPalette, INotebookTracker, ISettingRegistry],
+  requires: [IRenderMimeRegistry, ICommandPalette, INotebookTracker, ISettingRegistry],
   activate: async (
     app: JupyterFrontEnd,
+    rmRegistry: IRenderMimeRegistry,
     palette: ICommandPalette,
     notebookTracker: INotebookTracker,
     settingRegistry: ISettingRegistry
@@ -119,7 +121,8 @@ const extension: JupyterFrontEndPlugin<void> = {
           azureApiKey,
           deploymentId: azureDeploymentName,
           notebookTracker,
-          app
+          app,
+          rmRegistry
         });
         app.shell.add(sidePanel, 'right', { rank: 1000 });
       } catch (reason) {

@@ -17,6 +17,8 @@ import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { getSelectedCode } from './utils';
+import { RendermimeMarkdown } from './rendermime-markdown';
+import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 
 interface IMessage {
   id: string;
@@ -24,7 +26,7 @@ interface IMessage {
   role: 'user' | 'assistant' | 'system';
 }
 
-const mockMessages: IMessage[] = [{ id: '1', content: 'Hello, how can I assist you today?', role: 'assistant' }];
+const mockMessages: IMessage[] = [{ id: '1', content: '## Hello, how can I assist you today?', role: 'assistant' }];
 
 interface IChatProps {
   aiService: string;
@@ -36,6 +38,7 @@ interface IChatProps {
   deploymentId?: string;
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
+  rmRegistry: IRenderMimeRegistry;
 }
 
 export function Chat({
@@ -47,7 +50,8 @@ export function Chat({
   azureApiKey,
   deploymentId,
   notebookTracker,
-  app
+  app,
+  rmRegistry
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(mockMessages);
   const [input, setInput] = useState('');
@@ -139,7 +143,7 @@ export function Chat({
             <Typography sx={{ fontWeight: 'bold' }} color={message.role === 'user' ? 'primary' : 'textSecondary'}>
               {message.role === 'user' ? 'You' : 'Pretzel AI'}
             </Typography>
-            <Typography>{message.content}</Typography>
+            <RendermimeMarkdown rmRegistry={rmRegistry} markdownStr={message.content} />
           </Box>
         ))}
       </Box>
