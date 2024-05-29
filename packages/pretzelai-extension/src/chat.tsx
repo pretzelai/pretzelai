@@ -9,7 +9,9 @@
 
 import React, { useState } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
-import { cutIcon } from '@jupyterlab/ui-components';
+import { LabIcon } from '@jupyterlab/ui-components';
+// @ts-expect-error Svg
+import pretzelSvg from './pretzel.svg';
 import { Box, IconButton, TextField, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
@@ -22,6 +24,11 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { AiService, getTopSimilarities } from './prompt';
 import { OpenAI } from 'openai';
 import { OpenAIClient } from '@azure/openai';
+
+const pretzelIcon = new LabIcon({
+  name: 'pretzelai::chat',
+  svgstr: pretzelSvg
+});
 
 interface IMessage {
   id: string;
@@ -182,7 +189,7 @@ export function Chat({
 export function createChat(props: IChatProps): ReactWidget {
   const widget = ReactWidget.create(<Chat {...props} />);
   widget.id = 'pretzelai::chat';
-  widget.title.icon = cutIcon;
+  widget.title.icon = pretzelIcon;
   widget.title.caption = 'Pretzel AI Chat';
   return widget;
 }
