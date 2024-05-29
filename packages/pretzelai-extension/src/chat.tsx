@@ -36,7 +36,7 @@ interface IMessage {
   role: 'user' | 'assistant' | 'system';
 }
 
-const mockMessages: IMessage[] = [{ id: '1', content: 'Hello, how can I assist you today?', role: 'assistant' }];
+const initialMessage: IMessage[] = [{ id: '1', content: 'Hello, how can I assist you today?', role: 'assistant' }];
 
 interface IChatProps {
   aiService: AiService;
@@ -67,7 +67,7 @@ export function Chat({
   aiClient,
   codeMatchThreshold
 }: IChatProps): JSX.Element {
-  const [messages, setMessages] = useState(mockMessages);
+  const [messages, setMessages] = useState(initialMessage);
   const [input, setInput] = useState('');
 
   const onSend = async () => {
@@ -83,14 +83,6 @@ export function Chat({
     const embeddings = JSON.parse(file.content);
     const selectedCode = getSelectedCode(notebookTracker).extractedCode;
 
-    const newMessage = {
-      id: String(messages.length + 1),
-      content: input,
-      role: 'user'
-    };
-    setMessages([...messages, newMessage as IMessage]);
-    setInput('');
-
     const formattedMessages = [
       {
         role: 'system',
@@ -102,6 +94,15 @@ export function Chat({
       })),
       { role: 'user', content: input }
     ];
+
+    const newMessage = {
+      id: String(messages.length + 1),
+      content: input,
+      role: 'user'
+    };
+
+    setMessages(prevMessages => [...prevMessages, newMessage as IMessage]);
+    setInput('');
 
     const topSimilarities = await getTopSimilarities(
       input,

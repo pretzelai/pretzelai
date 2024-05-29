@@ -54,7 +54,7 @@ export const chatAIStream = async ({
 }): Promise<void> => {
   const lastContent = messages[messages.length - 1].content as string;
   const lastContentWithInjection = generateChatPrompt(lastContent, topSimilarities, activeCellCode, selectedCode);
-  const messagesWithInjection = [...messages.splice(-1), { role: 'user', content: lastContentWithInjection }];
+  const messagesWithInjection = [...messages.slice(0, -1), { role: 'user', content: lastContentWithInjection }];
   if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && messages) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
