@@ -6,6 +6,7 @@
  * Contributions by contributors listed in the PRETZEL_CONTRIBUTORS file (found at
  * the root of the project) are licensed under AGPLv3.
  */
+
 import { INotebookTracker } from '@jupyterlab/notebook';
 
 export async function calculateHash(input: string) {
