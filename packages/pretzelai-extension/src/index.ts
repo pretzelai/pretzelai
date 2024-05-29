@@ -117,7 +117,9 @@ const extension: JupyterFrontEndPlugin<void> = {
           openAiModel,
           azureBaseUrl,
           azureApiKey,
-          deploymentId: azureDeploymentName
+          deploymentId: azureDeploymentName,
+          notebookTracker,
+          app
         });
         app.shell.add(sidePanel, 'right', { rank: 1000 });
       } catch (reason) {
@@ -487,6 +489,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     }
 
+    // remove this and import from utils, leaving it here to avoid merged conflicts for now
     const getSelectedCode = () => {
       const selection = notebookTracker.activeCell?.editor?.getSelection();
       const cellCode = notebookTracker.activeCell?.model.sharedModel.source;

@@ -22,7 +22,6 @@ export const chatAIStream = async ({
   messages: OpenAI.ChatCompletionMessage[];
 }): Promise<void> => {
   if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && messages) {
-    console.log('hallochen');
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,

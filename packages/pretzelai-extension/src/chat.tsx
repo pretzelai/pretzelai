@@ -5,6 +5,9 @@ import { Box, IconButton, TextField, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
+import { INotebookTracker } from '@jupyterlab/notebook';
+import { JupyterFrontEnd } from '@jupyterlab/application';
+import { getSelectedCode } from './utils';
 
 interface IMessage {
   id: string;
@@ -22,6 +25,8 @@ interface IChatProps {
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
+  notebookTracker: INotebookTracker;
+  app: JupyterFrontEnd;
 }
 
 export function Chat({
@@ -31,12 +36,29 @@ export function Chat({
   openAiModel,
   azureBaseUrl,
   azureApiKey,
-  deploymentId
+  deploymentId,
+  notebookTracker,
+  app
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(mockMessages);
   const [input, setInput] = useState('');
 
   const onSend = async () => {
+    const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
+    const notebook = notebookTracker.currentWidget;
+    const currentNotebookPath = notebook!.context.path;
+    const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
+    const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+    const embeddingsFolderName = '.embeddings';
+    const embeddingsPath = currentDir + '/' + embeddingsFolderName + '/' + notebookName + '_embeddings.json';
+
+    const file = await app.serviceManager.contents.get(embeddingsPath);
+    const embeddings = JSON.parse(file.content);
+    const selectedCode = getSelectedCode(notebookTracker);
+    console.log(activeCellCode);
+    console.log(embeddings);
+    console.log(selectedCode);
+
     const newMessage = {
       id: String(messages.length + 1),
       content: input,
@@ -102,6 +124,7 @@ export function Chat({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
+        {}
         {messages.map(message => (
           <Box key={message.id} sx={{ marginBottom: 2 }}>
             <Typography sx={{ fontWeight: 'bold' }} color={message.role === 'user' ? 'primary' : 'textSecondary'}>
