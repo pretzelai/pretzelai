@@ -626,8 +626,9 @@ function ensureJupyterlab(): string[] {
     }
 
     // Make sure it is included as a dependency.
-    corePackage.dependencies[data.name] = `~${data.version}`;
-
+    if (!corePackage.dependencies[data.name].startsWith('file:')) {
+      corePackage.dependencies[data.name] = `~${data.version}`;
+    }
     // Handle extensions.
     ['extension', 'mimeExtension'].forEach(item => {
       let ext = data.jupyterlab[item];
