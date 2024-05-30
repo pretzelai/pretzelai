@@ -31,6 +31,8 @@ import { IOutputModel } from '@jupyterlab/rendermime';
 import { initSplashScreen } from './splashScreen';
 import { URLExt } from '@jupyterlab/coreutils';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
+import { createChat } from './chat';
+import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
@@ -56,9 +58,10 @@ const NUMBER_OF_SIMILAR_CELLS = 3;
 const extension: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
-  requires: [ICommandPalette, INotebookTracker, ISettingRegistry],
+  requires: [IRenderMimeRegistry, ICommandPalette, INotebookTracker, ISettingRegistry],
   activate: async (
     app: JupyterFrontEnd,
+    rmRegistry: IRenderMimeRegistry,
     palette: ICommandPalette,
     notebookTracker: INotebookTracker,
     settingRegistry: ISettingRegistry
@@ -79,7 +82,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureBaseUrl = '';
     let azureDeploymentName = '';
     let azureApiKey = '';
-    let aiClient: OpenAI | OpenAIClient | null;
+    let aiClient: OpenAI | OpenAIClient | null = null;
     let posthogPromptTelemetry: boolean = true;
     let codeMatchThreshold: number;
     let isAIEnabled: boolean = false;
@@ -129,6 +132,21 @@ const extension: JupyterFrontEndPlugin<void> = {
         updateFunc?.();
         loadAIClient();
         showSplashScreen(posthogCookieConsent);
+        const sidePanel = createChat({
+          aiService,
+          openAiApiKey,
+          openAiBaseUrl,
+          openAiModel,
+          azureBaseUrl,
+          azureApiKey,
+          deploymentId: azureDeploymentName,
+          notebookTracker,
+          app,
+          rmRegistry,
+          aiClient,
+          codeMatchThreshold
+        });
+        app.shell.add(sidePanel, 'right', { rank: 1000 });
       } catch (reason) {
         console.error('Failed to load settings for Pretzel', reason);
       }
@@ -465,6 +483,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     }
 
+    // remove this and import from utils, leaving it here to avoid merged conflicts for now
     const getSelectedCode = () => {
       const selection = notebookTracker.activeCell?.editor?.getSelection();
       const cellCode = notebookTracker.activeCell?.model.sharedModel.source;
