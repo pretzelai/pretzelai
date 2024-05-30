@@ -40,6 +40,15 @@ const URL_CONFIG = {
   rtdVersion: 'latest'
 };
 
+// packages that have been modified and should not be pulled from npm
+const LOCAL_PACKAGES: Dict<string> = {
+  '@jupyterlab/apputils-extension': 'apputils-extension',
+  '@jupyterlab/codemirror': 'codemirror',
+  '@jupyterlab/codemirror-extension': 'codemirror-extension',
+  '@jupyterlab/help-extension': 'help-extension',
+  '@jupyterlab/pretzelai-extension': 'pretzelai-extension'
+};
+
 // Data to ignore.
 const MISSING: Dict<string[]> = {
   '@jupyterlab/coreutils': ['path'],
@@ -521,11 +530,13 @@ function ensureCorePackage(corePackage: any, corePaths: string[]) {
   // resolutions.
   coreData.forEach((data, name) => {
     // Insist on a restricted version in the yarn resolution.
-    if (
-      corePackage.dependencies &&
-      Object.keys(corePackage.dependencies).includes(data.name) &&
-      !corePackage.dependencies[data.name].startsWith('file:')
-    ) {
+    if (LOCAL_PACKAGES.hasOwnProperty(name)) {
+      corePackage.resolutions[name] = `file:${path.join(
+        '..',
+        'packages',
+        LOCAL_PACKAGES[name]
+      )}`;
+    } else {
       corePackage.resolutions[name] = `~${data.version}`;
     }
   });
@@ -632,11 +643,13 @@ function ensureJupyterlab(): string[] {
     }
 
     // Make sure it is included as a dependency.
-    if (
-      corePackage.dependencies &&
-      Object.keys(corePackage.dependencies).includes(data.name) &&
-      !corePackage.dependencies[data.name].startsWith('file:')
-    ) {
+    if (LOCAL_PACKAGES.hasOwnProperty(data.name)) {
+      corePackage.dependencies[data.name] = `file:${path.join(
+        '..',
+        'packages',
+        LOCAL_PACKAGES[data.name]
+      )}`;
+    } else {
       corePackage.dependencies[data.name] = `~${data.version}`;
     }
     // Handle extensions.
