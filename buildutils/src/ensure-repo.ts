@@ -521,7 +521,12 @@ function ensureCorePackage(corePackage: any, corePaths: string[]) {
   // resolutions.
   coreData.forEach((data, name) => {
     // Insist on a restricted version in the yarn resolution.
-    corePackage.resolutions[name] = `~${data.version}`;
+    if (
+      corePackage.dependencies &&
+      !corePackage.dependencies[data.name].startsWith('file:')
+    ) {
+      corePackage.resolutions[name] = `~${data.version}`;
+    }
   });
 
   // Then fill in any missing packages that should be singletons from the direct
@@ -626,7 +631,10 @@ function ensureJupyterlab(): string[] {
     }
 
     // Make sure it is included as a dependency.
-    if (!corePackage.dependencies[data.name].startsWith('file:')) {
+    if (
+      corePackage.dependencies &&
+      !corePackage.dependencies[data.name].startsWith('file:')
+    ) {
       corePackage.dependencies[data.name] = `~${data.version}`;
     }
     // Handle extensions.
