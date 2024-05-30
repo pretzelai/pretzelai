@@ -26,7 +26,7 @@ const updateFileDependencies = (dependencies: { [key: string]: string }) => {
     if (value.startsWith('file:../packages/')) {
       dependencies[key] = value.replace(
         'file:../packages/',
-        'file:./../packages/'
+        'file:../../packages/'
       );
     }
   }
