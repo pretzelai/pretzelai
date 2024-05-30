@@ -36,7 +36,6 @@ import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
-import '../style/index.css';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {

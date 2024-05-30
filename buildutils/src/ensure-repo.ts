@@ -40,6 +40,16 @@ const URL_CONFIG = {
   rtdVersion: 'latest'
 };
 
+// PRETZEL CHANGE
+// packages that have been modified and should not be pulled from npm
+const LOCAL_PACKAGES: Dict<string> = {
+  '@jupyterlab/apputils-extension': 'apputils-extension',
+  '@jupyterlab/codemirror': 'codemirror',
+  '@jupyterlab/codemirror-extension': 'codemirror-extension',
+  '@jupyterlab/help-extension': 'help-extension',
+  '@jupyterlab/pretzelai-extension': 'pretzelai-extension'
+};
+
 // Data to ignore.
 const MISSING: Dict<string[]> = {
   '@jupyterlab/coreutils': ['path'],
@@ -521,7 +531,15 @@ function ensureCorePackage(corePackage: any, corePaths: string[]) {
   // resolutions.
   coreData.forEach((data, name) => {
     // Insist on a restricted version in the yarn resolution.
-    corePackage.resolutions[name] = `~${data.version}`;
+    if (LOCAL_PACKAGES.hasOwnProperty(name)) {
+      corePackage.resolutions[name] = `file:${path.join(
+        '..',
+        'packages',
+        LOCAL_PACKAGES[name]
+      )}`;
+    } else {
+      corePackage.resolutions[name] = `~${data.version}`;
+    }
   });
 
   // Then fill in any missing packages that should be singletons from the direct
@@ -553,51 +571,6 @@ function ensureCorePackage(corePackage: any, corePaths: string[]) {
 }
 
 /**
- * Ensure the federated example core package.
- */
-function ensureFederatedExample(): string[] {
-  const basePath = path.resolve('.');
-  const corePath = path.join(
-    basePath,
-    'examples',
-    'federated',
-    'core_package',
-    'package.json'
-  );
-  const corePackage = utils.readJSONFile(corePath);
-  // the list of dependencies might differ from the main JupyterLab application
-  const dependencies = new Set(Object.keys(corePackage.dependencies));
-
-  const corePaths = utils.getCorePaths().filter(p => {
-    return dependencies.has(`@jupyterlab/${path.basename(p)}`);
-  });
-
-  ensureCorePackage(corePackage, corePaths);
-
-  const coreData = getCoreData(corePaths);
-  corePackage.jupyterlab.extensions = [];
-  coreData.forEach((data, name) => {
-    // Make sure it is included as a dependency.
-    corePackage.dependencies[data.name] = `^${data.version}`;
-
-    const meta = data.jupyterlab;
-    const keep = meta?.extension || meta?.mimeExtension;
-    if (!keep) {
-      return;
-    }
-    corePackage.jupyterlab.extensions.push(name);
-  });
-
-  corePackage.jupyterlab.extensions.sort();
-
-  // Write the package.json back to disk.
-  if (utils.writePackageData(corePath, corePackage)) {
-    return ['Updated federated example'];
-  }
-  return [];
-}
-
-/**
  * Ensure the jupyterlab application package.
  */
 function ensureJupyterlab(): string[] {
@@ -626,8 +599,15 @@ function ensureJupyterlab(): string[] {
     }
 
     // Make sure it is included as a dependency.
-    corePackage.dependencies[data.name] = `~${data.version}`;
-
+    if (LOCAL_PACKAGES.hasOwnProperty(data.name)) {
+      corePackage.dependencies[data.name] = `file:${path.join(
+        '..',
+        'packages',
+        LOCAL_PACKAGES[data.name]
+      )}`;
+    } else {
+      corePackage.dependencies[data.name] = `~${data.version}`;
+    }
     // Handle extensions.
     ['extension', 'mimeExtension'].forEach(item => {
       let ext = data.jupyterlab[item];
@@ -855,12 +835,6 @@ export async function ensureIntegrity(): Promise<boolean> {
 
   // Handle buildutils
   ensureBuildUtils();
-
-  // Handle the federated example application
-  pkgMessages = ensureFederatedExample();
-  if (pkgMessages.length > 0) {
-    messages['@jupyterlab/example-federated-core'] = pkgMessages;
-  }
 
   // Handle the JupyterLab application top package.
   pkgMessages = ensureJupyterlab();

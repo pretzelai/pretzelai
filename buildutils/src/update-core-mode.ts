@@ -20,6 +20,22 @@ data['jupyterlab']['outputDir'] = '..';
 data['jupyterlab']['staticDir'] = '../static';
 data['jupyterlab']['linkedPackages'] = {};
 
+// Modify dependencies and resolutions to add an additional '../' for file references
+const updateFileReferences = (references: { [key: string]: string }) => {
+  for (const [key, value] of Object.entries(references)) {
+    if (value.startsWith('file:../packages/')) {
+      references[key] = value.replace(
+        'file:../packages/',
+        'file:../../packages/'
+      );
+    }
+  }
+};
+
+updateFileReferences(data.dependencies);
+updateFileReferences(data.devDependencies);
+updateFileReferences(data.resolutions);
+
 const staging = './jupyterlab/staging';
 
 // Ensure a clean staging directory.
