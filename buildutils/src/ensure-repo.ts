@@ -523,6 +523,7 @@ function ensureCorePackage(corePackage: any, corePaths: string[]) {
     // Insist on a restricted version in the yarn resolution.
     if (
       corePackage.dependencies &&
+      Object.keys(corePackage.dependencies).includes(data.name) &&
       !corePackage.dependencies[data.name].startsWith('file:')
     ) {
       corePackage.resolutions[name] = `~${data.version}`;
@@ -633,6 +634,7 @@ function ensureJupyterlab(): string[] {
     // Make sure it is included as a dependency.
     if (
       corePackage.dependencies &&
+      Object.keys(corePackage.dependencies).includes(data.name) &&
       !corePackage.dependencies[data.name].startsWith('file:')
     ) {
       corePackage.dependencies[data.name] = `~${data.version}`;
