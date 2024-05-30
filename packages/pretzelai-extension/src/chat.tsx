@@ -10,8 +10,7 @@
 import React, { useState } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { LabIcon } from '@jupyterlab/ui-components';
-// @ts-expect-error Svg
-import pretzelSvg from './pretzel.svg';
+import pretzelSvg from '../style/icons/pretzel.svg';
 import { Box, IconButton, TextField, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
