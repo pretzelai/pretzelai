@@ -40,6 +40,7 @@ const URL_CONFIG = {
   rtdVersion: 'latest'
 };
 
+// PRETZEL CHANGE
 // packages that have been modified and should not be pulled from npm
 const LOCAL_PACKAGES: Dict<string> = {
   '@jupyterlab/apputils-extension': 'apputils-extension',
@@ -499,6 +500,7 @@ function getCoreData(corePaths: string[]): CoreData {
  * Ensure a core package.
  */
 function ensureCorePackage(corePackage: any, corePaths: string[]) {
+  const basePath = path.resolve('.');
   corePackage.jupyterlab.extensions = {};
   corePackage.dependencies = {};
 
@@ -880,11 +882,12 @@ export async function ensureIntegrity(): Promise<boolean> {
   // Handle buildutils
   ensureBuildUtils();
 
+  // PRETZEL CHANGE: Disable federated example.
   // Handle the federated example application
-  pkgMessages = ensureFederatedExample();
-  if (pkgMessages.length > 0) {
-    messages['@jupyterlab/example-federated-core'] = pkgMessages;
-  }
+  // pkgMessages = ensureFederatedExample();
+  // if (pkgMessages.length > 0) {
+  //   messages['@jupyterlab/example-federated-core'] = pkgMessages;
+  // }
 
   // Handle the JupyterLab application top package.
   pkgMessages = ensureJupyterlab();
