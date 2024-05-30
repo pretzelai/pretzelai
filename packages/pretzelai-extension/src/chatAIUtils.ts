@@ -70,13 +70,12 @@ export const chatAIStream = async ({
       renderChat(chunk.choices[0]?.delta?.content || '');
     }
   } else if (aiService === 'Use Pretzel AI Server') {
-    const response = await fetch('https://wjwgjk52kb3trqnlqivqqyxm3i0glvof.lambda-url.eu-central-1.on.aws/', {
+    const response = await fetch('https://api.pretzelai.app/chat/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
         messages: messagesWithInjection
       })
     });
