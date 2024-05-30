@@ -500,7 +500,6 @@ function getCoreData(corePaths: string[]): CoreData {
  * Ensure a core package.
  */
 function ensureCorePackage(corePackage: any, corePaths: string[]) {
-  const basePath = path.resolve('.');
   corePackage.jupyterlab.extensions = {};
   corePackage.dependencies = {};
 
@@ -569,51 +568,6 @@ function ensureCorePackage(corePackage: any, corePaths: string[]) {
       )}`
     );
   }
-}
-
-/**
- * Ensure the federated example core package.
- */
-function ensureFederatedExample(): string[] {
-  const basePath = path.resolve('.');
-  const corePath = path.join(
-    basePath,
-    'examples',
-    'federated',
-    'core_package',
-    'package.json'
-  );
-  const corePackage = utils.readJSONFile(corePath);
-  // the list of dependencies might differ from the main JupyterLab application
-  const dependencies = new Set(Object.keys(corePackage.dependencies));
-
-  const corePaths = utils.getCorePaths().filter(p => {
-    return dependencies.has(`@jupyterlab/${path.basename(p)}`);
-  });
-
-  ensureCorePackage(corePackage, corePaths);
-
-  const coreData = getCoreData(corePaths);
-  corePackage.jupyterlab.extensions = [];
-  coreData.forEach((data, name) => {
-    // Make sure it is included as a dependency.
-    corePackage.dependencies[data.name] = `^${data.version}`;
-
-    const meta = data.jupyterlab;
-    const keep = meta?.extension || meta?.mimeExtension;
-    if (!keep) {
-      return;
-    }
-    corePackage.jupyterlab.extensions.push(name);
-  });
-
-  corePackage.jupyterlab.extensions.sort();
-
-  // Write the package.json back to disk.
-  if (utils.writePackageData(corePath, corePackage)) {
-    return ['Updated federated example'];
-  }
-  return [];
 }
 
 /**
@@ -881,13 +835,6 @@ export async function ensureIntegrity(): Promise<boolean> {
 
   // Handle buildutils
   ensureBuildUtils();
-
-  // PRETZEL CHANGE: Disable federated example.
-  // Handle the federated example application
-  // pkgMessages = ensureFederatedExample();
-  // if (pkgMessages.length > 0) {
-  //   messages['@jupyterlab/example-federated-core'] = pkgMessages;
-  // }
 
   // Handle the JupyterLab application top package.
   pkgMessages = ensureJupyterlab();
