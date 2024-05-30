@@ -2221,12 +2221,12 @@ __metadata:
   dependencies:
     "@jupyterlab/application": ~4.2.0
     "@jupyterlab/application-extension": ~4.2.0
-    "@jupyterlab/apputils-extension": ~4.2.0
+    "@jupyterlab/apputils-extension": "file:../packages/apputils-extension"
     "@jupyterlab/builder": ^4.2.0
     "@jupyterlab/buildutils": ^4.2.0
     "@jupyterlab/cell-toolbar-extension": ~4.2.0
     "@jupyterlab/celltags-extension": ~4.2.0
-    "@jupyterlab/codemirror-extension": ~4.2.0
+    "@jupyterlab/codemirror-extension": "file:../packages/codemirror-extension"
     "@jupyterlab/completer-extension": ~4.2.0
     "@jupyterlab/console-extension": ~4.2.0
     "@jupyterlab/coreutils": ~6.2.0
@@ -2237,7 +2237,7 @@ __metadata:
     "@jupyterlab/extensionmanager-extension": ~4.2.0
     "@jupyterlab/filebrowser-extension": ~4.2.0
     "@jupyterlab/fileeditor-extension": ~4.2.0
-    "@jupyterlab/help-extension": ~4.2.0
+    "@jupyterlab/help-extension": "file:../packages/help-extension"
     "@jupyterlab/htmlviewer-extension": ~4.2.0
     "@jupyterlab/hub-extension": ~4.2.0
     "@jupyterlab/imageviewer-extension": ~4.2.0
@@ -2256,7 +2256,7 @@ __metadata:
     "@jupyterlab/notebook-extension": ~4.2.0
     "@jupyterlab/pdf-extension": ~4.2.0
     "@jupyterlab/pluginmanager-extension": ~4.2.0
-    "@jupyterlab/pretzelai-extension": ~0.2.2
+    "@jupyterlab/pretzelai-extension": "file:../packages/pretzelai-extension"
     "@jupyterlab/rendermime-extension": ~4.2.0
     "@jupyterlab/running-extension": ~4.2.0
     "@jupyterlab/settingeditor-extension": ~4.2.0
@@ -2328,7 +2328,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/apputils-extension@^4.2.0, @jupyterlab/apputils-extension@workspace:packages/apputils-extension, @jupyterlab/apputils-extension@~4.2.0":
+"@jupyterlab/apputils-extension@^4.2.0, @jupyterlab/apputils-extension@workspace:packages/apputils-extension":
   version: 0.0.0-use.local
   resolution: "@jupyterlab/apputils-extension@workspace:packages/apputils-extension"
   dependencies:
@@ -2359,6 +2359,37 @@ __metadata:
     typescript: ~5.1.6
   languageName: unknown
   linkType: soft
+
+"@jupyterlab/apputils-extension@file:../packages/apputils-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
+  version: 4.2.0
+  resolution: "@jupyterlab/apputils-extension@file:../packages/apputils-extension#../packages/apputils-extension::hash=410992&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  dependencies:
+    "@jupyterlab/application": ^4.2.0
+    "@jupyterlab/apputils": ^4.3.0
+    "@jupyterlab/coreutils": ^6.2.0
+    "@jupyterlab/docregistry": ^4.2.0
+    "@jupyterlab/mainmenu": ^4.2.0
+    "@jupyterlab/rendermime-interfaces": ^3.10.0
+    "@jupyterlab/services": ^7.2.0
+    "@jupyterlab/settingregistry": ^4.2.0
+    "@jupyterlab/statedb": ^4.2.0
+    "@jupyterlab/statusbar": ^4.2.0
+    "@jupyterlab/translation": ^4.2.0
+    "@jupyterlab/ui-components": ^4.2.0
+    "@jupyterlab/workspaces": ^4.2.0
+    "@lumino/algorithm": ^2.0.1
+    "@lumino/commands": ^2.3.0
+    "@lumino/coreutils": ^2.1.2
+    "@lumino/disposable": ^2.1.2
+    "@lumino/domutils": ^2.0.1
+    "@lumino/polling": ^2.1.2
+    "@lumino/widgets": ^2.3.2
+    react: ^18.2.0
+    react-dom: ^18.2.0
+    react-toastify: ^9.0.8
+  checksum: ceaa282c11b0119386f16fbb57ec07932595c4f8945ae07e373eaa9f489f53d44b452507575abc67e47bbc971417cd2ff4b7592c1cb97007043388735b0568ff
+  languageName: node
+  linkType: hard
 
 "@jupyterlab/apputils@^4.3.0, @jupyterlab/apputils@workspace:packages/apputils":
   version: 0.0.0-use.local
@@ -2617,7 +2648,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/codemirror-extension@^4.2.0, @jupyterlab/codemirror-extension@workspace:packages/codemirror-extension, @jupyterlab/codemirror-extension@~4.2.0":
+"@jupyterlab/codemirror-extension@^4.2.0, @jupyterlab/codemirror-extension@workspace:packages/codemirror-extension":
   version: 0.0.0-use.local
   resolution: "@jupyterlab/codemirror-extension@workspace:packages/codemirror-extension"
   dependencies:
@@ -2645,6 +2676,33 @@ __metadata:
     typescript: ~5.1.6
   languageName: unknown
   linkType: soft
+
+"@jupyterlab/codemirror-extension@file:../packages/codemirror-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
+  version: 4.2.0
+  resolution: "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension#../packages/codemirror-extension::hash=5044e0&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  dependencies:
+    "@codemirror/commands": ^6.3.3
+    "@codemirror/lang-markdown": ^6.2.4
+    "@codemirror/language": ^6.10.1
+    "@codemirror/legacy-modes": ^6.3.3
+    "@codemirror/search": ^6.5.6
+    "@codemirror/view": ^6.26.0
+    "@jupyter/ydoc": ^2.0.1
+    "@jupyterlab/application": ^4.2.0
+    "@jupyterlab/codeeditor": ^4.2.0
+    "@jupyterlab/codemirror": ^4.2.0
+    "@jupyterlab/settingregistry": ^4.2.0
+    "@jupyterlab/statusbar": ^4.2.0
+    "@jupyterlab/translation": ^4.2.0
+    "@jupyterlab/ui-components": ^4.2.0
+    "@lumino/coreutils": ^2.1.2
+    "@lumino/widgets": ^2.3.2
+    "@rjsf/utils": ^5.13.4
+    "@rjsf/validator-ajv8": ^5.13.4
+    react: ^18.2.0
+  checksum: 270b6186a59bdcc68dc4881d6830c2548d8138afc025bc09f382aa3ea31033230dbe73de960cb2f14633681ba3758e6ca554a56ddb2cfc45164709feccd8dbf1
+  languageName: node
+  linkType: hard
 
 "@jupyterlab/codemirror@^4.2.0, @jupyterlab/codemirror@workspace:packages/codemirror":
   version: 0.0.0-use.local
@@ -3611,7 +3669,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/help-extension@^4.2.0, @jupyterlab/help-extension@workspace:packages/help-extension, @jupyterlab/help-extension@~4.2.0":
+"@jupyterlab/help-extension@^4.2.0, @jupyterlab/help-extension@workspace:packages/help-extension":
   version: 0.0.0-use.local
   resolution: "@jupyterlab/help-extension@workspace:packages/help-extension"
   dependencies:
@@ -3631,6 +3689,26 @@ __metadata:
     typescript: ~5.1.6
   languageName: unknown
   linkType: soft
+
+"@jupyterlab/help-extension@file:../packages/help-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
+  version: 4.2.0
+  resolution: "@jupyterlab/help-extension@file:../packages/help-extension#../packages/help-extension::hash=03e520&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  dependencies:
+    "@jupyterlab/application": ^4.2.0
+    "@jupyterlab/apputils": ^4.3.0
+    "@jupyterlab/coreutils": ^6.2.0
+    "@jupyterlab/mainmenu": ^4.2.0
+    "@jupyterlab/services": ^7.2.0
+    "@jupyterlab/translation": ^4.2.0
+    "@jupyterlab/ui-components": ^4.2.0
+    "@lumino/coreutils": ^2.1.2
+    "@lumino/signaling": ^2.1.2
+    "@lumino/virtualdom": ^2.0.1
+    "@lumino/widgets": ^2.3.2
+    react: ^18.2.0
+  checksum: 71a322e16e2ab62279b98f31e0b233e3bd733f480cc30a3e773de7f9f1ea812da27584017c24c938ff4edace67198e160b16a4bb611310262768df44d00df8ea
+  languageName: node
+  linkType: hard
 
 "@jupyterlab/htmlviewer-extension@^4.2.0, @jupyterlab/htmlviewer-extension@workspace:packages/htmlviewer-extension, @jupyterlab/htmlviewer-extension@~4.2.0":
   version: 0.0.0-use.local
@@ -4473,15 +4551,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/pretzelai-extension@^0.2.2, @jupyterlab/pretzelai-extension@workspace:packages/pretzelai-extension, @jupyterlab/pretzelai-extension@~0.2.2":
+"@jupyterlab/pretzelai-extension@^0.2.2, @jupyterlab/pretzelai-extension@workspace:packages/pretzelai-extension":
   version: 0.0.0-use.local
   resolution: "@jupyterlab/pretzelai-extension@workspace:packages/pretzelai-extension"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
+    "@codemirror/commands": ^6.3.3
+    "@codemirror/lang-markdown": ^6.2.4
+    "@codemirror/language": ^6.10.1
+    "@codemirror/state": ^6.4.1
+    "@codemirror/view": ^6.26.0
     "@jupyterlab/application": ^4.2.0
     "@jupyterlab/apputils": ^4.3.0
     "@jupyterlab/builder": ^4.2.0
     "@jupyterlab/cells": ^4.2.0
+    "@jupyterlab/codemirror": ^4.2.0
     "@jupyterlab/coreutils": ^6.2.0
     "@jupyterlab/notebook": ^4.2.0
     "@jupyterlab/outputarea": ^4.2.0
@@ -4515,6 +4599,36 @@ __metadata:
     yjs: ^13.5.0
   languageName: unknown
   linkType: soft
+
+"@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
+  version: 0.2.2
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=4072d0&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  dependencies:
+    "@azure/openai": ^1.0.0-beta.12
+    "@codemirror/commands": ^6.3.3
+    "@codemirror/lang-markdown": ^6.2.4
+    "@codemirror/language": ^6.10.1
+    "@codemirror/state": ^6.4.1
+    "@codemirror/view": ^6.26.0
+    "@jupyterlab/application": ^4.2.0
+    "@jupyterlab/apputils": ^4.3.0
+    "@jupyterlab/cells": ^4.2.0
+    "@jupyterlab/codemirror": ^4.2.0
+    "@jupyterlab/coreutils": ^6.2.0
+    "@jupyterlab/notebook": ^4.2.0
+    "@jupyterlab/outputarea": ^4.2.0
+    "@jupyterlab/rendermime": ^4.2.0
+    "@jupyterlab/services": ^7.2.0
+    "@jupyterlab/settingregistry": ^4.2.0
+    "@jupyterlab/ui-components": ^4.2.0
+    "@lumino/widgets": ^2.3.2
+    monaco-editor: ^0.47.0
+    openai: ^4.38.0
+    posthog-js: ^1.130.2
+    react: ^18.2.0
+  checksum: b716f281f99e4a436c1b99e8d41153eac1affe1b40cc385aa287ded7789f71789810e6851a7aeda9c40cc4e64f0f8d1975737611472425fb89c75032b1769852
+  languageName: node
+  linkType: hard
 
 "@jupyterlab/property-inspector@^4.2.0, @jupyterlab/property-inspector@workspace:packages/property-inspector":
   version: 0.0.0-use.local
@@ -8519,7 +8633,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"array-buffer-byte-length@npm:^1.0.0, array-buffer-byte-length@npm:^1.0.1":
+"array-buffer-byte-length@npm:^1.0.1":
   version: 1.0.1
   resolution: "array-buffer-byte-length@npm:1.0.1"
   dependencies:
@@ -8595,7 +8709,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"arraybuffer.prototype.slice@npm:^1.0.2, arraybuffer.prototype.slice@npm:^1.0.3":
+"arraybuffer.prototype.slice@npm:^1.0.3":
   version: 1.0.3
   resolution: "arraybuffer.prototype.slice@npm:1.0.3"
   dependencies:
@@ -8678,7 +8792,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"available-typed-arrays@npm:^1.0.5, available-typed-arrays@npm:^1.0.7":
+"available-typed-arrays@npm:^1.0.7":
   version: 1.0.7
   resolution: "available-typed-arrays@npm:1.0.7"
   dependencies:
@@ -9182,7 +9296,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"call-bind@npm:^1.0.0, call-bind@npm:^1.0.2, call-bind@npm:^1.0.4, call-bind@npm:^1.0.5, call-bind@npm:^1.0.6, call-bind@npm:^1.0.7":
+"call-bind@npm:^1.0.0, call-bind@npm:^1.0.2, call-bind@npm:^1.0.5, call-bind@npm:^1.0.6, call-bind@npm:^1.0.7":
   version: 1.0.7
   resolution: "call-bind@npm:1.0.7"
   dependencies:
@@ -10850,7 +10964,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"define-data-property@npm:^1.0.1, define-data-property@npm:^1.1.1, define-data-property@npm:^1.1.4":
+"define-data-property@npm:^1.0.1, define-data-property@npm:^1.1.4":
   version: 1.1.4
   resolution: "define-data-property@npm:1.1.4"
   dependencies:
@@ -12487,7 +12601,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-intrinsic@npm:^1.0.2, get-intrinsic@npm:^1.1.1, get-intrinsic@npm:^1.1.3, get-intrinsic@npm:^1.2.0, get-intrinsic@npm:^1.2.1, get-intrinsic@npm:^1.2.2, get-intrinsic@npm:^1.2.3, get-intrinsic@npm:^1.2.4":
+"get-intrinsic@npm:^1.0.2, get-intrinsic@npm:^1.1.1, get-intrinsic@npm:^1.1.3, get-intrinsic@npm:^1.2.1, get-intrinsic@npm:^1.2.3, get-intrinsic@npm:^1.2.4":
   version: 1.2.4
   resolution: "get-intrinsic@npm:1.2.4"
   dependencies:
@@ -12551,7 +12665,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-symbol-description@npm:^1.0.0, get-symbol-description@npm:^1.0.2":
+"get-symbol-description@npm:^1.0.2":
   version: 1.0.2
   resolution: "get-symbol-description@npm:1.0.2"
   dependencies:
@@ -13581,7 +13695,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-array-buffer@npm:^3.0.1, is-array-buffer@npm:^3.0.2, is-array-buffer@npm:^3.0.4":
+"is-array-buffer@npm:^3.0.4":
   version: 3.0.4
   resolution: "is-array-buffer@npm:3.0.4"
   dependencies:
@@ -13792,7 +13906,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-negative-zero@npm:^2.0.2, is-negative-zero@npm:^2.0.3":
+"is-negative-zero@npm:^2.0.3":
   version: 2.0.3
   resolution: "is-negative-zero@npm:2.0.3"
   checksum: c1e6b23d2070c0539d7b36022d5a94407132411d01aba39ec549af824231f3804b1aea90b5e4e58e807a65d23ceb538ed6e355ce76b267bdd86edb757ffcbdcd
@@ -13949,7 +14063,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-typed-array@npm:^1.1.10, is-typed-array@npm:^1.1.12, is-typed-array@npm:^1.1.9, is-typed-array@npm:^1.1.13":
+"is-typed-array@npm:^1.1.13":
   version: 1.1.13
   resolution: "is-typed-array@npm:1.1.13"
   dependencies:
@@ -17024,7 +17138,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"object.assign@npm:^4.1.3, object.assign@npm:^4.1.4, object.assign@npm:^4.1.5":
+"object.assign@npm:^4.1.3, object.assign@npm:^4.1.5":
   version: 4.1.5
   resolution: "object.assign@npm:4.1.5"
   dependencies:
@@ -18590,7 +18704,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"regexp.prototype.flags@npm:^1.4.3, regexp.prototype.flags@npm:^1.5.1, regexp.prototype.flags@npm:^1.5.2":
+"regexp.prototype.flags@npm:^1.4.3, regexp.prototype.flags@npm:^1.5.2":
   version: 1.5.2
   resolution: "regexp.prototype.flags@npm:1.5.2"
   dependencies:
@@ -18973,7 +19087,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"safe-regex-test@npm:^1.0.0, safe-regex-test@npm:^1.0.3":
+"safe-regex-test@npm:^1.0.3":
   version: 1.0.3
   resolution: "safe-regex-test@npm:1.0.3"
   dependencies:
@@ -19064,7 +19178,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:2 || 3 || 4 || 5, semver@npm:^5.4.1, semver@npm:^5.6.0, semver@npm:^5.5.0":
+"semver@npm:2 || 3 || 4 || 5, semver@npm:^5.4.1, semver@npm:^5.5.0, semver@npm:^5.6.0":
   version: 5.7.2
   resolution: "semver@npm:5.7.2"
   bin:
@@ -19175,7 +19289,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"set-function-length@npm:^1.1.1, set-function-length@npm:^1.2.1":
+"set-function-length@npm:^1.2.1":
   version: 1.2.2
   resolution: "set-function-length@npm:1.2.2"
   dependencies:
@@ -19189,7 +19303,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"set-function-name@npm:^2.0.0, set-function-name@npm:^2.0.1":
+"set-function-name@npm:^2.0.1":
   version: 2.0.1
   resolution: "set-function-name@npm:2.0.1"
   dependencies:
@@ -19736,7 +19850,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"string.prototype.trim@npm:^1.2.8, string.prototype.trim@npm:^1.2.9":
+"string.prototype.trim@npm:^1.2.9":
   version: 1.2.9
   resolution: "string.prototype.trim@npm:1.2.9"
   dependencies:
@@ -19748,7 +19862,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"string.prototype.trimend@npm:^1.0.7, string.prototype.trimend@npm:^1.0.8":
+"string.prototype.trimend@npm:^1.0.8":
   version: 1.0.8
   resolution: "string.prototype.trimend@npm:1.0.8"
   dependencies:
@@ -19759,7 +19873,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"string.prototype.trimstart@npm:^1.0.7, string.prototype.trimstart@npm:^1.0.8":
+"string.prototype.trimstart@npm:^1.0.8":
   version: 1.0.8
   resolution: "string.prototype.trimstart@npm:1.0.8"
   dependencies:
@@ -20690,7 +20804,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typed-array-buffer@npm:^1.0.0, typed-array-buffer@npm:^1.0.2":
+"typed-array-buffer@npm:^1.0.2":
   version: 1.0.2
   resolution: "typed-array-buffer@npm:1.0.2"
   dependencies:
@@ -20701,7 +20815,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typed-array-byte-length@npm:^1.0.0, typed-array-byte-length@npm:^1.0.1":
+"typed-array-byte-length@npm:^1.0.1":
   version: 1.0.1
   resolution: "typed-array-byte-length@npm:1.0.1"
   dependencies:
@@ -20714,7 +20828,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typed-array-byte-offset@npm:^1.0.0, typed-array-byte-offset@npm:^1.0.2":
+"typed-array-byte-offset@npm:^1.0.2":
   version: 1.0.2
   resolution: "typed-array-byte-offset@npm:1.0.2"
   dependencies:
@@ -20728,7 +20842,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typed-array-length@npm:^1.0.4, typed-array-length@npm:^1.0.6":
+"typed-array-length@npm:^1.0.6":
   version: 1.0.6
   resolution: "typed-array-length@npm:1.0.6"
   dependencies:
@@ -22062,7 +22176,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"which-typed-array@npm:^1.1.11, which-typed-array@npm:^1.1.13, which-typed-array@npm:^1.1.9, which-typed-array@npm:^1.1.14, which-typed-array@npm:^1.1.15":
+"which-typed-array@npm:^1.1.14, which-typed-array@npm:^1.1.15, which-typed-array@npm:^1.1.9":
   version: 1.1.15
   resolution: "which-typed-array@npm:1.1.15"
   dependencies:

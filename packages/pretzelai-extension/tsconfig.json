@@ -19,7 +19,9 @@
     "strictNullChecks": true,
     "target": "ES2018"
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*"
+  ],
   "references": [
     {
       "path": "../application"
@@ -29,6 +31,9 @@
     },
     {
       "path": "../cells"
+    },
+    {
+      "path": "../codemirror"
     },
     {
       "path": "../coreutils"
