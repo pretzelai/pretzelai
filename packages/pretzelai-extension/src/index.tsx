@@ -37,6 +37,9 @@ import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
+import PromptHistoryButton from './components/prompt-history-button';
+import ReactDOM from 'react-dom';
+import React from 'react';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -706,6 +709,14 @@ const extension: JupyterFrontEndPlugin<void> = {
             activeCell!.editor!.focus();
           };
           removeButton.addEventListener('click', removeHandler);
+
+          // add prompt history button
+          // const promptHistoryButton = new PromptHistoryButton();
+          // inputFieldButtonsContainer.appendChild(promptHistoryButton.container);
+          const promptHistoryButtonContainer = document.createElement('div');
+          // eslint-disable-next-line react/no-deprecated
+          ReactDOM.render(<PromptHistoryButton />, promptHistoryButtonContainer);
+          inputFieldButtonsContainer.appendChild(promptHistoryButtonContainer.firstChild!);
 
           const handleSubmit = async (userInput: string) => {
             parentContainer.removeChild(inputContainer);
