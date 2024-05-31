@@ -241,7 +241,7 @@ export const openAiStream = async ({
       );
     }
   } else if (aiService === 'Use Pretzel AI Server') {
-    const response = await fetch('https://wjwgjk52kb3trqnlqivqqyxm3i0glvof.lambda-url.eu-central-1.on.aws/', {
+    const response = await fetch('https://api.pretzelai.app/prompt/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -460,7 +460,7 @@ export const openaiEmbeddings = async (
 ): Promise<OpenAI.Embeddings.CreateEmbeddingResponse | Embeddings> => {
   if (aiService === 'Use Pretzel AI Server') {
     return (await (
-      await fetch('https://e7l46ifvcg6qrbuinytg7u535y0denki.lambda-url.eu-central-1.on.aws/', {
+      await fetch('https://api.pretzelai.app/embeddings/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
