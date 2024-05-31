@@ -11,7 +11,6 @@
  * @packageDocumentation
  * @module pretzelai-extension
  */
-
 import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';

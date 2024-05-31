@@ -9,7 +9,7 @@
   ],
   "homepage": "",
   "bugs": {
-    "url": "/issues"
+    "url": "https://github.com/pretzelai/pretzelai/issues"
   },
   "repository": {
     "type": "git",
@@ -33,6 +33,7 @@
     "src/**/*.{ts,tsx}",
     "schema/*.json",
     "style/**/*.css",
+    "style/index.js",
     "style/**/*.svg"
   ],
   "scripts": {
