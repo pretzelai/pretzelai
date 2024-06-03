@@ -7,7 +7,7 @@
  * the root of the project) are licensed under AGPLv3.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import pretzelSvg from '../style/icons/pretzel.svg';
@@ -68,6 +68,15 @@ export function Chat({
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [input, setInput] = useState('');
+  const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView();
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const onSend = async () => {
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
@@ -152,7 +161,6 @@ export function Chat({
       } else if (lastMessage.role === 'assistant') {
         lastMessage.content += chunk;
       }
-
       return updatedMessages;
     });
   };
@@ -169,6 +177,7 @@ export function Chat({
             <RendermimeMarkdown rmRegistry={rmRegistry} markdownStr={message.content} />
           </Box>
         ))}
+        <div ref={messagesEndRef} />
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', padding: 1 }}>
         <TextField
