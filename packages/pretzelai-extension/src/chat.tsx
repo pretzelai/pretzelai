@@ -68,21 +68,7 @@ export function Chat({
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [input, setInput] = useState('');
-  const [isDarkTheme, setIsDarkTheme] = useState(document.body.getAttribute('data-jp-theme-light') !== 'true');
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
-
-  useEffect(() => {
-    const themeObserver = new MutationObserver(() => {
-      setIsDarkTheme(document.body.getAttribute('data-jp-theme-light') !== 'true');
-    });
-
-    themeObserver.observe(document.body, {
-      attributes: true,
-      attributeFilter: ['data-jp-theme-light']
-    });
-
-    return () => themeObserver.disconnect();
-  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView();
@@ -185,8 +171,15 @@ export function Chat({
         {}
         {messages.map(message => (
           <Box key={message.id} sx={{ marginBottom: 2 }}>
-            <Box sx={{ backgroundColor: 'lightblue', borderRadius: '10px', display: 'inline-block', paddingX: '10px' }}>
-              <Typography sx={{ fontWeight: 'bold' }} color={'primary'}>
+            <Box
+              sx={{
+                backgroundColor: 'var(--jp-brand-color2)',
+                borderRadius: '10px',
+                display: 'inline-block',
+                paddingX: '10px'
+              }}
+            >
+              <Typography sx={{ fontWeight: 'bold' }} color={'var(--jp-ui-inverse-font-color1)'}>
                 {message.role === 'user' ? 'You' : 'Pretzel AI'}
               </Typography>
             </Box>
@@ -203,16 +196,16 @@ export function Chat({
           fullWidth
           placeholder="Type message to ask AI..."
           sx={{
-            color: isDarkTheme ? 'white' : 'black',
+            color: 'var(--jp-ui-font-color1)',
             '& .MuiInputBase-input': {
-              color: isDarkTheme ? 'white' : 'black'
+              color: 'var(--jp-ui-font-color1)'
             },
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: isDarkTheme ? 'white' : 'black'
+              borderColor: 'var(--jp-ui-font-color1)'
             }
           }}
         />
-        <IconButton onClick={onSend} sx={{ color: isDarkTheme ? 'white' : 'black' }}>
+        <IconButton onClick={onSend} sx={{ color: 'var(--jp-ui-font-color1)' }}>
           <SendIcon />
         </IconButton>
       </Box>
