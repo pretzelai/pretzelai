@@ -10,19 +10,31 @@ const generateChatPrompt = (
   activeCellCode?: string,
   selectedCode?: string
 ) => {
-  return `${lastContent}
-${
-  selectedCode
-    ? 'My question is regarding this code: \n-----\n' + selectedCode + '\n-----\n'
-    : activeCellCode
-    ? 'The cell I am focused on is: \n-----\n' + activeCellCode + '\n-----\n'
-    : ''
-}
-${
-  topSimilarities
-    ? 'Cells containing related content are: \n-----\n' + topSimilarities.join('\n-----\n') + '\n-----\n'
-    : ''
-}`;
+  let output = `${lastContent}\n`;
+  if (selectedCode) {
+    output += `My question is related to this part of the code:
+\`\`\`
+${selectedCode}
+\`\`\``;
+  }
+
+  if (lastContent.toLowerCase().includes('@notebook') && topSimilarities) {
+    output += `Cells containing related content are:
+\`\`\`
+${topSimilarities.join('\n```\n')}
+\`\`\`
+`;
+  } else {
+    output += `My main question is the above.
+If you need context this is the cell I am focused on.
+Your goal is to answer my question briefly and don't mention the code unless necessary.
+\`\`\`
+${activeCellCode}
+\`\`\`
+`;
+  }
+
+  return output;
 };
 
 export const chatAIStream = async ({
