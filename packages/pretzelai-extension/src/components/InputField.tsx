@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
@@ -7,6 +7,7 @@ import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { history, historyKeymap, insertNewlineAndIndent, undo } from '@codemirror/commands';
 import { PromptHistoryButton, RemoveButton, SubmitButton } from './prompt-box-buttons';
 import posthog from 'posthog-js';
+import { FixedSizeStack } from '../utils';
 
 interface IInputFieldProps {
   isAIEnabled: boolean;
@@ -14,7 +15,8 @@ interface IInputFieldProps {
   placeholderDisabled: string;
   handleSubmit: (input: string) => void;
   handleRemove: () => void;
-  handlePromptHistory: () => void;
+  handlePromptHistory: (promptHistoryIndex: number) => void;
+  promptHistoryStack: FixedSizeStack<string>;
   setInputView: (view: EditorView) => void;
   initialPrompt?: string;
   activeCell: any; // Add this prop
@@ -27,12 +29,14 @@ const InputField: React.FC<IInputFieldProps> = ({
   handleSubmit,
   handleRemove,
   handlePromptHistory,
+  promptHistoryStack,
   setInputView,
   initialPrompt = '',
   activeCell // Add this prop
 }) => {
   const inputFieldRef = useRef<HTMLDivElement>(null);
   const inputViewRef = useRef<EditorView | null>(null);
+  const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0); // how many items to skip
 
   useEffect(() => {
     if (inputFieldRef.current) {
@@ -61,10 +65,10 @@ const InputField: React.FC<IInputFieldProps> = ({
 
       inputView.dom.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
-          posthog.capture('Remove via Escape', {
+          posthog.capture('Back to Cell via Escape', {
             event_type: 'keypress',
             event_value: 'esc',
-            method: 'remove'
+            method: 'back_to_cell'
           });
           event.preventDefault();
           if (activeCell && activeCell.editor) {
@@ -82,24 +86,34 @@ const InputField: React.FC<IInputFieldProps> = ({
               method: 'submit'
             });
             const currentPrompt = inputView.state.doc.toString();
-            activeCell.model.setMetadata('currentPrompt', currentPrompt);
+            promptHistoryStack.push(currentPrompt);
             handleSubmit(currentPrompt);
           }
         }
-        if (event.key === 'z' && (event.metaKey || event.ctrlKey)) {
+        if (event.key === 'ArrowUp') {
           event.preventDefault();
-          const undoResult = undo({ state: inputView.state, dispatch: inputView.dispatch });
-          if (!undoResult) {
-            const oldPrompt = activeCell.model.getMetadata('currentPrompt');
-            if (oldPrompt) {
-              inputView.dispatch({
-                changes: { from: 0, to: inputView.state.doc.length, insert: oldPrompt }
-              });
-              inputView.dispatch({
-                selection: { anchor: inputView.state.doc.length }
-              });
-            }
-          }
+          posthog.capture('Prompt History Back via Shortcut', {
+            event_type: 'keypress',
+            event_value: 'up_arrow',
+            method: 'prompt_history'
+          });
+          setPromptHistoryIndex(prevIndex => {
+            handlePromptHistory(prevIndex + 1);
+            return prevIndex + 1;
+          });
+        }
+
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          posthog.capture('Prompt History Forward via Shortcut', {
+            event_type: 'keypress',
+            event_value: 'down_arrow',
+            method: 'prompt_history'
+          });
+          setPromptHistoryIndex(prevIndex => {
+            handlePromptHistory(prevIndex - 1);
+            return prevIndex - 1;
+          });
         }
       });
 
@@ -126,8 +140,26 @@ const InputField: React.FC<IInputFieldProps> = ({
           }}
           isDisabled={!isAIEnabled}
         />
-        <RemoveButton handleClick={handleRemove} />
-        <PromptHistoryButton handleClick={handlePromptHistory} activeCell={activeCell} />
+        <RemoveButton
+          handleClick={() => {
+            posthog.capture('Remove via Click', {
+              event_type: 'click',
+              method: 'remove'
+            });
+            handleRemove();
+          }}
+        />
+        <PromptHistoryButton
+          handleClick={(promptHistoryIndex: number) => {
+            posthog.capture('Prompt History via Click', {
+              event_type: 'click',
+              method: 'prompt_history'
+            });
+            handlePromptHistory(promptHistoryIndex);
+            setPromptHistoryIndex(promptHistoryIndex + 1);
+          }}
+          promptHistoryIndex={promptHistoryIndex}
+        />
       </div>
     </div>
   );

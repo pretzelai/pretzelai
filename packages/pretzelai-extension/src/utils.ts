@@ -113,3 +113,36 @@ export const getSelectedCode = (notebookTracker: INotebookTracker) => {
   // also return the selection
   return { extractedCode: extractedCode.trimEnd(), selection };
 };
+
+export class FixedSizeStack<T> {
+  private stack: T[] = [];
+  private maxSize: number;
+
+  constructor(maxSize: number) {
+    this.maxSize = maxSize;
+  }
+
+  push(item: T): void {
+    this.stack.push(item);
+    if (this.stack.length > this.maxSize) {
+      this.stack.shift(); // Remove the oldest item
+    }
+  }
+
+  get length(): number {
+    return this.stack.length;
+  }
+
+  get(index: number): T {
+    if (index >= 0) {
+      index = index % this.stack.length;
+    } else {
+      index = (index % this.stack.length) + this.stack.length;
+    }
+    const reverseIndex = this.stack.length - 1 - index;
+    if (reverseIndex < 0 || reverseIndex >= this.stack.length) {
+      throw new Error('Index out of bounds');
+    }
+    return this.stack[reverseIndex];
+  }
+}

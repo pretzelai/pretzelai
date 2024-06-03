@@ -19,7 +19,7 @@ import * as monaco from 'monaco-editor';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { calculateHash, isSetsEqual, renderEditor } from './utils';
+import { calculateHash, FixedSizeStack, isSetsEqual, renderEditor } from './utils';
 import { ServerConnection } from '@jupyterlab/services';
 
 import { AiService, Embedding, generatePrompt, getTopSimilarities, openaiEmbeddings, openAiStream } from './prompt';
@@ -84,6 +84,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let posthogPromptTelemetry: boolean = true;
     let codeMatchThreshold: number;
     let isAIEnabled: boolean = false;
+    let promptHistoryStack: FixedSizeStack<string> = new FixedSizeStack<string>(50);
 
     const showSplashScreen = async (consent: string) => {
       if (consent === 'None') {
@@ -686,29 +687,28 @@ const extension: JupyterFrontEndPlugin<void> = {
           };
 
           const handleRemove = () => {
-            posthog.capture('Remove via Click', {
-              event_type: 'click',
-              method: 'remove'
-            });
             activeCell.node.removeChild(parentContainer);
             const statusElements = activeCell.node.querySelectorAll('p.status-element');
             statusElements.forEach(element => element.remove());
             activeCell!.editor!.focus();
           };
 
-          const handlePromptHistory = () => {
-            const oldPrompt = activeCell.model.getMetadata('currentPrompt');
-            inputView!.dispatch({
-              changes: { from: 0, to: inputView!.state.doc.length, insert: oldPrompt }
-            });
-            inputView!.dispatch({
-              selection: { anchor: inputView!.state.doc.length }
-            });
-            inputView!.focus();
+          const handlePromptHistory = (promptHistoryIndex: number = 0) => {
+            if (promptHistoryStack.length > 0) {
+              const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
+              inputView!.dispatch({
+                changes: { from: 0, to: inputView!.state.doc.length, insert: oldPrompt }
+              });
+              inputView!.dispatch({
+                selection: { anchor: inputView!.state.doc.length }
+              });
+              inputView!.focus();
+            }
           };
 
           if (activeCell.model.getMetadata('isPromptEdit')) {
-            initialPrompt = activeCell.model.getMetadata('currentPrompt');
+            const promptHistory = promptHistoryStack.get(0);
+            initialPrompt = promptHistory;
             activeCell.model.setMetadata('isPromptEdit', false);
           }
           inputRoot.render(
@@ -720,6 +720,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               handleSubmit={handleSubmit}
               handleRemove={handleRemove}
               handlePromptHistory={handlePromptHistory}
+              promptHistoryStack={promptHistoryStack}
               setInputView={view => {
                 inputView = view;
                 setTimeout(() => inputView?.focus(), 0);

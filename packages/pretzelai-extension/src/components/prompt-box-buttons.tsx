@@ -3,32 +3,6 @@ import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import '../../style/base.css';
 
-const encodedSvgStr = encodeURIComponent(promptHistorySvg);
-
-const promptHistoryIcon = new LabIcon({
-  name: 'pretzelai::prompt-history',
-  svgstr: encodedSvgStr
-});
-
-const PromptHistoryButton: React.FC<{ handleClick: () => void }> = ({ handleClick }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  return (
-    <div className="prompt-history-button-container">
-      <button
-        className="prompt-history-button"
-        title="Prompt History"
-        onClick={handleClick}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-      >
-        <promptHistoryIcon.react tag="span" className="jp-Icon jp-Icon-20" />
-      </button>
-      {showTooltip && <div className="tooltip">Populate with last prompt</div>}
-    </div>
-  );
-};
-
 interface ISubmitButtonProps {
   handleClick: () => void;
   isDisabled: boolean;
@@ -49,7 +23,11 @@ const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled })
       >
         Submit <span style={{ fontSize: '0.8em' }}>↵</span>
       </button>
-      {showTooltip && <div className="tooltip">Send input to AI (shortcut: Enter)</div>}
+      {showTooltip && (
+        <div className="tooltip">
+          Send prompt to AI for completion <strong>(Enter)</strong>
+        </div>
+      )}
     </div>
   );
 };
@@ -75,10 +53,50 @@ const RemoveButton: React.FC<IRemoveButtonProps> = ({ handleClick }) => {
       >
         Remove <span style={{ fontSize: '0.8em' }}>{shortcut}</span>
       </button>
-      {showTooltip && <div className="tooltip">Remove the AI prompt box (shortcut: {keyCombination})</div>}
+      {showTooltip && (
+        <div className="tooltip">
+          Remove the AI prompt box <strong>({keyCombination})</strong>
+        </div>
+      )}
     </div>
   );
 };
-export default RemoveButton;
+
+const encodedSvgStr = encodeURIComponent(promptHistorySvg);
+
+const promptHistoryIcon = new LabIcon({
+  name: 'pretzelai::prompt-history',
+  svgstr: encodedSvgStr
+});
+
+const PromptHistoryButton: React.FC<{
+  handleClick: (promptHistoryIndex: number) => void;
+  promptHistoryIndex: number;
+}> = ({ handleClick, promptHistoryIndex }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const isMac = /Mac/i.test(navigator.userAgent);
+  const keyCombination = isMac ? 'Cmd + Shift + H' : 'Ctrl + Shift + H';
+
+  return (
+    <div className="prompt-history-button-container">
+      <button
+        className="prompt-history-button"
+        title="Prompt History"
+        onClick={() => {
+          handleClick(promptHistoryIndex);
+        }}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        <promptHistoryIcon.react tag="span" className="jp-Icon jp-Icon-20" />
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Populate with last prompt <strong>({keyCombination})</strong>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export { PromptHistoryButton, RemoveButton, SubmitButton };

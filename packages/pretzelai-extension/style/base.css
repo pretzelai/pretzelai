@@ -106,7 +106,7 @@ div.cm-scroller > div {
   position: absolute;
   top: -30px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-40%);
   background-color: var(--jp-layout-color1);
   color: var(--jp-ui-font-color1);
   padding: 5px;
