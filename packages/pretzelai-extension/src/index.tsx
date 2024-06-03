@@ -37,8 +37,8 @@ import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
-import PromptHistoryButton from './components/prompt-history-button';
-import ReactDOM from 'react-dom';
+import RemoveButton, { PromptHistoryButton, SubmitButton } from './components/prompt-box-buttons';
+import { createRoot } from 'react-dom/client';
 import React from 'react';
 
 function initializePosthog(cookiesEnabled: boolean) {
@@ -619,10 +619,9 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           const inputField = document.createElement('div');
           inputField.classList.add('pretzelInputField');
-          const oldPrompt = activeCell.model.getMetadata('currentPrompt');
 
           const state = EditorState.create({
-            doc: oldPrompt || '',
+            doc: '',
             extensions: [
               markdown(),
               history({ newGroupDelay: 50 }),
@@ -660,15 +659,20 @@ const extension: JupyterFrontEndPlugin<void> = {
               if (event.shiftKey) {
                 // insert a new line
                 insertNewlineAndIndent({ state: inputView.state, dispatch: inputView.dispatch });
-              } else if (!submitButton.disabled) {
-                posthog.capture('Submit via Enter', {
-                  event_type: 'keypress',
-                  event_value: 'enter',
-                  method: 'submit'
-                });
-                const currentPrompt = inputView.state.doc.toString();
-                activeCell.model.setMetadata('currentPrompt', currentPrompt);
-                handleSubmit(currentPrompt);
+              } else {
+                const submitButton = inputFieldButtonsContainer.querySelector(
+                  '.pretzelInputSubmitButton'
+                ) as HTMLButtonElement;
+                if (submitButton && !submitButton.disabled) {
+                  posthog.capture('Submit via Enter', {
+                    event_type: 'keypress',
+                    event_value: 'enter',
+                    method: 'submit'
+                  });
+                  const currentPrompt = inputView.state.doc.toString();
+                  activeCell.model.setMetadata('currentPrompt', currentPrompt);
+                  handleSubmit(currentPrompt);
+                }
               }
             }
           });
@@ -676,47 +680,52 @@ const extension: JupyterFrontEndPlugin<void> = {
           const inputFieldButtonsContainer = document.createElement('div');
           inputFieldButtonsContainer.className = 'input-field-buttons-container';
           inputContainer.appendChild(inputFieldButtonsContainer);
+          const inputFieldButtonsRoot = createRoot(inputFieldButtonsContainer);
           // Move focus into the CodeMirror editor in inputField
           inputView.focus();
 
-          const submitButton = document.createElement('button');
-          submitButton.classList.add('pretzelInputSubmitButton');
-          submitButton.textContent = 'Submit';
-          submitButton.disabled = !isAIEnabled;
-          submitButton.addEventListener('click', () => {
-            posthog.capture('Submit via Click', {
-              event_type: 'click',
-              method: 'submit'
-            });
-            handleSubmit(inputView.state.doc.toString());
-          });
-          inputFieldButtonsContainer.appendChild(submitButton);
+          inputFieldButtonsRoot.render(
+            <>
+              <SubmitButton
+                handleClick={() => {
+                  posthog.capture('Submit via Click', {
+                    event_type: 'click',
+                    method: 'submit'
+                  });
+                  handleSubmit(inputView.state.doc.toString());
+                }}
+                isDisabled={!isAIEnabled}
+              />
+              <RemoveButton
+                handleClick={() => {
+                  posthog.capture('Remove via Click', {
+                    event_type: 'click',
+                    method: 'remove'
+                  });
+                  activeCell.node.removeChild(parentContainer);
+                  const statusElements = activeCell.node.querySelectorAll('p.status-element');
+                  statusElements.forEach(element => element.remove());
 
-          const removeButton = document.createElement('button');
-          removeButton.className = 'remove-button';
-          removeButton.textContent = 'Remove';
-          inputFieldButtonsContainer.appendChild(removeButton);
-          const removeHandler = () => {
-            posthog.capture('Remove via Click', {
-              event_type: 'click',
-              method: 'remove'
-            });
-            activeCell.node.removeChild(parentContainer);
-            const statusElements = activeCell.node.querySelectorAll('p.status-element');
-            statusElements.forEach(element => element.remove());
-
-            // Switch focus back to the Jupyter cell
-            activeCell!.editor!.focus();
-          };
-          removeButton.addEventListener('click', removeHandler);
-
-          // add prompt history button
-          // const promptHistoryButton = new PromptHistoryButton();
-          // inputFieldButtonsContainer.appendChild(promptHistoryButton.container);
-          const promptHistoryButtonContainer = document.createElement('div');
-          // eslint-disable-next-line react/no-deprecated
-          ReactDOM.render(<PromptHistoryButton />, promptHistoryButtonContainer);
-          inputFieldButtonsContainer.appendChild(promptHistoryButtonContainer.firstChild!);
+                  // Switch focus back to the Jupyter cell
+                  activeCell!.editor!.focus();
+                }}
+              />
+              <PromptHistoryButton
+                handleClick={() => {
+                  const oldPrompt = activeCell.model.getMetadata('currentPrompt');
+                  inputView.dispatch({
+                    changes: { from: 0, to: inputView.state.doc.length, insert: oldPrompt }
+                  });
+                  // Shift focus to the end of the existing text in the CodeMirror editor
+                  inputView.dispatch({
+                    selection: { anchor: inputView.state.doc.length }
+                  });
+                  // Shift focus to the CodeMirror editor
+                  inputView.focus();
+                }}
+              />
+            </>
+          );
 
           const handleSubmit = async (userInput: string) => {
             parentContainer.removeChild(inputContainer);
