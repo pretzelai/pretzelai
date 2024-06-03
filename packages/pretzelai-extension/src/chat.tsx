@@ -68,6 +68,7 @@ export function Chat({
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [input, setInput] = useState('');
+  const [referenceSource, setReferenceSource] = useState('');
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -134,7 +135,8 @@ export function Chat({
       messages: formattedMessages as ChatCompletionMessage[],
       topSimilarities,
       activeCellCode,
-      selectedCode
+      selectedCode,
+      setReferenceSource
     });
   };
 
@@ -183,6 +185,19 @@ export function Chat({
                 {message.role === 'user' ? 'You' : 'Pretzel AI'}
               </Typography>
             </Box>
+            {referenceSource && message.role === 'assistant' && messages[messages.length - 1].id === message.id && (
+              <Box
+                sx={{
+                  backgroundColor: 'var(--jp-layout-color2)',
+                  borderRadius: '10px',
+                  display: 'inline-block',
+                  paddingX: '10px',
+                  marginLeft: '10px'
+                }}
+              >
+                <Typography color={'var(--jp-ui-font-color1)'}>{`Using ${referenceSource}...`}</Typography>
+              </Box>
+            )}
             <RendermimeMarkdown rmRegistry={rmRegistry} markdownStr={message.content} />
           </Box>
         ))}

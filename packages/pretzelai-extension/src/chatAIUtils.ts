@@ -6,25 +6,27 @@ export const CHAT_SYSTEM_MESSAGE =
 
 const generateChatPrompt = (
   lastContent: string,
+  setReferenceSource: (source: string) => void,
   topSimilarities?: string[],
   activeCellCode?: string,
   selectedCode?: string
 ) => {
   let output = `${lastContent}\n`;
   if (selectedCode) {
+    setReferenceSource('selected code');
     output += `My question is related to this part of the code:
 \`\`\`
 ${selectedCode}
 \`\`\``;
-  }
-
-  if (lastContent.toLowerCase().includes('@notebook') && topSimilarities) {
+  } else if (lastContent.toLowerCase().includes('@notebook') && topSimilarities) {
+    setReferenceSource('all cells in notebook');
     output += `Cells containing related content are:
 \`\`\`
 ${topSimilarities.join('\n```\n')}
 \`\`\`
 `;
   } else {
+    setReferenceSource('current cell code');
     output += `My main question is the above.
 If you need context this is the cell I am focused on.
 Your goal is to answer my question briefly and don't mention the code unless necessary.
@@ -49,7 +51,8 @@ export const chatAIStream = async ({
   messages,
   topSimilarities,
   activeCellCode,
-  selectedCode
+  selectedCode,
+  setReferenceSource
 }: {
   aiService: string;
   openAiApiKey?: string;
@@ -63,9 +66,16 @@ export const chatAIStream = async ({
   topSimilarities: string[];
   activeCellCode?: string;
   selectedCode?: string;
+  setReferenceSource: (source: string) => void;
 }): Promise<void> => {
   const lastContent = messages[messages.length - 1].content as string;
-  const lastContentWithInjection = generateChatPrompt(lastContent, topSimilarities, activeCellCode, selectedCode);
+  const lastContentWithInjection = generateChatPrompt(
+    lastContent,
+    setReferenceSource,
+    topSimilarities,
+    activeCellCode,
+    selectedCode
+  );
   const messagesWithInjection = [...messages.slice(0, -1), { role: 'user', content: lastContentWithInjection }];
   if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && messages) {
     const openai = new OpenAI({
@@ -81,6 +91,7 @@ export const chatAIStream = async ({
     for await (const chunk of stream) {
       renderChat(chunk.choices[0]?.delta?.content || '');
     }
+    setReferenceSource('');
   } else if (aiService === 'Use Pretzel AI Server') {
     const response = await fetch('https://api.pretzelai.app/chat/', {
       method: 'POST',
@@ -98,9 +109,11 @@ export const chatAIStream = async ({
       const { done, value } = await reader.read();
       if (done) {
         isReading = false;
+        setReferenceSource('');
+      } else {
+        const chunk = decoder.decode(value);
+        renderChat(chunk);
       }
-      const chunk = decoder.decode(value);
-      renderChat(chunk);
     }
   }
 };
