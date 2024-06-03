@@ -220,3 +220,7 @@ div.pretzelInputField > .cm-editor {
 .splash-content a {
   text-decoration: underline;
 }
+
+.cm-placeholder {
+  white-space: pre-wrap; /* Preserve line breaks */
+}

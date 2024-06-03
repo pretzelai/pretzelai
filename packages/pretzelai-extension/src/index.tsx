@@ -72,7 +72,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Go To: Settings > Settings Editor > Pretzel AI Settings to configure';
 
     const placeholderEnabled =
-      'Ask AI. Use @variable_name to reference defined variables and dataframes. Shift + Enter for new line. Enter to submit.';
+      'Ask AI. Refernce variables/dataframes with @variable syntax. Shift + Enter for new line.\nEnter to submit. Use ↑ / ↓ to navigate prompt history.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let openAiModel = '';

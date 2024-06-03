@@ -4,7 +4,7 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { history, historyKeymap, insertNewlineAndIndent, undo } from '@codemirror/commands';
+import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
 import { PromptHistoryButton, RemoveButton, SubmitButton } from './prompt-box-buttons';
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
