@@ -68,7 +68,21 @@ export function Chat({
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [input, setInput] = useState('');
+  const [isDarkTheme, setIsDarkTheme] = useState(document.body.getAttribute('data-jp-theme-light') !== 'true');
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+  useEffect(() => {
+    const themeObserver = new MutationObserver(() => {
+      setIsDarkTheme(document.body.getAttribute('data-jp-theme-light') !== 'true');
+    });
+
+    themeObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-jp-theme-light']
+    });
+
+    return () => themeObserver.disconnect();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView();
@@ -171,9 +185,11 @@ export function Chat({
         {}
         {messages.map(message => (
           <Box key={message.id} sx={{ marginBottom: 2 }}>
-            <Typography sx={{ fontWeight: 'bold' }} color={message.role === 'user' ? 'primary' : 'textSecondary'}>
-              {message.role === 'user' ? 'You' : 'Pretzel AI'}
-            </Typography>
+            <Box sx={{ backgroundColor: 'lightblue', borderRadius: '10px', display: 'inline-block', paddingX: '10px' }}>
+              <Typography sx={{ fontWeight: 'bold' }} color={'primary'}>
+                {message.role === 'user' ? 'You' : 'Pretzel AI'}
+              </Typography>
+            </Box>
             <RendermimeMarkdown rmRegistry={rmRegistry} markdownStr={message.content} />
           </Box>
         ))}
@@ -186,8 +202,17 @@ export function Chat({
           onKeyDown={handleKeyDown}
           fullWidth
           placeholder="Type message to ask AI..."
+          sx={{
+            color: isDarkTheme ? 'white' : 'black',
+            '& .MuiInputBase-input': {
+              color: isDarkTheme ? 'white' : 'black'
+            },
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: isDarkTheme ? 'white' : 'black'
+            }
+          }}
         />
-        <IconButton onClick={onSend}>
+        <IconButton onClick={onSend} sx={{ color: isDarkTheme ? 'white' : 'black' }}>
           <SendIcon />
         </IconButton>
       </Box>
