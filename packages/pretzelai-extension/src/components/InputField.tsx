@@ -4,7 +4,7 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
+import { history, historyKeymap, insertNewlineAndIndent, undo } from '@codemirror/commands';
 import { PromptHistoryButton, RemoveButton, SubmitButton } from './prompt-box-buttons';
 import posthog from 'posthog-js';
 
@@ -86,6 +86,21 @@ const InputField: React.FC<IInputFieldProps> = ({
             handleSubmit(currentPrompt);
           }
         }
+        if (event.key === 'z' && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          const undoResult = undo({ state: inputView.state, dispatch: inputView.dispatch });
+          if (!undoResult) {
+            const oldPrompt = activeCell.model.getMetadata('currentPrompt');
+            if (oldPrompt) {
+              inputView.dispatch({
+                changes: { from: 0, to: inputView.state.doc.length, insert: oldPrompt }
+              });
+              inputView.dispatch({
+                selection: { anchor: inputView.state.doc.length }
+              });
+            }
+          }
+        }
       });
 
       inputViewRef.current = inputView;
@@ -112,7 +127,7 @@ const InputField: React.FC<IInputFieldProps> = ({
           isDisabled={!isAIEnabled}
         />
         <RemoveButton handleClick={handleRemove} />
-        <PromptHistoryButton handleClick={handlePromptHistory} />
+        <PromptHistoryButton handleClick={handlePromptHistory} activeCell={activeCell} />
       </div>
     </div>
   );
