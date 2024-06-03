@@ -81,4 +81,4 @@ const RemoveButton: React.FC<IRemoveButtonProps> = ({ handleClick }) => {
 };
 export default RemoveButton;
 
-export { SubmitButton, PromptHistoryButton };
+export { PromptHistoryButton, RemoveButton, SubmitButton };
