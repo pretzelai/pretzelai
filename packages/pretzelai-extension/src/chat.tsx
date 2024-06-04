@@ -13,6 +13,7 @@ import { LabIcon } from '@jupyterlab/ui-components';
 import pretzelSvg from '../style/icons/pretzel.svg';
 import { Box, IconButton, TextField, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import StopIcon from '@mui/icons-material/Stop';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
@@ -68,6 +69,7 @@ export function Chat({
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [input, setInput] = useState('');
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [referenceSource, setReferenceSource] = useState('');
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
@@ -80,6 +82,7 @@ export function Chat({
   }, [messages]);
 
   const onSend = async () => {
+    setIsAiGenerating(true);
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
     const notebook = notebookTracker.currentWidget;
     const currentNotebookPath = notebook!.context.path;
@@ -136,7 +139,8 @@ export function Chat({
       topSimilarities,
       activeCellCode,
       selectedCode,
-      setReferenceSource
+      setReferenceSource,
+      setIsAiGenerating
     });
   };
 
@@ -207,27 +211,46 @@ export function Chat({
         ))}
         <div ref={messagesEndRef} />
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', padding: 1 }}>
-        <TextField
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          fullWidth
-          placeholder="Type message to ask AI..."
-          sx={{
-            color: 'var(--jp-ui-font-color1)',
-            '& .MuiInputBase-input': {
-              color: 'var(--jp-ui-font-color1)'
-            },
-            '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: 'var(--jp-ui-font-color1)'
-            }
-          }}
-        />
-        <IconButton onClick={onSend} sx={{ color: 'var(--jp-ui-font-color1)' }}>
-          <SendIcon />
-        </IconButton>
-      </Box>
+      {isAiGenerating ? (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
+          <Typography>Generating AI response...</Typography>
+          <IconButton
+            onClick={() => setIsAiGenerating(false)}
+            sx={{
+              color: 'red',
+              backgroundColor: '#ffcccc',
+              borderRadius: '10%',
+              fontSize: '1rem',
+              alignSelf: 'center'
+            }}
+          >
+            <StopIcon />
+            Cancel
+          </IconButton>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', alignItems: 'center', padding: 1 }}>
+          <TextField
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            fullWidth
+            placeholder="Type message to ask AI..."
+            sx={{
+              color: 'var(--jp-ui-font-color1)',
+              '& .MuiInputBase-input': {
+                color: 'var(--jp-ui-font-color1)'
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'var(--jp-ui-font-color1)'
+              }
+            }}
+          />
+          <IconButton onClick={onSend} sx={{ color: 'var(--jp-ui-font-color1)' }}>
+            <SendIcon />
+          </IconButton>
+        </Box>
+      )}
     </Box>
   );
 }

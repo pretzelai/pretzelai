@@ -52,7 +52,8 @@ export const chatAIStream = async ({
   topSimilarities,
   activeCellCode,
   selectedCode,
-  setReferenceSource
+  setReferenceSource,
+  setIsAiGenerating
 }: {
   aiService: string;
   openAiApiKey?: string;
@@ -67,6 +68,7 @@ export const chatAIStream = async ({
   activeCellCode?: string;
   selectedCode?: string;
   setReferenceSource: (source: string) => void;
+  setIsAiGenerating: (isGenerating: boolean) => void;
 }): Promise<void> => {
   const lastContent = messages[messages.length - 1].content as string;
   const lastContentWithInjection = generateChatPrompt(
@@ -92,6 +94,7 @@ export const chatAIStream = async ({
       renderChat(chunk.choices[0]?.delta?.content || '');
     }
     setReferenceSource('');
+    setIsAiGenerating(false);
   } else if (aiService === 'Use Pretzel AI Server') {
     const response = await fetch('https://api.pretzelai.app/chat/', {
       method: 'POST',
@@ -110,6 +113,7 @@ export const chatAIStream = async ({
       if (done) {
         isReading = false;
         setReferenceSource('');
+        setIsAiGenerating(false);
       } else {
         const chunk = decoder.decode(value);
         renderChat(chunk);
