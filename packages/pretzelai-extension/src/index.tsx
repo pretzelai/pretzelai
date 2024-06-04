@@ -15,7 +15,6 @@ import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application'
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { IIOPubMessage } from '@jupyterlab/services/lib/kernel/messages';
-import * as monaco from 'monaco-editor';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
@@ -306,7 +305,6 @@ const extension: JupyterFrontEndPlugin<void> = {
         prompt,
         parentContainer,
         diffRoot,
-        monaco,
         oldCode: originalCode,
         azureBaseUrl,
         azureApiKey,
@@ -665,7 +663,6 @@ const extension: JupyterFrontEndPlugin<void> = {
                   aiService,
                   parentContainer,
                   diffRoot,
-                  monaco,
                   oldCode,
                   // OpenAI API
                   openAiApiKey,

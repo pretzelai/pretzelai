@@ -11,13 +11,8 @@ import { cosineSimilarity } from './utils';
 import { OpenAI } from 'openai';
 import { Embeddings } from '@azure/openai/types/openai';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import posthog from 'posthog-js';
 import * as React from 'react';
-import { Dialog, showDialog } from '@jupyterlab/apputils';
-import * as monaco from 'monaco-editor';
-
-import DiffEditor from './components/DiffEditor';
-import { useEffect, useState } from 'react';
+import { DiffContainer } from './components/DiffContainer';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -174,27 +169,6 @@ INSTRUCTION:
 - ONLY IF the error is in a DIFFERENT PART of the Jupyter Notebook: add a comment at the top explaining this and add AS LITTLE CODE AS POSSIBLE in the CURRENT cell to fix the error.`;
 }
 
-interface IStreamingDiffEditorProps {
-  stream: AsyncIterable<any>;
-  oldCode: string;
-  onEditorCreated: (editor: monaco.editor.IStandaloneDiffEditor) => void;
-}
-
-const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({ stream, oldCode, onEditorCreated }) => {
-  const [newCode, setNewCode] = useState('');
-
-  useEffect(() => {
-    const accumulate = async () => {
-      for await (const chunk of stream) {
-        setNewCode(prevCode => prevCode + (chunk.choices[0]?.delta?.content || ''));
-      }
-    };
-    accumulate();
-  }, [stream]);
-
-  return <DiffEditor oldCode={oldCode} newCode={newCode} onEditorCreated={onEditorCreated} />;
-};
-
 export const openAiStream = async ({
   aiService,
   openAiApiKey,
@@ -203,7 +177,6 @@ export const openAiStream = async ({
   prompt,
   parentContainer,
   diffRoot,
-  monaco,
   oldCode,
   azureBaseUrl,
   azureApiKey,
@@ -220,7 +193,6 @@ export const openAiStream = async ({
   prompt?: string;
   parentContainer: HTMLElement;
   diffRoot: any;
-  monaco: any;
   oldCode: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
@@ -232,7 +204,6 @@ export const openAiStream = async ({
 }): Promise<void> => {
   statusElement.textContent = 'Calling AI service...';
 
-  let diffEditorPromise: Promise<monaco.editor.IStandaloneDiffEditor> | null = null;
   let stream: AsyncIterable<any> | null = null;
 
   if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
@@ -308,165 +279,19 @@ export const openAiStream = async ({
   }
 
   statusElement.textContent = 'Generating code...';
-  // wait for the diff editor to be created
-  diffEditorPromise = new Promise<monaco.editor.IStandaloneDiffEditor>(resolve => {
-    const handleEditorCreated = (editor: monaco.editor.IStandaloneDiffEditor) => {
-      resolve(editor);
-    };
-    diffRoot.render(<StreamingDiffEditor stream={stream!} oldCode={oldCode} onEditorCreated={handleEditorCreated} />);
-  });
-
-  const diffEditor = await diffEditorPromise;
-  // Handle occasional responses with backticks
-  const newCode = diffEditor!.getModel()!.modified.getValue();
-  if (newCode.split('```').length === 3) {
-    diffEditor!.getModel()!.modified.setValue(newCode.split('```')[1]);
-  }
-
-  // if the string "# INJECT NEW CODE HERE" then replace it with empty string including the newline and update the modified model
-  if (newCode.includes('# INJECT NEW CODE HERE')) {
-    diffEditor!
-      .getModel()!
-      .modified.setValue(newCode.replace('# INJECT NEW CODE HERE\n', '').replace('# INJECT NEW CODE HERE', ''));
-  }
-
-  const diffContainer = document.querySelector('.diff-container');
-  const acceptAndRunButton = document.createElement('button');
-  acceptAndRunButton.textContent = 'Accept and Run';
-  acceptAndRunButton.classList.add('accept-and-run-button');
-  const handleAcceptAndRun = () => {
-    const modifiedCode = diffEditor!.getModel()!.modified.getValue();
-    activeCell.model.sharedModel.source = modifiedCode;
-    commands.execute('notebook:run-cell');
-    activeCell.node.removeChild(parentContainer);
-    statusElement.remove();
-  };
-  acceptAndRunButton.addEventListener('click', () => {
-    posthog.capture('Accept and Run', {
-      event_type: 'click',
-      method: 'accept_and_run'
-    });
-    handleAcceptAndRun();
-  });
-
-  const acceptButton = document.createElement('button');
-  acceptButton.textContent = 'Accept';
-  acceptButton.classList.add('accept-button');
-  const handleAccept = () => {
-    const modifiedCode = diffEditor!.getModel()!.modified.getValue();
-    activeCell.model.sharedModel.source = modifiedCode;
-    activeCell.node.removeChild(parentContainer);
-    statusElement.remove();
-  };
-  acceptButton.addEventListener('click', () => {
-    posthog.capture('Accept', {
-      event_type: 'click',
-      method: 'accept'
-    });
-    handleAccept();
-  });
-
-  const rejectButton = document.createElement('button');
-  rejectButton.textContent = 'Reject';
-  rejectButton.classList.add('reject-button');
-  const handleReject = () => {
-    activeCell.node.removeChild(parentContainer);
-    activeCell.model.sharedModel.source = oldCode;
-    statusElement.remove();
-  };
-  rejectButton.addEventListener('click', () => {
-    posthog.capture('Reject', {
-      event_type: 'click',
-      method: 'reject'
-    });
-    handleReject();
-  });
-
-  const editPromptButton = document.createElement('button');
-  if (!isErrorFixPrompt) {
-    editPromptButton.textContent = 'Edit Prompt';
-    editPromptButton.classList.add('edit-prompt-button');
-
-    editPromptButton.addEventListener('click', () => {
-      posthog.capture('Edit Prompt', {
-        event_type: 'click',
-        method: 'edit_prompt'
-      });
-      parentContainer.remove();
-      activeCell.model.setMetadata('isPromptEdit', true);
-      commands.execute('pretzelai:replace-code');
-    });
-  }
-
-  const infoIcon = document.createElement('div');
-  infoIcon.innerHTML = `<svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
-  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.529 9.988a2.502 2.502 0 1 1 5 .191A2.441 2.441 0 0 1 12 12.582V14m-.01 3.008H12M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-</svg>`;
-  infoIcon.classList.add('info-icon');
-  infoIcon.addEventListener('click', () => {
-    const richTextBody = (
-      <div>
-        <p>
-          <b>
-            Accept and Run (shortcut: <u>Shift + Enter</u>)
-          </b>
-          : Will put the code in current Jupyter cell AND run it.
-        </p>
-        <p>
-          <b>
-            Accept (shortcut: <u>Enter</u>)
-          </b>
-          : Will put the code in current Jupyter cell but WILL NOT run it.
-        </p>
-        <p>
-          <b>Reject</b>: Will reject the generated code. Your cell will return to the state it was before.
-        </p>
-        <p>
-          <b>Edit Prompt</b>: Go back to writing the editing your initial prompt.
-        </p>
-        <p>
-          See more in the README <a href="https://github.com/pretzelai/pretzelai?tab=readme-ov-file#usage">here</a>.
-        </p>
-      </div>
-    );
-
-    showDialog({
-      title: 'Using AI Features',
-      body: richTextBody,
-      buttons: [
-        Dialog.createButton({
-          label: 'Close',
-          className: 'jp-About-button jp-mod-reject jp-mod-styled'
-        })
-      ]
-    });
-  });
-
-  const diffButtonsContainer = document.createElement('div');
-  diffButtonsContainer.classList.add('diff-buttons-container');
-  diffButtonsContainer.tabIndex = 0; // Make the container focusable
-  diffContainer!.appendChild(diffButtonsContainer);
-  diffButtonsContainer!.appendChild(acceptAndRunButton!);
-  diffButtonsContainer!.appendChild(acceptButton!);
-  diffButtonsContainer!.appendChild(rejectButton!);
-  if (!isErrorFixPrompt) {
-    diffButtonsContainer!.appendChild(editPromptButton!);
-  }
-  diffButtonsContainer!.appendChild(infoIcon);
-  diffButtonsContainer.addEventListener('keydown', event => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleAccept();
-    } else if (event.key === 'Enter' && event.shiftKey) {
-      event.preventDefault();
-      handleAcceptAndRun();
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      handleReject();
-    }
-  });
-  diffButtonsContainer.focus();
-  statusElement.textContent = '';
+  diffRoot.render(
+    <DiffContainer
+      stream={stream!}
+      oldCode={oldCode}
+      onEditorCreated={() => {}}
+      onStreamingDone={() => {}}
+      parentContainer={parentContainer}
+      activeCell={activeCell}
+      commands={commands}
+      statusElement={statusElement}
+      isErrorFixPrompt={isErrorFixPrompt}
+    />
+  );
 };
 
 export const openaiEmbeddings = async (
