@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { CodeToolbar, CodeToolbarProps } from './code-blocks/code-toolbar';
 import { createPortal } from 'react-dom';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 const MD_MIME_TYPE = 'text/markdown';
 const RENDERMIME_MD_CLASS = 'jp-pretzelai-rendermime-markdown';
@@ -16,6 +17,7 @@ const RENDERMIME_MD_CLASS = 'jp-pretzelai-rendermime-markdown';
 type RendermimeMarkdownProps = {
   markdownStr: string;
   rmRegistry: IRenderMimeRegistry;
+  notebookTracker: INotebookTracker;
 };
 
 function escapeLatexDelimiters(text: string) {
@@ -43,12 +45,14 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
 
       const newCodeToolbarDefns: [HTMLDivElement, CodeToolbarProps][] = [];
 
-      // Attach CodeToolbar root element to each <pre> block
       const preBlocks = renderer.node.querySelectorAll('pre');
       preBlocks.forEach(preBlock => {
         const codeToolbarRoot = document.createElement('div');
         preBlock.parentNode?.insertBefore(codeToolbarRoot, preBlock.nextSibling);
-        newCodeToolbarDefns.push([codeToolbarRoot, { content: preBlock.textContent || '' }]);
+        newCodeToolbarDefns.push([
+          codeToolbarRoot,
+          { content: preBlock.textContent || '', notebookTracker: props.notebookTracker }
+        ]);
       });
 
       setCodeToolbarDefns(newCodeToolbarDefns);
@@ -60,9 +64,7 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
 
   useEffect(() => {
     if (renderedContent && renderedContentRef.current) {
-      // Clear previous content
       renderedContentRef.current.innerHTML = '';
-      // Append new content
       renderedContentRef.current.appendChild(renderedContent);
     }
   }, [renderedContent]);
@@ -70,15 +72,10 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
   return (
     <div className={RENDERMIME_MD_CLASS}>
       <div ref={renderedContentRef} />
-      {
-        // Render a `CodeToolbar` element underneath each code block.
-        // We use ReactDOM.createPortal() so each `CodeToolbar` element is able
-        // to use the context in the main React tree.
-        codeToolbarDefns.map(codeToolbarDefn => {
-          const [codeToolbarRoot, codeToolbarProps] = codeToolbarDefn;
-          return createPortal(<CodeToolbar {...codeToolbarProps} />, codeToolbarRoot);
-        })
-      }
+      {codeToolbarDefns.map(codeToolbarDefn => {
+        const [codeToolbarRoot, codeToolbarProps] = codeToolbarDefn;
+        return createPortal(<CodeToolbar {...codeToolbarProps} />, codeToolbarRoot);
+      })}
     </div>
   );
 }

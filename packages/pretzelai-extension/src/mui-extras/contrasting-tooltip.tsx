@@ -1,10 +1,13 @@
+/* -----------------------------------------------------------------------------
+| Copyright (c) Jupyter Development Team.
+| Distributed under the terms of the Modified BSD License.
+|----------------------------------------------------------------------------*/
+// This file is a modified version of the original file from Jupyter AI.
+// https://github.com/jupyterlab/jupyter-ai/blob/main/packages/jupyter-ai/src/components/mui-extras/contrasting-tooltip.tsx
+
 import React from 'react';
 import { styled, Tooltip, tooltipClasses, TooltipProps } from '@mui/material';
 
-/**
- * A restyled MUI tooltip component that is dark by default to improve contrast
- * against JupyterLab's default light theme. TODO: support dark themes.
- */
 export const ContrastingTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip {...props} arrow classes={{ popper: className }} />
 ))(({ theme }) => ({

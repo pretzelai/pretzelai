@@ -198,7 +198,11 @@ export function Chat({
                 <Typography color={'var(--jp-ui-font-color1)'}>{`Using ${referenceSource}...`}</Typography>
               </Box>
             )}
-            <RendermimeMarkdown rmRegistry={rmRegistry} markdownStr={message.content} />
+            <RendermimeMarkdown
+              rmRegistry={rmRegistry}
+              markdownStr={message.content}
+              notebookTracker={notebookTracker}
+            />
           </Box>
         ))}
         <div ref={messagesEndRef} />

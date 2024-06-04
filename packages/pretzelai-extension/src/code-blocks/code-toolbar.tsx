@@ -12,6 +12,7 @@ import { addAboveIcon, addBelowIcon } from '@jupyterlab/ui-components';
 import { CopyButton } from './copy-button';
 import replaceCellIconRaw from '../../style/icons/replace-cell.svg';
 import { LabIcon } from '@jupyterlab/ui-components';
+import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
 
 const replaceCellIcon = new LabIcon({
   name: 'pretzelai::replace-cell',
@@ -21,10 +22,8 @@ const replaceCellIcon = new LabIcon({
 import { TooltippedIconButton } from '../mui-extras/tooltipped-icon-button';
 
 export type CodeToolbarProps = {
-  /**
-   * The content of the Markdown code block this component is attached to.
-   */
   content: string;
+  notebookTracker: INotebookTracker;
 };
 
 export function CodeToolbar(props: CodeToolbarProps): JSX.Element {
@@ -40,39 +39,64 @@ export function CodeToolbar(props: CodeToolbarProps): JSX.Element {
         borderTop: 'none'
       }}
     >
-      <InsertAboveButton />
-      <InsertBelowButton />
-      <ReplaceButton />
+      <InsertAboveButton {...props} />
+      <InsertBelowButton {...props} />
+      <ReplaceButton {...props} />
       <CopyButton value={props.content} />
     </Box>
   );
 }
 
-function InsertAboveButton() {
+type ToolbarButtonProps = {
+  content: string;
+  notebookTracker: INotebookTracker;
+};
+
+const insertCell = (notebookTracker: INotebookTracker, content: string, index: number) => {
+  if (notebookTracker.activeCell) {
+    const nb = notebookTracker.currentWidget as NotebookPanel;
+    const activeCellIndex = nb.model?.sharedModel.cells.findIndex(
+      c => c.id === notebookTracker.activeCell?.model.sharedModel.id
+    ) as number;
+    nb.model?.sharedModel.insertCell(activeCellIndex + index, {
+      cell_type: 'code',
+      source: content
+    });
+  }
+};
+
+function InsertAboveButton({ notebookTracker, content }: ToolbarButtonProps) {
   const tooltip = 'Insert above active cell';
 
   return (
-    <TooltippedIconButton tooltip={tooltip} onClick={() => {}}>
+    <TooltippedIconButton tooltip={tooltip} onClick={() => insertCell(notebookTracker, content, 0)}>
       <addAboveIcon.react height="16px" width="16px" />
     </TooltippedIconButton>
   );
 }
 
-function InsertBelowButton() {
+function InsertBelowButton({ notebookTracker, content }: ToolbarButtonProps) {
   const tooltip = 'Insert below active cell';
 
   return (
-    <TooltippedIconButton tooltip={tooltip} onClick={() => {}}>
+    <TooltippedIconButton tooltip={tooltip} onClick={() => insertCell(notebookTracker, content, 1)}>
       <addBelowIcon.react height="16px" width="16px" />
     </TooltippedIconButton>
   );
 }
 
-function ReplaceButton() {
+function ReplaceButton({ notebookTracker, content }: ToolbarButtonProps) {
   const tooltip = 'Replace active cell';
 
   return (
-    <TooltippedIconButton tooltip={tooltip} onClick={() => {}}>
+    <TooltippedIconButton
+      tooltip={tooltip}
+      onClick={() => {
+        if (notebookTracker.activeCell) {
+          notebookTracker.activeCell.model.sharedModel.source = content;
+        }
+      }}
+    >
       <replaceCellIcon.react height="16px" width="16px" />
     </TooltippedIconButton>
   );
