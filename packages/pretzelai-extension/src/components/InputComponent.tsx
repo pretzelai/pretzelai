@@ -17,7 +17,7 @@ import { PromptHistoryButton, RemoveButton, SubmitButton } from './prompt-box-bu
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
 
-interface IInputFieldProps {
+interface IInputComponentProps {
   isAIEnabled: boolean;
   placeholderEnabled: string;
   placeholderDisabled: string;
@@ -30,7 +30,7 @@ interface IInputFieldProps {
   activeCell: any; // Add this prop
 }
 
-const InputField: React.FC<IInputFieldProps> = ({
+const InputComponent: React.FC<IInputComponentProps> = ({
   isAIEnabled,
   placeholderEnabled,
   placeholderDisabled,
@@ -132,7 +132,7 @@ const InputField: React.FC<IInputFieldProps> = ({
     return () => {
       inputViewRef.current?.destroy();
     };
-  }, [isAIEnabled, placeholderEnabled, placeholderDisabled, handleSubmit, handleRemove, setInputView, activeCell]);
+  }, [isAIEnabled, handleSubmit, handleRemove, setInputView, activeCell]);
 
   return (
     <div className="input-container">
@@ -173,4 +173,4 @@ const InputField: React.FC<IInputFieldProps> = ({
   );
 };
 
-export default InputField;
+export default InputComponent;

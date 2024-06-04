@@ -19,7 +19,7 @@ import * as monaco from 'monaco-editor';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { calculateHash, FixedSizeStack, isSetsEqual, renderEditor } from './utils';
+import { calculateHash, FixedSizeStack, isSetsEqual } from './utils';
 import { ServerConnection } from '@jupyterlab/services';
 
 import { AiService, Embedding, generatePrompt, getTopSimilarities, openaiEmbeddings, openAiStream } from './prompt';
@@ -35,7 +35,7 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { EditorView } from '@codemirror/view';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
-import InputField from './components/InputField';
+import InputComponent from './components/InputComponent';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -72,7 +72,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Go To: Settings > Settings Editor > Pretzel AI Settings to configure';
 
     const placeholderEnabled =
-      'Ask AI. Refernce variables/dataframes with @variable syntax. Shift + Enter for new line.\nEnter to submit. Use ↑ / ↓ to navigate prompt history.';
+      'Ask AI. Refernce variables/dataframes with @variable syntax. Shift + Enter for new line.\n' +
+      'Enter to submit. Use ↑ / ↓ to navigate prompt history.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let openAiModel = '';
@@ -287,14 +288,15 @@ const extension: JupyterFrontEndPlugin<void> = {
         codeMatchThreshold
       );
       const prompt = generatePrompt('', originalCode, topSimilarities, '', traceback);
-      let diffEditorContainer: HTMLElement = document.createElement('div');
-      let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
 
       const parentContainer = document.createElement('div');
       parentContainer.classList.add('pretzelParentContainerAI');
       activeCell.node.appendChild(parentContainer);
 
-      diffEditor = renderEditor('', parentContainer, diffEditorContainer, diffEditor, monaco, originalCode);
+      const diffContainer = document.createElement('div');
+      diffContainer.classList.add('diff-container');
+      parentContainer.appendChild(diffContainer);
+      const diffRoot = createRoot(diffContainer);
 
       openAiStream({
         aiService,
@@ -303,9 +305,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         openAiModel,
         prompt,
         parentContainer,
-        inputContainer: null,
-        diffEditorContainer,
-        diffEditor,
+        diffRoot,
         monaco,
         oldCode: originalCode,
         azureBaseUrl,
@@ -313,7 +313,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         deploymentId: azureDeploymentName,
         activeCell,
         commands,
-        statusElement
+        statusElement,
+        isErrorFixPrompt: false
       })
         .then(() => {
           // clear output of the cell
@@ -575,9 +576,6 @@ const extension: JupyterFrontEndPlugin<void> = {
       execute: () => {
         const activeCell = notebookTracker.activeCell;
 
-        let diffEditorContainer: HTMLElement = document.createElement('div');
-        let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
-
         if (activeCell) {
           // Cmd K twice should toggle the box
           const existingDiv = activeCell.node.querySelector('.pretzelParentContainerAI');
@@ -601,17 +599,22 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           let oldCode = activeCell.model.sharedModel.source;
 
-          const statusElement = document.createElement('p');
-          statusElement.className = 'status-element';
-          activeCell.node.appendChild(statusElement);
-
           const parentContainer = document.createElement('div');
           parentContainer.classList.add('pretzelParentContainerAI');
           activeCell.node.appendChild(parentContainer);
 
+          const statusElement = document.createElement('p');
+          statusElement.className = 'status-element';
+          parentContainer.appendChild(statusElement);
+
           const inputContainer = document.createElement('div');
           parentContainer.appendChild(inputContainer);
           const inputRoot = createRoot(inputContainer);
+
+          const diffContainer = document.createElement('div');
+          diffContainer.className = 'diff-container';
+          parentContainer.appendChild(diffContainer);
+          const diffRoot = createRoot(diffContainer);
 
           let inputView: EditorView | null = null;
           let initialPrompt: string | undefined = '';
@@ -658,15 +661,12 @@ const extension: JupyterFrontEndPlugin<void> = {
                 } else {
                   posthog.capture('prompt', { property: 'no_telemetry' });
                 }
-                diffEditor = renderEditor('', parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
                 openAiStream({
                   aiService,
                   parentContainer,
-                  diffEditorContainer,
-                  diffEditor,
+                  diffRoot,
                   monaco,
                   oldCode,
-                  inputContainer,
                   // OpenAI API
                   openAiApiKey,
                   openAiBaseUrl,
@@ -678,7 +678,8 @@ const extension: JupyterFrontEndPlugin<void> = {
                   deploymentId: azureDeploymentName,
                   activeCell,
                   commands,
-                  statusElement
+                  statusElement,
+                  isErrorFixPrompt: false
                 });
               } catch (error) {
                 activeCell.node.removeChild(parentContainer);
@@ -712,7 +713,7 @@ const extension: JupyterFrontEndPlugin<void> = {
             activeCell.model.setMetadata('isPromptEdit', false);
           }
           inputRoot.render(
-            <InputField
+            <InputComponent
               activeCell={activeCell}
               isAIEnabled={isAIEnabled}
               placeholderEnabled={placeholderEnabled}

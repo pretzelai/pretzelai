@@ -8,6 +8,8 @@
  */
 
 import { INotebookTracker } from '@jupyterlab/notebook';
+// import React, { useEffect } from 'react';
+// import { createRoot } from 'react-dom/client';
 
 export async function calculateHash(input: string) {
   const encoder = new TextEncoder();
@@ -26,65 +28,6 @@ export const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
 };
 
 export const isSetsEqual = (xs: Set<any>, ys: Set<any>) => xs.size === ys.size && [...xs].every(x => ys.has(x));
-
-export const renderEditor = (
-  gen: string,
-  parentContainer: HTMLElement,
-  diffEditorContainer: HTMLElement,
-  diffEditor: any,
-  monaco: any,
-  oldCode: string
-) => {
-  try {
-    if (!diffEditor) {
-      const diffContainer = document.createElement('div');
-      diffContainer.className = 'diff-container';
-      diffContainer.style.marginTop = '10px';
-      diffContainer.style.display = 'flex';
-      diffContainer.style.flexDirection = 'column';
-      parentContainer.appendChild(diffContainer);
-
-      diffContainer.appendChild(diffEditorContainer);
-
-      // finally, the diff editor itself
-      const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
-      diffEditor = monaco.editor.createDiffEditor(diffEditorContainer, {
-        readOnly: true,
-        theme: currentTheme,
-        renderSideBySide: false,
-        minimap: { enabled: false },
-        overviewRulerBorder: false,
-        overviewRulerLanes: 0,
-        scrollbar: {
-          vertical: 'hidden',
-          horizontal: 'hidden',
-          handleMouseWheel: false
-        }
-      });
-      diffEditor.setModel({
-        original: monaco.editor.createModel(oldCode, 'python'),
-        modified: monaco.editor.createModel('', 'python')
-      });
-    }
-    const modifiedModel = diffEditor!.getModel()!.modified;
-    const endLineNumber = modifiedModel.getLineCount();
-    const endColumn = modifiedModel.getLineMaxColumn(endLineNumber);
-    modifiedModel.applyEdits([
-      {
-        range: new monaco.Range(endLineNumber, endColumn, endLineNumber, endColumn),
-        text: gen,
-        forceMoveMarkers: true
-      }
-    ]);
-    const newCode = modifiedModel.getValue();
-    const heightPx = oldCode.split('\n').length + newCode.split('\n').length * 19;
-    diffEditorContainer.style.height = heightPx + 'px';
-    diffEditor?.layout();
-    return diffEditor;
-  } catch (error) {
-    console.log('Error rendering editor:', error);
-  }
-};
 
 export const getSelectedCode = (notebookTracker: INotebookTracker) => {
   const selection = notebookTracker.activeCell?.editor?.getSelection();

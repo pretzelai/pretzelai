@@ -10,11 +10,14 @@
 import { cosineSimilarity } from './utils';
 import { OpenAI } from 'openai';
 import { Embeddings } from '@azure/openai/types/openai';
-import { renderEditor } from './utils';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
 import * as React from 'react';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
+import * as monaco from 'monaco-editor';
+
+import DiffEditor from './components/DiffEditor';
+import { useEffect, useState } from 'react';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -171,6 +174,27 @@ INSTRUCTION:
 - ONLY IF the error is in a DIFFERENT PART of the Jupyter Notebook: add a comment at the top explaining this and add AS LITTLE CODE AS POSSIBLE in the CURRENT cell to fix the error.`;
 }
 
+interface IStreamingDiffEditorProps {
+  stream: AsyncIterable<any>;
+  oldCode: string;
+  onEditorCreated: (editor: monaco.editor.IStandaloneDiffEditor) => void;
+}
+
+const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({ stream, oldCode, onEditorCreated }) => {
+  const [newCode, setNewCode] = useState('');
+
+  useEffect(() => {
+    const accumulate = async () => {
+      for await (const chunk of stream) {
+        setNewCode(prevCode => prevCode + (chunk.choices[0]?.delta?.content || ''));
+      }
+    };
+    accumulate();
+  }, [stream]);
+
+  return <DiffEditor oldCode={oldCode} newCode={newCode} onEditorCreated={onEditorCreated} />;
+};
+
 export const openAiStream = async ({
   aiService,
   openAiApiKey,
@@ -178,9 +202,7 @@ export const openAiStream = async ({
   openAiModel,
   prompt,
   parentContainer,
-  inputContainer,
-  diffEditorContainer,
-  diffEditor,
+  diffRoot,
   monaco,
   oldCode,
   azureBaseUrl,
@@ -188,7 +210,8 @@ export const openAiStream = async ({
   deploymentId,
   activeCell,
   commands,
-  statusElement
+  statusElement,
+  isErrorFixPrompt
 }: {
   aiService: string;
   openAiApiKey?: string;
@@ -196,9 +219,7 @@ export const openAiStream = async ({
   openAiModel?: string;
   prompt?: string;
   parentContainer: HTMLElement;
-  inputContainer: Node | null;
-  diffEditorContainer: HTMLElement;
-  diffEditor: any;
+  diffRoot: any;
   monaco: any;
   oldCode: string;
   azureBaseUrl?: string;
@@ -207,15 +228,20 @@ export const openAiStream = async ({
   activeCell: any;
   commands: any;
   statusElement: HTMLElement;
+  isErrorFixPrompt: boolean;
 }): Promise<void> => {
   statusElement.textContent = 'Calling AI service...';
+
+  let diffEditorPromise: Promise<monaco.editor.IStandaloneDiffEditor> | null = null;
+  let stream: AsyncIterable<any> | null = null;
+
   if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
       baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
     });
-    const stream = await openai.chat.completions.create({
+    stream = await openai.chat.completions.create({
       model: openAiModel,
       messages: [
         {
@@ -229,17 +255,6 @@ export const openAiStream = async ({
       ],
       stream: true
     });
-    statusElement.textContent = 'Generating code...';
-    for await (const chunk of stream) {
-      renderEditor(
-        chunk.choices[0]?.delta?.content || '',
-        parentContainer,
-        diffEditorContainer,
-        diffEditor,
-        monaco,
-        oldCode
-      );
-    }
   } else if (aiService === 'Use Pretzel AI Server') {
     const response = await fetch('https://api.pretzelai.app/prompt/', {
       method: 'POST',
@@ -260,61 +275,61 @@ export const openAiStream = async ({
         ]
       })
     });
+
     const reader = response!.body!.getReader();
     const decoder = new TextDecoder('utf-8');
-    let isReading = true;
-    statusElement.textContent = 'Generating code...';
-    while (isReading) {
-      const { done, value } = await reader.read();
-      if (done) {
-        isReading = false;
+
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        let isReading = true;
+        while (isReading) {
+          const { done, value } = await reader.read();
+          if (done) {
+            isReading = false;
+          }
+          const chunk = decoder.decode(value);
+          yield { choices: [{ delta: { content: chunk } }] };
+        }
       }
-      const chunk = decoder.decode(value);
-      renderEditor(chunk, parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
-    }
+    };
   } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
     const result = await client.getCompletions(deploymentId, [prompt]);
-    statusElement.textContent = 'Generating code...';
-    for (const choice of result.choices) {
-      renderEditor(choice.text, parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
-    }
-  }
-  // Handle occasional responses with backticks
-  const newCode = diffEditor.getModel().modified.getValue();
-  if (newCode.split('```').length === 3) {
-    renderEditor(newCode.split('```')[1], parentContainer, diffEditorContainer, diffEditor, monaco, oldCode);
-  }
 
-  // if the string "# INJECT NEW CODE HERE" then replace it with empty string including the newline and renderEditor
-  if (newCode.includes('# INJECT NEW CODE HERE')) {
-    renderEditor(
-      newCode.replace('# INJECT NEW CODE HERE\n', '').replace('# INJECT NEW CODE HERE', ''),
-      parentContainer,
-      diffEditorContainer,
-      diffEditor,
-      monaco,
-      oldCode
-    );
-  }
-
-  setTimeout(async () => {
-    const changes = diffEditor.getLineChanges();
-    let totalLines = oldCode.split('\n').length;
-    if (changes) {
-      changes.forEach((c: any) => {
-        if (c.modifiedEndLineNumber >= c.modifiedStartLineNumber) {
-          const modified = c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
-
-          totalLines += modified;
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        for (const choice of result.choices) {
+          yield { choices: [{ delta: { content: choice.text } }] };
         }
-      });
-    }
-    const heightPx = totalLines * 19;
-    diffEditorContainer.style.height = heightPx + 'px';
-    diffEditor?.layout();
-  }, 500);
-  // Create "Accept and Run", "Accept", and "Reject" buttons
+      }
+    };
+  } else {
+    throw new Error('Invalid AI service');
+  }
+
+  statusElement.textContent = 'Generating code...';
+  // wait for the diff editor to be created
+  diffEditorPromise = new Promise<monaco.editor.IStandaloneDiffEditor>(resolve => {
+    const handleEditorCreated = (editor: monaco.editor.IStandaloneDiffEditor) => {
+      resolve(editor);
+    };
+    diffRoot.render(<StreamingDiffEditor stream={stream!} oldCode={oldCode} onEditorCreated={handleEditorCreated} />);
+  });
+
+  const diffEditor = await diffEditorPromise;
+  // Handle occasional responses with backticks
+  const newCode = diffEditor!.getModel()!.modified.getValue();
+  if (newCode.split('```').length === 3) {
+    diffEditor!.getModel()!.modified.setValue(newCode.split('```')[1]);
+  }
+
+  // if the string "# INJECT NEW CODE HERE" then replace it with empty string including the newline and update the modified model
+  if (newCode.includes('# INJECT NEW CODE HERE')) {
+    diffEditor!
+      .getModel()!
+      .modified.setValue(newCode.replace('# INJECT NEW CODE HERE\n', '').replace('# INJECT NEW CODE HERE', ''));
+  }
+
   const diffContainer = document.querySelector('.diff-container');
   const acceptAndRunButton = document.createElement('button');
   acceptAndRunButton.textContent = 'Accept and Run';
@@ -368,7 +383,7 @@ export const openAiStream = async ({
   });
 
   const editPromptButton = document.createElement('button');
-  if (inputContainer) {
+  if (!isErrorFixPrompt) {
     editPromptButton.textContent = 'Edit Prompt';
     editPromptButton.classList.add('edit-prompt-button');
 
@@ -434,7 +449,7 @@ export const openAiStream = async ({
   diffButtonsContainer!.appendChild(acceptAndRunButton!);
   diffButtonsContainer!.appendChild(acceptButton!);
   diffButtonsContainer!.appendChild(rejectButton!);
-  if (inputContainer) {
+  if (!isErrorFixPrompt) {
     diffButtonsContainer!.appendChild(editPromptButton!);
   }
   diffButtonsContainer!.appendChild(infoIcon);
