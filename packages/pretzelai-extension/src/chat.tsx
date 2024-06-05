@@ -71,6 +71,7 @@ export function Chat({
   const [input, setInput] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [referenceSource, setReferenceSource] = useState('');
+  const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -126,6 +127,10 @@ export function Chat({
       codeMatchThreshold
     );
 
+    const controller = new AbortController();
+    let signal = controller.signal;
+    setStopGeneration(() => () => controller.abort());
+
     await chatAIStream({
       aiService,
       openAiApiKey,
@@ -140,7 +145,8 @@ export function Chat({
       activeCellCode,
       selectedCode,
       setReferenceSource,
-      setIsAiGenerating
+      setIsAiGenerating,
+      signal
     });
   };
 
@@ -215,7 +221,11 @@ export function Chat({
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
           <Typography>Generating AI response...</Typography>
           <IconButton
-            onClick={() => setIsAiGenerating(false)}
+            onClick={() => {
+              setIsAiGenerating(false);
+              stopGeneration();
+              setReferenceSource('');
+            }}
             sx={{
               color: 'red',
               backgroundColor: '#ffcccc',

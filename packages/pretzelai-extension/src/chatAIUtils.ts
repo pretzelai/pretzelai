@@ -53,7 +53,8 @@ export const chatAIStream = async ({
   activeCellCode,
   selectedCode,
   setReferenceSource,
-  setIsAiGenerating
+  setIsAiGenerating,
+  signal
 }: {
   aiService: string;
   openAiApiKey?: string;
@@ -69,6 +70,7 @@ export const chatAIStream = async ({
   selectedCode?: string;
   setReferenceSource: (source: string) => void;
   setIsAiGenerating: (isGenerating: boolean) => void;
+  signal: AbortSignal;
 }): Promise<void> => {
   const lastContent = messages[messages.length - 1].content as string;
   const lastContentWithInjection = generateChatPrompt(
@@ -85,11 +87,16 @@ export const chatAIStream = async ({
       dangerouslyAllowBrowser: true,
       baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
     });
-    const stream = await openai.chat.completions.create({
-      model: openAiModel,
-      messages: messagesWithInjection as ChatCompletionMessage[],
-      stream: true
-    });
+    const stream = await openai.chat.completions.create(
+      {
+        model: openAiModel,
+        messages: messagesWithInjection as ChatCompletionMessage[],
+        stream: true
+      },
+      {
+        signal
+      }
+    );
     for await (const chunk of stream) {
       renderChat(chunk.choices[0]?.delta?.content || '');
     }
@@ -103,7 +110,8 @@ export const chatAIStream = async ({
       },
       body: JSON.stringify({
         messages: messagesWithInjection
-      })
+      }),
+      signal
     });
     const reader = response!.body!.getReader();
     const decoder = new TextDecoder('utf-8');
