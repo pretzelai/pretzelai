@@ -212,6 +212,10 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
           event.preventDefault();
           const acceptAndRunButton = document.querySelector('.accept-and-run-button') as HTMLButtonElement;
           acceptAndRunButton.click();
+        } else if (event.key === 'Escape' && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          const editPromptButton = document.querySelector('.edit-prompt-button') as HTMLButtonElement;
+          editPromptButton.click();
         } else if (event.key === 'Escape') {
           event.preventDefault();
           const rejectButton = document.querySelector('.reject-button') as HTMLButtonElement;
