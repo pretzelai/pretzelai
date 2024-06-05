@@ -124,7 +124,7 @@ interface IInputComponentProps {
   handleRemove: () => void;
   promptHistoryStack: FixedSizeStack<string>;
   setInputView: (view: EditorView) => void;
-  initialPrompt?: string;
+  initialPrompt: string;
   activeCell: any;
 }
 const InputComponent: React.FC<IInputComponentProps> = ({
@@ -135,7 +135,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   handleRemove,
   promptHistoryStack,
   setInputView,
-  initialPrompt = '',
+  initialPrompt,
   activeCell
 }) => {
   const inputFieldRef = useRef<HTMLDivElement>(null);
@@ -215,7 +215,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             method: 'prompt_history'
           });
           setPromptHistoryIndex(prevIndex => {
-            handlePromptHistory(prevIndex + 1);
+            handlePromptHistory(prevIndex);
             return prevIndex + 1;
           });
         }
@@ -228,7 +228,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             method: 'prompt_history'
           });
           setPromptHistoryIndex(prevIndex => {
-            handlePromptHistory(prevIndex - 1);
+            handlePromptHistory(prevIndex);
             return prevIndex - 1;
           });
         }

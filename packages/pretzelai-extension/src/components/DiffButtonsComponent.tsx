@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import * as monaco from 'monaco-editor';
-import React from 'react';
+import React, { useEffect } from 'react';
 import posthog from 'posthog-js';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 
@@ -175,10 +175,18 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
   oldCode,
   handleRemove
 }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.focus();
+    }
+  }, []);
+
   return (
     <div
       className="diff-buttons-container"
       tabIndex={0}
+      ref={containerRef}
       onKeyDown={event => {
         if (event.key === 'Enter' && !event.shiftKey) {
           event.preventDefault();

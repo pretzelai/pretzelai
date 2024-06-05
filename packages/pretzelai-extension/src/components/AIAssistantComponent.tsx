@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
 import { DiffComponent } from './DiffComponent';
 import { FixedSizeStack, generateAIStream, getSelectedCode } from '../utils';
@@ -40,9 +40,17 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   const [showInputComponent, setShowInputComponent] = useState(!props.skipInput);
   const [showDiffContainer, setShowDiffContainer] = useState(!!props.skipInput);
   const [showStatusElement, setShowStatusElement] = useState(true);
+  const [initialPrompt, setInitialPrompt] = useState<string>('');
 
   const [stream, setStream] = useState<AsyncIterable<any> | null>(null);
   const [statusElementText, setStatusElementText] = useState<string>('');
+
+  useEffect(() => {
+    if (props.activeCell.model.getMetadata('isPromptEdit')) {
+      setInitialPrompt(props.promptHistoryStack.get(0));
+      props.activeCell.model.setMetadata('isPromptEdit', false);
+    }
+  }, []);
 
   const handleSubmit = async (userInput: string) => {
     const { extractedCode } = getSelectedCode(props.notebookTracker);
@@ -107,7 +115,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           handleRemove={props.handleRemove}
           promptHistoryStack={props.promptHistoryStack}
           setInputView={() => {}}
-          initialPrompt={''}
+          initialPrompt={initialPrompt}
           activeCell={props.activeCell}
           placeholderEnabled={props.placeholderEnabled}
           placeholderDisabled={props.placeholderDisabled}
