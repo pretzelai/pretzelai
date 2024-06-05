@@ -378,6 +378,7 @@ export const openAiStream = async ({
         method: 'edit_prompt'
       });
       parentContainer.remove();
+      activeCell.model.setMetadata('isPromptEdit', true);
       commands.execute('pretzelai:replace-code');
     });
   }

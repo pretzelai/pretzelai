@@ -11,7 +11,6 @@
  * @packageDocumentation
  * @module pretzelai-extension
  */
-
 import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
@@ -20,7 +19,7 @@ import * as monaco from 'monaco-editor';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { calculateHash, isSetsEqual, renderEditor } from './utils';
+import { calculateHash, FixedSizeStack, isSetsEqual, renderEditor } from './utils';
 import { ServerConnection } from '@jupyterlab/services';
 
 import { AiService, Embedding, generatePrompt, getTopSimilarities, openaiEmbeddings, openAiStream } from './prompt';
@@ -33,11 +32,10 @@ import { URLExt } from '@jupyterlab/coreutils';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { createChat } from './chat';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { EditorState } from '@codemirror/state';
-import { EditorView, keymap, placeholder } from '@codemirror/view';
-import { markdown } from '@codemirror/lang-markdown';
-import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
+import { EditorView } from '@codemirror/view';
+import { createRoot } from 'react-dom/client';
+import React from 'react';
+import InputField from './components/InputField';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -74,7 +72,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Go To: Settings > Settings Editor > Pretzel AI Settings to configure';
 
     const placeholderEnabled =
-      'Ask AI. Use @variable_name to reference defined variables and dataframes. Shift + Enter for new line. Enter to submit.';
+      'Ask AI. Refernce variables/dataframes with @variable syntax. Shift + Enter for new line.\nEnter to submit. Use ↑ / ↓ to navigate prompt history.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let openAiModel = '';
@@ -86,6 +84,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let posthogPromptTelemetry: boolean = true;
     let codeMatchThreshold: number;
     let isAIEnabled: boolean = false;
+    let promptHistoryStack: FixedSizeStack<string> = new FixedSizeStack<string>(50);
 
     const showSplashScreen = async (consent: string) => {
       if (consent === 'None') {
@@ -606,107 +605,16 @@ const extension: JupyterFrontEndPlugin<void> = {
           statusElement.className = 'status-element';
           activeCell.node.appendChild(statusElement);
 
-          // Create a parent container for all dynamically created elements
           const parentContainer = document.createElement('div');
           parentContainer.classList.add('pretzelParentContainerAI');
           activeCell.node.appendChild(parentContainer);
-          // Create an input field and append it below the cell
+
           const inputContainer = document.createElement('div');
-          inputContainer.className = 'input-container';
           parentContainer.appendChild(inputContainer);
+          const inputRoot = createRoot(inputContainer);
 
-          const inputField = document.createElement('div');
-          inputField.classList.add('pretzelInputField');
-          const oldPrompt = activeCell.model.getMetadata('currentPrompt');
-
-          const state = EditorState.create({
-            doc: oldPrompt || '',
-            extensions: [
-              markdown(),
-              history({ newGroupDelay: 50 }),
-              keymap.of(historyKeymap),
-              isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
-              EditorView.lineWrapping,
-              EditorView.editable.of(isAIEnabled),
-              // Enable syntax highlighting
-              syntaxHighlighting(defaultHighlightStyle)
-            ]
-          });
-          const inputView = new EditorView({
-            state,
-            parent: inputField
-          });
-          inputContainer.appendChild(inputField);
-          inputView.dispatch({
-            selection: { anchor: state.doc.length, head: state.doc.length }
-          });
-          inputView.dom.addEventListener('keydown', event => {
-            if (event.key === 'Escape') {
-              posthog.capture('Remove via Escape', {
-                event_type: 'keypress',
-                event_value: 'esc',
-                method: 'remove'
-              });
-              event.preventDefault();
-              const activeCell = notebookTracker.activeCell;
-              if (activeCell && activeCell.editor) {
-                activeCell.editor.focus();
-              }
-            }
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              if (event.shiftKey) {
-                // insert a new line
-                insertNewlineAndIndent({ state: inputView.state, dispatch: inputView.dispatch });
-              } else if (!submitButton.disabled) {
-                posthog.capture('Submit via Enter', {
-                  event_type: 'keypress',
-                  event_value: 'enter',
-                  method: 'submit'
-                });
-                const currentPrompt = inputView.state.doc.toString();
-                activeCell.model.setMetadata('currentPrompt', currentPrompt);
-                handleSubmit(currentPrompt);
-              }
-            }
-          });
-
-          const inputFieldButtonsContainer = document.createElement('div');
-          inputFieldButtonsContainer.className = 'input-field-buttons-container';
-          inputContainer.appendChild(inputFieldButtonsContainer);
-          // Move focus into the CodeMirror editor in inputField
-          inputView.focus();
-
-          const submitButton = document.createElement('button');
-          submitButton.classList.add('pretzelInputSubmitButton');
-          submitButton.textContent = 'Submit';
-          submitButton.disabled = !isAIEnabled;
-          submitButton.addEventListener('click', () => {
-            posthog.capture('Submit via Click', {
-              event_type: 'click',
-              method: 'submit'
-            });
-            handleSubmit(inputView.state.doc.toString());
-          });
-          inputFieldButtonsContainer.appendChild(submitButton);
-
-          const removeButton = document.createElement('button');
-          removeButton.className = 'remove-button';
-          removeButton.textContent = 'Remove';
-          inputFieldButtonsContainer.appendChild(removeButton);
-          const removeHandler = () => {
-            posthog.capture('Remove via Click', {
-              event_type: 'click',
-              method: 'remove'
-            });
-            activeCell.node.removeChild(parentContainer);
-            const statusElements = activeCell.node.querySelectorAll('p.status-element');
-            statusElements.forEach(element => element.remove());
-
-            // Switch focus back to the Jupyter cell
-            activeCell!.editor!.focus();
-          };
-          removeButton.addEventListener('click', removeHandler);
+          let inputView: EditorView | null = null;
+          let initialPrompt: string | undefined = '';
 
           const handleSubmit = async (userInput: string) => {
             parentContainer.removeChild(inputContainer);
@@ -777,6 +685,49 @@ const extension: JupyterFrontEndPlugin<void> = {
               }
             }
           };
+
+          const handleRemove = () => {
+            activeCell.node.removeChild(parentContainer);
+            const statusElements = activeCell.node.querySelectorAll('p.status-element');
+            statusElements.forEach(element => element.remove());
+            activeCell!.editor!.focus();
+          };
+
+          const handlePromptHistory = (promptHistoryIndex: number = 0) => {
+            if (promptHistoryStack.length > 0) {
+              const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
+              inputView!.dispatch({
+                changes: { from: 0, to: inputView!.state.doc.length, insert: oldPrompt }
+              });
+              inputView!.dispatch({
+                selection: { anchor: inputView!.state.doc.length }
+              });
+              inputView!.focus();
+            }
+          };
+
+          if (activeCell.model.getMetadata('isPromptEdit')) {
+            const promptHistory = promptHistoryStack.get(0);
+            initialPrompt = promptHistory;
+            activeCell.model.setMetadata('isPromptEdit', false);
+          }
+          inputRoot.render(
+            <InputField
+              activeCell={activeCell}
+              isAIEnabled={isAIEnabled}
+              placeholderEnabled={placeholderEnabled}
+              placeholderDisabled={placeholderDisabled}
+              handleSubmit={handleSubmit}
+              handleRemove={handleRemove}
+              handlePromptHistory={handlePromptHistory}
+              promptHistoryStack={promptHistoryStack}
+              setInputView={view => {
+                inputView = view;
+                setTimeout(() => inputView?.focus(), 0);
+              }}
+              initialPrompt={initialPrompt}
+            />
+          );
         }
       }
     });

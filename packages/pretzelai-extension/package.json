@@ -9,7 +9,7 @@
   ],
   "homepage": "",
   "bugs": {
-    "url": "/issues"
+    "url": "https://github.com/pretzelai/pretzelai/issues"
   },
   "repository": {
     "type": "git",
@@ -33,6 +33,7 @@
     "src/**/*.{ts,tsx}",
     "schema/*.json",
     "style/**/*.css",
+    "style/index.js",
     "style/**/*.svg"
   ],
   "scripts": {
@@ -113,7 +114,8 @@
     "monaco-editor": "^0.47.0",
     "openai": "^4.38.0",
     "posthog-js": "^1.130.2",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@jupyterlab/builder": "^4.2.0",
