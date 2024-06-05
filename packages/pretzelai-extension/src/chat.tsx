@@ -24,6 +24,8 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { AiService, getTopSimilarities } from './prompt';
 import { OpenAI } from 'openai';
 import { OpenAIClient } from '@azure/openai';
+import { URLExt } from '@jupyterlab/coreutils';
+import { ServerConnection } from '@jupyterlab/services';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -68,11 +70,77 @@ export function Chat({
   codeMatchThreshold
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
+  const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
+  const [chatIndex, setChatIndex] = useState(0);
   const [input, setInput] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [referenceSource, setReferenceSource] = useState('');
   const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+  const saveMessages = async () => {
+    const notebook = notebookTracker.currentWidget;
+    if (notebook?.model && !isAiGenerating) {
+      const currentNotebookPath = notebook.context.path;
+      const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+      const chatHistoryPath = currentDir + '/' + '.chat_history.json';
+
+      const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', chatHistoryPath);
+      const response = await ServerConnection.makeRequest(
+        requestUrl,
+        { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+        app.serviceManager.serverSettings
+      );
+      if (response.ok) {
+        // .chat_history.json exists
+        const file = await app.serviceManager.contents.get(chatHistoryPath);
+        try {
+          const chatHistoryJson = JSON.parse(file.content);
+          let lastChat: IMessage[] | string = chatHistoryJson[chatHistoryJson.length - 1];
+          if (typeof lastChat === 'string') {
+            lastChat = JSON.parse(lastChat) as IMessage[];
+          }
+          if (
+            lastChat.every(m => messages.some(m2 => m2.content === m.content && m2.role === m.role && m2.id === m.id))
+          ) {
+            chatHistoryJson[chatHistoryJson.length - 1] = messages;
+          } else {
+            chatHistoryJson.push(messages);
+          }
+          if (messages.length > 1) {
+            await app.serviceManager.contents.save(chatHistoryPath, {
+              type: 'file',
+              format: 'text',
+              content: JSON.stringify(chatHistoryJson)
+            });
+          }
+          setChatHistory(chatHistoryJson);
+          setChatIndex(chatHistoryJson.length - 1);
+        } catch (error) {
+          console.error('Error parsing chat history JSON:', error);
+        }
+      } else {
+        // create chat_history.json
+        app.serviceManager.contents.save(chatHistoryPath, {
+          type: 'file',
+          format: 'text',
+          content: JSON.stringify([JSON.stringify(messages)])
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    // Load chat history
+    saveMessages();
+  }, []);
+
+  useEffect(() => {
+    // Triggers when AI generation finishes
+    if (!isAiGenerating) {
+      saveMessages();
+    }
+  }, [isAiGenerating]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView();
@@ -177,10 +245,21 @@ export function Chat({
     });
   };
 
+  const restoreChat = (direction: number) => {
+    if (chatIndex + direction >= 0 && chatIndex + direction < chatHistory.length) {
+      setChatIndex(chatIndex + direction);
+      setMessages(chatHistory[chatIndex + direction]);
+    }
+  };
+
+  const clearChat = () => {
+    setMessages(initialMessage);
+    setChatIndex(chatHistory.length);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
-        {}
         {messages.map(message => (
           <Box key={message.id} sx={{ marginBottom: 2 }}>
             <Box
@@ -262,10 +341,12 @@ export function Chat({
             </IconButton>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginTop: '8px' }}>
-            <Button onClick={() => setMessages(initialMessage)} sx={{ marginRight: '8px' }}>
+            <Button onClick={clearChat} sx={{ marginRight: '8px' }}>
               Clear chat
             </Button>
-            <Button>Restore previous chat</Button>
+            <Button onClick={() => restoreChat(-1)}>{'<'}</Button>
+            <Typography>History</Typography>
+            <Button onClick={() => restoreChat(1)}>{'>'}</Button>
           </Box>
         </Box>
       )}
