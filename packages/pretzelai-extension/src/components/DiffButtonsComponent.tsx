@@ -1,7 +1,6 @@
 /* eslint-disable camelcase */
-import { Dialog, showDialog } from '@jupyterlab/apputils';
 import * as monaco from 'monaco-editor';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import posthog from 'posthog-js';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 
@@ -13,6 +12,10 @@ const AcceptAndRunButton: React.FC<{
   commands: CommandRegistry;
   handleRemove: () => void;
 }> = ({ diffEditor, activeCell, commands, handleRemove }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const keyCombination = 'Shift + Enter';
+  const shortcut = '⇧↵';
+
   const handleClick = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
@@ -25,9 +28,24 @@ const AcceptAndRunButton: React.FC<{
   };
 
   return (
-    <button onClick={handleClick} className="accept-and-run-button">
-      Accept and Run
-    </button>
+    <div className="accept-and-run-button-container">
+      <button
+        onClick={handleClick}
+        className="accept-and-run-button"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        title={`Accept and Run ${shortcut}`}
+      >
+        Run <span style={{ fontSize: '0.8em' }}>{shortcut}</span>
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Accept generated code into the cell <strong>and run it</strong>
+          <br />
+          Shortcut: <strong>{keyCombination}</strong>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -36,6 +54,11 @@ const AcceptButton: React.FC<{
   activeCell: Cell<ICellModel>;
   handleRemove: () => void;
 }> = ({ diffEditor, activeCell, handleRemove }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const isMac = /Mac/i.test(navigator.userAgent);
+  const keyCombination = isMac ? 'Enter' : 'Enter';
+  const shortcut = isMac ? '↵' : 'Enter';
+
   const handleClick = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
@@ -47,9 +70,24 @@ const AcceptButton: React.FC<{
   };
 
   return (
-    <button onClick={handleClick} className="accept-button">
-      Accept
-    </button>
+    <div className="accept-button-container">
+      <button
+        onClick={handleClick}
+        className="accept-button"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        title={`Accept ${shortcut}`}
+      >
+        Accept <span style={{ fontSize: '0.8em' }}>{shortcut}</span>
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Accept the code into the cell
+          <br />
+          Shortcut: <strong>{keyCombination}</strong>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -58,6 +96,11 @@ const RejectButton: React.FC<{
   oldCode: string;
   handleRemove: () => void;
 }> = ({ activeCell, oldCode, handleRemove }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const isMac = /Mac/i.test(navigator.userAgent);
+  const keyCombination = isMac ? 'Esc' : 'Esc';
+  const shortcut = isMac ? '⎋' : 'Esc';
+
   const handleClick = () => {
     activeCell.model.sharedModel.source = oldCode;
     posthog.capture('Reject', {
@@ -68,9 +111,24 @@ const RejectButton: React.FC<{
   };
 
   return (
-    <button onClick={handleClick} className="reject-button">
-      Reject
-    </button>
+    <div className="reject-button-container">
+      <button
+        onClick={handleClick}
+        className="reject-button"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        title={`Reject ${shortcut}`}
+      >
+        Reject <span style={{ fontSize: '0.8em' }}>{shortcut}</span>
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Reject the changes and revert to the original code
+          <br />
+          Shortcut: <strong>{keyCombination}</strong>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -79,6 +137,11 @@ const EditPromptButton: React.FC<{
   commands: CommandRegistry;
   handleRemove: () => void;
 }> = ({ activeCell, commands, handleRemove }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const isMac = /Mac/i.test(navigator.userAgent);
+  const keyCombination = isMac ? 'Cmd + Esc' : 'Ctrl+Esc';
+  const shortcut = isMac ? '⌘⎋' : '⌃⎋';
+
   const handleClick = () => {
     activeCell.model.setMetadata('isPromptEdit', true);
     handleRemove();
@@ -90,70 +153,23 @@ const EditPromptButton: React.FC<{
   };
 
   return (
-    <button onClick={handleClick} className="edit-prompt-button">
-      Edit Prompt
-    </button>
-  );
-};
-const InfoIcon: React.FC = () => {
-  const handleClick = () => {
-    const richTextBody = (
-      <div>
-        <p>
-          <b>
-            Accept and Run (shortcut: <u>Shift + Enter</u>)
-          </b>
-          : Will put the code in current Jupyter cell AND run it.
-        </p>
-        <p>
-          <b>
-            Accept (shortcut: <u>Enter</u>)
-          </b>
-          : Will put the code in current Jupyter cell but WILL NOT run it.
-        </p>
-        <p>
-          <b>Reject</b>: Will reject the generated code. Your cell will return to the state it was before.
-        </p>
-        <p>
-          <b>Edit Prompt</b>: Go back to writing the editing your initial prompt.
-        </p>
-        <p>
-          See more in the README <a href="https://github.com/pretzelai/pretzelai?tab=readme-ov-file#usage">here</a>.
-        </p>
-      </div>
-    );
-
-    showDialog({
-      title: 'Using AI Features',
-      body: richTextBody,
-      buttons: [
-        Dialog.createButton({
-          label: 'Close',
-          className: 'jp-About-button jp-mod-reject jp-mod-styled'
-        })
-      ]
-    });
-  };
-
-  return (
-    <div className="info-icon" onClick={handleClick}>
-      <svg
-        className="w-6 h-6 text-gray-800 dark:text-white"
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        fill="none"
-        viewBox="0 0 24 24"
+    <div className="edit-prompt-button-container">
+      <button
+        onClick={handleClick}
+        className="edit-prompt-button"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        title={`Edit Prompt ${shortcut}`}
       >
-        <path
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M9.529 9.988a2.502 2.502 0 1 1 5 .191A2.441 2.441 0 0 1 12 12.582V14m-.01 3.008H12M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-        />
-      </svg>
+        Edit Prompt <span style={{ fontSize: '0.8em' }}>{shortcut}</span>
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Edit your last prompt
+          <br />
+          Shortcut: <strong>{keyCombination}</strong>
+        </div>
+      )}
     </div>
   );
 };
@@ -214,7 +230,6 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
       {!isErrorFixPrompt && (
         <EditPromptButton activeCell={activeCell} commands={commands} handleRemove={handleRemove} />
       )}
-      <InfoIcon />
     </div>
   );
 };

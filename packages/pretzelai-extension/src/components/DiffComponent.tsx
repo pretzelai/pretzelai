@@ -30,6 +30,8 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
         minimap: { enabled: false },
         overviewRulerBorder: false,
         overviewRulerLanes: 0,
+        renderOverviewRuler: false,
+        lineNumbers: 'off',
         scrollbar: {
           vertical: 'hidden',
           horizontal: 'hidden',
@@ -49,7 +51,7 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
     if (editorRef.current) {
       const modifiedModel = editorRef.current!.getModel()!.modified;
       modifiedModel.setValue(newCode);
-      const heightPx = (oldCode.split('\n').length + newCode.split('\n').length + 1) * 19;
+      const heightPx = (oldCode.split('\n').length + newCode.split('\n').length) * 19;
       diffEditorRef.current!.style.height = heightPx + 'px';
       editorRef.current.layout();
     }
@@ -85,6 +87,7 @@ interface IDiffContainerProps {
   commands: any;
   isErrorFixPrompt: boolean;
   handleRemove: () => void;
+  setShowStatusElement: (show: boolean) => void;
 }
 
 export const DiffComponent: React.FC<IDiffContainerProps> = props => {
@@ -101,6 +104,7 @@ export const DiffComponent: React.FC<IDiffContainerProps> = props => {
         }}
         onStreamingDone={() => {
           setStreamingDone(true);
+          props.setShowStatusElement(false);
         }}
       />
       {streamingDone && diffEditor && <ButtonsContainer {...props} diffEditor={diffEditor} />}

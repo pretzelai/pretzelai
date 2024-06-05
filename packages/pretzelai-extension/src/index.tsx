@@ -66,8 +66,9 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Go To: Settings > Settings Editor > Pretzel AI Settings to configure';
 
     const placeholderEnabled =
-      'Ask AI. Refernce variables/dataframes with @variable syntax. Shift + Enter for new line.\n' +
-      'Enter to submit. Use ↑ / ↓ to navigate prompt history.';
+      'Ask AI. Use @variable syntax in prompt to reference variables/dataframes.\n' +
+      'Shift + Enter for new line.\n' +
+      'Use ↑ / ↓ to navigate prompt history for current browser session.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let openAiModel = '';
@@ -232,15 +233,31 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
 
     function addAskAIButton(cellNode: HTMLElement) {
-      const existingButton = document.querySelector('.ask-ai-button');
-      if (existingButton) {
-        existingButton.remove();
-      }
+      // Remove existing buttons from all cells before adding a new one
+      document.querySelectorAll('.ask-ai-button-container').forEach(container => {
+        container.remove();
+      });
+
+      const buttonContainer = document.createElement('div');
+      buttonContainer.className = 'ask-ai-button-container';
 
       const button = document.createElement('button');
-      button.textContent = 'Ask AI';
+      // get shortcut keybinding by checking if Mac
+      const isMac = /Mac/i.test(navigator.userAgent);
+      const shortcut = isMac ? '⌘K' : '^K';
+      const shortcutText = isMac ? 'Cmd+K' : 'Ctrl+K';
+
+      button.innerHTML = `Ask AI <span style="font-size: 0.8em;">${shortcut}</span>`;
       button.className = 'ask-ai-button';
-      cellNode.appendChild(button);
+      button.title = 'Ask AI ' + shortcut;
+      buttonContainer.appendChild(button);
+
+      // Tooltip
+      const tooltip = document.createElement('div');
+      tooltip.className = 'tooltip';
+      tooltip.textContent = `Open the prompt box to instruct AI (${shortcutText})`;
+      buttonContainer.appendChild(tooltip); // Append tooltip to buttonContainer
+      cellNode.appendChild(buttonContainer); // Append buttonContainer to cellNode
 
       button.onclick = () => {
         posthog.capture('Ask AI', {
@@ -248,6 +265,13 @@ const extension: JupyterFrontEndPlugin<void> = {
           method: 'ask_ai'
         });
         commands.execute('pretzelai:replace-code');
+      };
+
+      button.onmouseenter = () => {
+        tooltip.style.visibility = 'visible';
+      };
+      button.onmouseleave = () => {
+        tooltip.style.visibility = 'hidden';
       };
     }
 

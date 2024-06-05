@@ -130,6 +130,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           commands={props.commands}
           isErrorFixPrompt={props.isErrorFixPrompt}
           handleRemove={props.handleRemove}
+          setShowStatusElement={setShowStatusElement}
         />
       )}
     </>

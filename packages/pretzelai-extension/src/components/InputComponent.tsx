@@ -9,7 +9,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { EditorState } from '@codemirror/state';
-import { EditorView, keymap, placeholder } from '@codemirror/view';
+import { drawSelection, EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
@@ -42,7 +42,9 @@ const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled })
       </button>
       {showTooltip && (
         <div className="tooltip">
-          Send prompt to AI for completion <strong>(Enter)</strong>
+          Send prompt to AI for completion
+          <br />
+          Shortcut: <strong>Enter</strong>
         </div>
       )}
     </div>
@@ -72,7 +74,9 @@ const RemoveButton: React.FC<IRemoveButtonProps> = ({ handleClick }) => {
       </button>
       {showTooltip && (
         <div className="tooltip">
-          Remove the AI prompt box <strong>({keyCombination})</strong>
+          Remove the AI prompt box
+          <br />
+          Shortcut: <strong>{keyCombination}</strong>
         </div>
       )}
     </div>
@@ -91,8 +95,6 @@ const PromptHistoryButton: React.FC<{
   promptHistoryIndex: number;
 }> = ({ handleClick, promptHistoryIndex }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const isMac = /Mac/i.test(navigator.userAgent);
-  const keyCombination = isMac ? 'Cmd + Shift + H' : 'Ctrl + Shift + H';
 
   return (
     <div className="prompt-history-button-container">
@@ -109,7 +111,9 @@ const PromptHistoryButton: React.FC<{
       </button>
       {showTooltip && (
         <div className="tooltip">
-          Populate with last prompt <strong>({keyCombination})</strong>
+          Populate with last prompt
+          <br />
+          Shortcut: <strong>Arrow Up Key</strong>
         </div>
       )}
     </div>
@@ -166,7 +170,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
           EditorView.lineWrapping,
           EditorView.editable.of(isAIEnabled),
-          syntaxHighlighting(defaultHighlightStyle)
+          syntaxHighlighting(defaultHighlightStyle),
+          drawSelection()
         ]
       });
 
