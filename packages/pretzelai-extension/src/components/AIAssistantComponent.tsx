@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import InputComponent from './InputComponent';
-import { DiffContainer } from './DiffContainer';
-import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables } from '../utils';
+import { DiffComponent } from './DiffComponent';
+import { FixedSizeStack, generateAIStream, getSelectedCode } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
-import { AiService, Embedding, generatePrompt } from '../prompt';
+import { AiService, Embedding } from '../prompt';
 import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';
-import posthog from 'posthog-js';
+import { CommandRegistry } from '@lumino/commands';
+import { Cell, ICellModel } from '@jupyterlab/cells';
 
 interface IAIAssistantComponentProps {
   aiService: AiService;
-  openAiApiKey?: string;
-  openAiBaseUrl?: string;
-  openAiModel?: string;
-  azureBaseUrl?: string;
-  azureApiKey?: string;
-  deploymentId?: string;
-  activeCell: any;
-  commands: any;
+  openAiApiKey: string;
+  openAiBaseUrl: string;
+  openAiModel: string;
+  azureBaseUrl: string;
+  azureApiKey: string;
+  deploymentId: string;
+  activeCell: Cell<ICellModel>;
+  commands: CommandRegistry;
   isErrorFixPrompt: boolean;
   oldCode: string;
   placeholderEnabled: string;
@@ -49,6 +50,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     let activeCell = props.notebookTracker.activeCell;
 
     if (userInput !== '') {
+      setShowInputComponent(false);
       setShowStatusElement(true);
       setStatusElementText('Calculating embeddings...');
 
@@ -86,7 +88,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         });
 
         setStream(stream);
-        setShowInputComponent(false);
         setStatusElementText('Generating code...');
         setShowDiffContainer(true);
       } catch (error) {
@@ -110,19 +111,17 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           activeCell={props.activeCell}
           placeholderEnabled={props.placeholderEnabled}
           placeholderDisabled={props.placeholderDisabled}
-          setStatusElementText={setStatusElementText}
         />
       )}
       {showDiffContainer && stream && (
-        <DiffContainer
+        <DiffComponent
           stream={stream}
           oldCode={props.oldCode}
           parentContainer={document.createElement('div')}
           activeCell={props.activeCell}
           commands={props.commands}
           isErrorFixPrompt={props.isErrorFixPrompt}
-          onEditorCreated={() => {}}
-          onStreamingDone={() => {}}
+          handleRemove={props.handleRemove}
         />
       )}
     </>

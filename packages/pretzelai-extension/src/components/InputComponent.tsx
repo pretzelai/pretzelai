@@ -126,7 +126,6 @@ interface IInputComponentProps {
   setInputView: (view: EditorView) => void;
   initialPrompt?: string;
   activeCell: any;
-  setStatusElementText: (text: string) => void;
 }
 const InputComponent: React.FC<IInputComponentProps> = ({
   isAIEnabled,
@@ -137,8 +136,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   promptHistoryStack,
   setInputView,
   initialPrompt = '',
-  activeCell,
-  setStatusElementText
+  activeCell
 }) => {
   const inputFieldRef = useRef<HTMLDivElement>(null);
   const inputViewRef = useRef<EditorView | null>(null);
@@ -237,7 +235,9 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       });
 
       inputViewRef.current = inputView;
+      // remove?
       setInputView(inputView);
+      inputView.focus();
     }
 
     return () => {

@@ -3,23 +3,25 @@ import { Dialog, showDialog } from '@jupyterlab/apputils';
 import * as monaco from 'monaco-editor';
 import React from 'react';
 import posthog from 'posthog-js';
-import { IStreamingDiffEditorProps } from './StreamingDiffEditor';
+import { Cell, ICellModel } from '@jupyterlab/cells';
+
+import { CommandRegistry } from '@lumino/commands';
 
 const AcceptAndRunButton: React.FC<{
   diffEditor: monaco.editor.IStandaloneDiffEditor;
-  parentContainer: HTMLElement;
-  activeCell: any;
-  commands: any;
-}> = ({ diffEditor, parentContainer, activeCell, commands }) => {
+  activeCell: Cell<ICellModel>;
+  commands: CommandRegistry;
+  handleRemove: () => void;
+}> = ({ diffEditor, activeCell, commands, handleRemove }) => {
   const handleClick = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
     commands.execute('notebook:run-cell');
-    activeCell.node.removeChild(parentContainer);
     posthog.capture('Accept and Run', {
       event_type: 'click',
       method: 'accept_and_run'
     });
+    handleRemove();
   };
 
   return (
@@ -31,17 +33,17 @@ const AcceptAndRunButton: React.FC<{
 
 const AcceptButton: React.FC<{
   diffEditor: monaco.editor.IStandaloneDiffEditor;
-  parentContainer: HTMLElement;
-  activeCell: any;
-}> = ({ diffEditor, parentContainer, activeCell }) => {
+  activeCell: Cell<ICellModel>;
+  handleRemove: () => void;
+}> = ({ diffEditor, activeCell, handleRemove }) => {
   const handleClick = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
-    activeCell.node.removeChild(parentContainer);
     posthog.capture('Accept', {
       event_type: 'click',
       method: 'accept'
     });
+    handleRemove();
   };
 
   return (
@@ -52,17 +54,17 @@ const AcceptButton: React.FC<{
 };
 
 const RejectButton: React.FC<{
-  parentContainer: HTMLElement;
-  activeCell: any;
+  activeCell: Cell<ICellModel>;
   oldCode: string;
-}> = ({ parentContainer, activeCell, oldCode }) => {
+  handleRemove: () => void;
+}> = ({ activeCell, oldCode, handleRemove }) => {
   const handleClick = () => {
-    activeCell.node.removeChild(parentContainer);
     activeCell.model.sharedModel.source = oldCode;
     posthog.capture('Reject', {
       event_type: 'click',
       method: 'reject'
     });
+    handleRemove();
   };
 
   return (
@@ -72,19 +74,19 @@ const RejectButton: React.FC<{
   );
 };
 
-const EditPromptButton: React.FC<{ parentContainer: HTMLElement; activeCell: any; commands: any }> = ({
-  parentContainer,
-  activeCell,
-  commands
-}) => {
+const EditPromptButton: React.FC<{
+  activeCell: Cell<ICellModel>;
+  commands: CommandRegistry;
+  handleRemove: () => void;
+}> = ({ activeCell, commands, handleRemove }) => {
   const handleClick = () => {
-    parentContainer.remove();
     activeCell.model.setMetadata('isPromptEdit', true);
-    commands.execute('pretzelai:replace-code');
+    handleRemove();
     posthog.capture('Edit Prompt', {
       event_type: 'click',
       method: 'edit_prompt'
     });
+    commands.execute('pretzelai:replace-code');
   };
 
   return (
@@ -156,22 +158,22 @@ const InfoIcon: React.FC = () => {
   );
 };
 
-interface IButtonsContainerProps extends IStreamingDiffEditorProps {
+interface IButtonsContainerProps {
   diffEditor: monaco.editor.IStandaloneDiffEditor;
-  parentContainer: HTMLElement;
-  activeCell: any;
-  commands: any;
+  activeCell: Cell<ICellModel>;
+  commands: CommandRegistry;
   isErrorFixPrompt: boolean;
   oldCode: string;
+  handleRemove: () => void;
 }
 
 export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
   diffEditor,
-  parentContainer,
   activeCell,
   commands,
   isErrorFixPrompt,
-  oldCode
+  oldCode,
+  handleRemove
 }) => {
   return (
     <div
@@ -195,14 +197,14 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
     >
       <AcceptAndRunButton
         diffEditor={diffEditor}
-        parentContainer={parentContainer}
         activeCell={activeCell}
         commands={commands}
+        handleRemove={handleRemove}
       />
-      <AcceptButton diffEditor={diffEditor} parentContainer={parentContainer} activeCell={activeCell} />
-      <RejectButton parentContainer={parentContainer} activeCell={activeCell} oldCode={oldCode} />
+      <AcceptButton diffEditor={diffEditor} activeCell={activeCell} handleRemove={handleRemove} />
+      <RejectButton activeCell={activeCell} oldCode={oldCode} handleRemove={handleRemove} />
       {!isErrorFixPrompt && (
-        <EditPromptButton parentContainer={parentContainer} activeCell={activeCell} commands={commands} />
+        <EditPromptButton activeCell={activeCell} commands={commands} handleRemove={handleRemove} />
       )}
       <InfoIcon />
     </div>

@@ -17,10 +17,11 @@ import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { getSelectedCode } from './utils';
+import { getSelectedCode, getTopSimilarities } from './utils';
 import { RendermimeMarkdown } from './rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { AiService, getTopSimilarities } from './prompt';
+import { AiService } from './prompt';
+
 import { OpenAI } from 'openai';
 import { OpenAIClient } from '@azure/openai';
 

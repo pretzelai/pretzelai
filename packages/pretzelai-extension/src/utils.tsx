@@ -297,13 +297,14 @@ export async function getEmbeddings(
       }
     }
     // Temporary solution to keep refreshing hashes in non blocking thread
-    setTimeout(getEmbeddings, 1000);
+    setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiService), 1000);
   } else {
-    setTimeout(getEmbeddings, 1000);
+    setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiService), 1000);
   }
   return embeddings;
 }
-const getTopSimilarities = async (
+
+export const getTopSimilarities = async (
   userInput: string,
   embeddings: Embedding[],
   numberOfSimilarities: number,
@@ -368,6 +369,43 @@ const setupStream = async ({
       ],
       stream: true
     });
+  } else if (aiService === 'Use Pretzel AI Server') {
+    const response = await fetch('https://api.pretzelai.app/prompt/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
+    });
+
+    const reader = response!.body!.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        let isReading = true;
+        while (isReading) {
+          const { done, value } = await reader.read();
+          if (done) {
+            isReading = false;
+          }
+          const chunk = decoder.decode(value);
+          yield { choices: [{ delta: { content: chunk } }] };
+        }
+      }
+    };
   } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
     const result = await client.getCompletions(deploymentId, [prompt]);
@@ -386,7 +424,7 @@ const setupStream = async ({
   return stream;
 };
 
-export async function generateAIStream({
+export const generateAIStream = async ({
   aiService,
   aiClient,
   embeddings,
@@ -403,7 +441,24 @@ export async function generateAIStream({
   azureApiKey,
   deploymentId,
   isInject
-}) {
+}: {
+  aiService: AiService;
+  aiClient: OpenAI | OpenAIClient | null;
+  embeddings: Embedding[];
+  userInput: string;
+  oldCodeForPrompt: string;
+  notebookTracker: INotebookTracker;
+  codeMatchThreshold: number;
+  numberOfSimilarCells: number;
+  posthogPromptTelemetry: boolean;
+  openAiApiKey: string;
+  openAiBaseUrl: string;
+  openAiModel: string;
+  azureBaseUrl: string;
+  azureApiKey: string;
+  deploymentId: string;
+  isInject: boolean;
+}): Promise<AsyncIterable<any>> => {
   const { extractedCode } = getSelectedCode(notebookTracker);
   const topSimilarities = await getTopSimilarities(
     userInput,
@@ -433,7 +488,7 @@ export async function generateAIStream({
     azureApiKey,
     deploymentId
   });
-}
+};
 
 export class FixedSizeStack<T> {
   private stack: T[] = [];

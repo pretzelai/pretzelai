@@ -1,13 +1,22 @@
-import React, { useEffect, useRef } from 'react';
+import * as React from 'react';
 import * as monaco from 'monaco-editor';
+import { useEffect, useRef, useState } from 'react';
+import { ButtonsContainer } from './DiffButtonsComponent';
 
-interface IDiffEditorProps {
-  newCode: string;
+export interface IStreamingDiffEditorProps {
+  stream: AsyncIterable<any>;
   oldCode: string;
   onEditorCreated: (editor: monaco.editor.IStandaloneDiffEditor) => void;
+  onStreamingDone: () => void;
 }
 
-const DiffEditor: React.FC<IDiffEditorProps> = ({ newCode, oldCode, onEditorCreated }) => {
+export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
+  stream,
+  oldCode,
+  onEditorCreated,
+  onStreamingDone
+}) => {
+  const [newCode, setNewCode] = useState('');
   const diffEditorRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneDiffEditor | null>(null);
 
@@ -46,6 +55,16 @@ const DiffEditor: React.FC<IDiffEditorProps> = ({ newCode, oldCode, onEditorCrea
     }
   }, [newCode, oldCode]);
 
+  useEffect(() => {
+    const accumulate = async () => {
+      for await (const chunk of stream) {
+        setNewCode(prevCode => prevCode + (chunk.choices[0]?.delta?.content || ''));
+      }
+      onStreamingDone();
+    };
+    accumulate();
+  }, [stream, onStreamingDone]);
+
   return (
     <div
       ref={diffEditorRef}
@@ -58,4 +77,33 @@ const DiffEditor: React.FC<IDiffEditorProps> = ({ newCode, oldCode, onEditorCrea
   );
 };
 
-export default DiffEditor;
+interface IDiffContainerProps {
+  stream: AsyncIterable<any>;
+  oldCode: string;
+  parentContainer: HTMLElement;
+  activeCell: any;
+  commands: any;
+  isErrorFixPrompt: boolean;
+  handleRemove: () => void;
+}
+
+export const DiffComponent: React.FC<IDiffContainerProps> = props => {
+  const [streamingDone, setStreamingDone] = useState(false);
+  const [diffEditor, setDiffEditor] = useState<monaco.editor.IStandaloneDiffEditor | null>(null);
+
+  return (
+    <div className="diff-container">
+      <StreamingDiffEditor
+        stream={props.stream}
+        oldCode={props.oldCode}
+        onEditorCreated={diffEditor => {
+          setDiffEditor(diffEditor);
+        }}
+        onStreamingDone={() => {
+          setStreamingDone(true);
+        }}
+      />
+      {streamingDone && diffEditor && <ButtonsContainer {...props} diffEditor={diffEditor} />}
+    </div>
+  );
+};
