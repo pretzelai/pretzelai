@@ -78,6 +78,34 @@ export function Chat({
   const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
+  const fetchChatHistory = async () => {
+    const notebook = notebookTracker.currentWidget;
+    if (!notebook?.model) {
+      setTimeout(fetchChatHistory, 1000);
+      return;
+    }
+    if (notebook?.model && !isAiGenerating) {
+      const currentNotebookPath = notebook.context.path;
+      const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+      const chatHistoryPath = currentDir + '/' + '.chat_history.json';
+
+      const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', chatHistoryPath);
+      const response = await ServerConnection.makeRequest(
+        requestUrl,
+        { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+        app.serviceManager.serverSettings
+      );
+      if (response.ok) {
+        // .chat_history.json exists
+        const file = await app.serviceManager.contents.get(chatHistoryPath);
+
+        const chatHistoryJson = JSON.parse(file.content);
+        setChatHistory(chatHistoryJson);
+        setChatIndex(chatHistoryJson.length);
+      }
+    }
+  };
+
   const saveMessages = async () => {
     const notebook = notebookTracker.currentWidget;
     if (notebook?.model && !isAiGenerating) {
@@ -96,10 +124,7 @@ export function Chat({
         const file = await app.serviceManager.contents.get(chatHistoryPath);
         try {
           const chatHistoryJson = JSON.parse(file.content);
-          let lastChat: IMessage[] | string = chatHistoryJson[chatHistoryJson.length - 1];
-          if (typeof lastChat === 'string') {
-            lastChat = JSON.parse(lastChat) as IMessage[];
-          }
+          let lastChat: IMessage[] = chatHistoryJson[chatHistoryJson.length - 1];
           if (
             lastChat.every(m => messages.some(m2 => m2.content === m.content && m2.role === m.role && m2.id === m.id))
           ) {
@@ -121,18 +146,21 @@ export function Chat({
         }
       } else {
         // create chat_history.json
+        const messagesToSave = messages.length > 1 ? [messages] : [];
         app.serviceManager.contents.save(chatHistoryPath, {
           type: 'file',
           format: 'text',
-          content: JSON.stringify([JSON.stringify(messages)])
+          content: JSON.stringify(messagesToSave)
         });
+        setChatHistory(messagesToSave);
+        setChatIndex(1);
       }
     }
   };
 
   useEffect(() => {
     // Load chat history
-    saveMessages();
+    fetchChatHistory();
   }, []);
 
   useEffect(() => {
@@ -342,7 +370,7 @@ export function Chat({
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginTop: '8px' }}>
             <Button onClick={clearChat} sx={{ marginRight: '8px' }}>
-              Clear chat
+              Clear
             </Button>
             <Button onClick={() => restoreChat(-1)}>{'<'}</Button>
             <Typography>History</Typography>
