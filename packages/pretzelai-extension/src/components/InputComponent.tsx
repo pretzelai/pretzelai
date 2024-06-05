@@ -9,42 +9,155 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { EditorState } from '@codemirror/state';
-import { EditorView, keymap, placeholder } from '@codemirror/view';
+import { drawSelection, EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
-import { PromptHistoryButton, RemoveButton, SubmitButton } from './prompt-box-buttons';
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
 
-interface IInputFieldProps {
+import { LabIcon } from '@jupyterlab/ui-components';
+import promptHistorySvg from '../../style/icons/prompt-history.svg';
+import '../../style/base.css';
+
+interface ISubmitButtonProps {
+  handleClick: () => void;
+  isDisabled: boolean;
+}
+
+const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div className="submit-button-container">
+      <button
+        className="pretzelInputSubmitButton"
+        onClick={handleClick}
+        disabled={isDisabled}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        title="Submit ↵"
+      >
+        Submit <span style={{ fontSize: '0.8em' }}>↵</span>
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Send prompt to AI for completion
+          <br />
+          Shortcut: <strong>Enter</strong>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface IRemoveButtonProps {
+  handleClick: () => void;
+}
+
+const RemoveButton: React.FC<IRemoveButtonProps> = ({ handleClick }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const isMac = /Mac/i.test(navigator.userAgent);
+  const keyCombination = isMac ? 'Cmd + K' : 'Ctrl + K';
+  const shortcut = isMac ? '⌘K' : '^K';
+
+  return (
+    <div className="remove-button-container">
+      <button
+        className="remove-button"
+        onClick={handleClick}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        title={`Remove ${shortcut}`}
+      >
+        Remove <span style={{ fontSize: '0.8em' }}>{shortcut}</span>
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Remove the AI prompt box
+          <br />
+          Shortcut: <strong>{keyCombination}</strong>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const encodedSvgStr = encodeURIComponent(promptHistorySvg);
+
+const promptHistoryIcon = new LabIcon({
+  name: 'pretzelai::prompt-history',
+  svgstr: encodedSvgStr
+});
+
+const PromptHistoryButton: React.FC<{
+  handleClick: (promptHistoryIndex: number) => void;
+  promptHistoryIndex: number;
+}> = ({ handleClick, promptHistoryIndex }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div className="prompt-history-button-container">
+      <button
+        className="prompt-history-button"
+        title="Prompt History"
+        onClick={() => {
+          handleClick(promptHistoryIndex);
+        }}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        <promptHistoryIcon.react tag="span" className="jp-Icon jp-Icon-20" />
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Populate with last prompt
+          <br />
+          Shortcut: <strong>Arrow Up Key</strong>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface IInputComponentProps {
   isAIEnabled: boolean;
   placeholderEnabled: string;
   placeholderDisabled: string;
   handleSubmit: (input: string) => void;
   handleRemove: () => void;
-  handlePromptHistory: (promptHistoryIndex: number) => void;
   promptHistoryStack: FixedSizeStack<string>;
   setInputView: (view: EditorView) => void;
-  initialPrompt?: string;
-  activeCell: any; // Add this prop
+  initialPrompt: string;
+  activeCell: any;
 }
-
-const InputField: React.FC<IInputFieldProps> = ({
+const InputComponent: React.FC<IInputComponentProps> = ({
   isAIEnabled,
   placeholderEnabled,
   placeholderDisabled,
   handleSubmit,
   handleRemove,
-  handlePromptHistory,
   promptHistoryStack,
   setInputView,
-  initialPrompt = '',
-  activeCell // Add this prop
+  initialPrompt,
+  activeCell
 }) => {
   const inputFieldRef = useRef<HTMLDivElement>(null);
   const inputViewRef = useRef<EditorView | null>(null);
   const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0); // how many items to skip
+
+  const handlePromptHistory = (promptHistoryIndex: number = 0) => {
+    if (promptHistoryStack.length > 0) {
+      const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
+      inputViewRef.current!.dispatch({
+        changes: { from: 0, to: inputViewRef.current!.state.doc.length, insert: oldPrompt }
+      });
+      inputViewRef.current!.dispatch({
+        selection: { anchor: inputViewRef.current!.state.doc.length }
+      });
+      inputViewRef.current!.focus();
+    }
+  };
 
   useEffect(() => {
     if (inputFieldRef.current) {
@@ -57,7 +170,8 @@ const InputField: React.FC<IInputFieldProps> = ({
           isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
           EditorView.lineWrapping,
           EditorView.editable.of(isAIEnabled),
-          syntaxHighlighting(defaultHighlightStyle)
+          syntaxHighlighting(defaultHighlightStyle),
+          drawSelection()
         ]
       });
 
@@ -106,7 +220,7 @@ const InputField: React.FC<IInputFieldProps> = ({
             method: 'prompt_history'
           });
           setPromptHistoryIndex(prevIndex => {
-            handlePromptHistory(prevIndex + 1);
+            handlePromptHistory(prevIndex);
             return prevIndex + 1;
           });
         }
@@ -119,20 +233,22 @@ const InputField: React.FC<IInputFieldProps> = ({
             method: 'prompt_history'
           });
           setPromptHistoryIndex(prevIndex => {
-            handlePromptHistory(prevIndex - 1);
+            handlePromptHistory(prevIndex);
             return prevIndex - 1;
           });
         }
       });
 
       inputViewRef.current = inputView;
+      // remove?
       setInputView(inputView);
+      inputView.focus();
     }
 
     return () => {
       inputViewRef.current?.destroy();
     };
-  }, [isAIEnabled, placeholderEnabled, placeholderDisabled, handleSubmit, handleRemove, setInputView, activeCell]);
+  }, [isAIEnabled, handleSubmit, handleRemove, setInputView, activeCell]);
 
   return (
     <div className="input-container">
@@ -173,4 +289,4 @@ const InputField: React.FC<IInputFieldProps> = ({
   );
 };
 
-export default InputField;
+export default InputComponent;
