@@ -11,7 +11,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import pretzelSvg from '../style/icons/pretzel.svg';
-import { Box, IconButton, TextField, Typography } from '@mui/material';
+import { Box, Button, IconButton, TextField, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import StopIcon from '@mui/icons-material/Stop';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
@@ -239,26 +239,34 @@ export function Chat({
           </IconButton>
         </Box>
       ) : (
-        <Box sx={{ display: 'flex', alignItems: 'center', padding: 1 }}>
-          <TextField
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            fullWidth
-            placeholder="Type message to ask AI..."
-            sx={{
-              color: 'var(--jp-ui-font-color1)',
-              '& .MuiInputBase-input': {
-                color: 'var(--jp-ui-font-color1)'
-              },
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'var(--jp-ui-font-color1)'
-              }
-            }}
-          />
-          <IconButton onClick={onSend} sx={{ color: 'var(--jp-ui-font-color1)' }}>
-            <SendIcon />
-          </IconButton>
+        <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <TextField
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              fullWidth
+              placeholder="Type message to ask AI..."
+              sx={{
+                color: 'var(--jp-ui-font-color1)',
+                '& .MuiInputBase-input': {
+                  color: 'var(--jp-ui-font-color1)'
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'var(--jp-ui-font-color1)'
+                }
+              }}
+            />
+            <IconButton onClick={onSend} sx={{ color: 'var(--jp-ui-font-color1)' }}>
+              <SendIcon />
+            </IconButton>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginTop: '8px' }}>
+            <Button onClick={() => setMessages(initialMessage)} sx={{ marginRight: '8px' }}>
+              Clear chat
+            </Button>
+            <Button>Restore previous chat</Button>
+          </Box>
         </Box>
       )}
     </Box>
