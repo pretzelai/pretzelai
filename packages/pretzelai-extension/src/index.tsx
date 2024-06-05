@@ -14,27 +14,22 @@
 import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { IIOPubMessage } from '@jupyterlab/services/lib/kernel/messages';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { calculateHash, FixedSizeStack, isSetsEqual } from './utils';
-import { ServerConnection } from '@jupyterlab/services';
+import { FixedSizeStack, getEmbeddings } from './utils';
 
-import { AiService, Embedding, generatePrompt, getTopSimilarities, openaiEmbeddings, openAiStream } from './prompt';
+import { AiService, Embedding, generatePrompt, getTopSimilarities } from './prompt';
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
 import { OutputAreaModel } from '@jupyterlab/outputarea';
 import { IOutputModel } from '@jupyterlab/rendermime';
 import { initSplashScreen } from './splashScreen';
-import { URLExt } from '@jupyterlab/coreutils';
-import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { createChat } from './chat';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { EditorView } from '@codemirror/view';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
-import InputComponent from './components/InputComponent';
+import { AIAssistantComponent } from './components/AIAssistantComponent';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -81,6 +76,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureDeploymentName = '';
     let azureApiKey = '';
     let aiClient: OpenAI | OpenAIClient | null = null;
+    let embeddings: Embedding[];
     let posthogPromptTelemetry: boolean = true;
     let codeMatchThreshold: number;
     let isAIEnabled: boolean = false;
@@ -200,6 +196,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     });
 
+    embeddings = await getEmbeddings(notebookTracker, app, aiClient, aiService);
+
     function findErrorOutput(outputs: OutputAreaModel): IOutputModel | undefined {
       for (let i = 0; i < outputs.length; i++) {
         const output = outputs.get(i);
@@ -291,283 +289,9 @@ const extension: JupyterFrontEndPlugin<void> = {
       const parentContainer = document.createElement('div');
       parentContainer.classList.add('pretzelParentContainerAI');
       activeCell.node.appendChild(parentContainer);
-
-      const diffContainer = document.createElement('div');
-      diffContainer.classList.add('diff-container');
-      parentContainer.appendChild(diffContainer);
-      const diffRoot = createRoot(diffContainer);
-
-      openAiStream({
-        aiService,
-        openAiApiKey,
-        openAiBaseUrl,
-        openAiModel,
-        prompt,
-        parentContainer,
-        diffRoot,
-        oldCode: originalCode,
-        azureBaseUrl,
-        azureApiKey,
-        deploymentId: azureDeploymentName,
-        activeCell,
-        commands,
-        statusElement,
-        isErrorFixPrompt: false
-      })
-        .then(() => {
-          // clear output of the cell
-          cellModel.outputs.clear();
-        })
-        .catch(error => {
-          console.error('Error during OpenAI stream:', error);
-        });
-    }
-
-    let embeddings: Embedding[];
-
-    async function createEmbeddings(embeddingsJSON: Embedding[], cells: any[], path: string) {
-      embeddings = embeddingsJSON;
-      const newEmbeddingsArray: Embedding[] = [];
-      const promises = cells
-        .filter(cell => cell.source.trim() !== '') // Filter out empty cells
-        .map(cell => {
-          return (async () => {
-            const index = embeddings.findIndex(e => e.id === cell.id);
-            if (index !== -1) {
-              const hash = await calculateHash(cell.source);
-              if (hash !== embeddings[index].hash) {
-                try {
-                  const response = await openaiEmbeddings(cell.source, aiService, aiClient);
-                  newEmbeddingsArray.push({
-                    id: cell.id,
-                    source: cell.source,
-                    hash,
-                    embedding: response.data[0].embedding
-                  });
-                } catch (error) {
-                  console.error('Error generating embedding:', error);
-                }
-              } else {
-                newEmbeddingsArray.push(embeddings[index]);
-              }
-            } else {
-              try {
-                const response = await openaiEmbeddings(cell.source, aiService, aiClient);
-                const hash = await calculateHash(cell.source);
-                newEmbeddingsArray.push({
-                  id: cell.id,
-                  source: cell.source,
-                  hash,
-                  embedding: response.data[0].embedding
-                });
-              } catch (error) {
-                console.error('Error generating embedding:', error);
-              }
-            }
-          })();
-        });
-      await Promise.allSettled(promises);
-      const oldSet = new Set(embeddings.map(e => e.hash));
-      const newSet = new Set(newEmbeddingsArray.map(e => e.hash));
-      if (!isSetsEqual(oldSet, newSet)) {
-        app.serviceManager.contents.save(path, {
-          type: 'file',
-          format: 'text',
-          content: JSON.stringify(newEmbeddingsArray)
-        });
-      }
-    }
-
-    // Function to print the source of all cells once the notebook is defined
-    async function getEmbeddings() {
-      const notebook = notebookTracker.currentWidget;
-      if (notebook?.model) {
-        const currentNotebookPath = notebook.context.path;
-        const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
-        const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
-        const embeddingsFolderName = '.embeddings';
-        const embeddingsPath = currentDir + '/' + embeddingsFolderName + '/' + notebookName + '_embeddings.json';
-        const newDirPath = currentDir + '/' + embeddingsFolderName;
-
-        // check if file exists via ServerConnection
-        const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', embeddingsPath);
-        const response = await ServerConnection.makeRequest(
-          requestUrl,
-          { method: 'GET', headers: { 'Content-Type': 'application/json' } },
-          app.serviceManager.serverSettings
-        );
-        if (response.ok) {
-          const file = await app.serviceManager.contents.get(embeddingsPath);
-          try {
-            const embJSON = JSON.parse(file.content);
-            createEmbeddings(embJSON, notebook!.model!.sharedModel.cells, embeddingsPath);
-          } catch (error) {
-            console.error('Error parsing embeddings JSON:', error);
-          }
-        } else {
-          // create directory. if already exists, this code does nothing
-          const requestUrl = URLExt.join(
-            app.serviceManager.serverSettings.baseUrl,
-            'api/contents',
-            encodeURIComponent(newDirPath)
-          );
-          const init = {
-            method: 'PUT',
-            body: JSON.stringify({ type: 'directory', path: newDirPath }),
-            headers: { 'Content-Type': 'application/json' }
-          };
-          try {
-            const response = await ServerConnection.makeRequest(requestUrl, init, app.serviceManager.serverSettings);
-            if (!response.ok) {
-              throw new Error(`Error creating directory: ${response}`);
-            }
-            await app.serviceManager.contents.save(embeddingsPath, {
-              type: 'file',
-              format: 'text',
-              content: JSON.stringify([])
-            });
-          } catch (error) {
-            console.error('Error creating embeddings:', error);
-          }
-        }
-        // Temporary solution to keep refreshing hashes in non blocking thread
-        setTimeout(getEmbeddings, 1000);
-      } else {
-        setTimeout(getEmbeddings, 1000);
-      }
-    }
-    getEmbeddings();
-
-    async function getVariableValue(variableName: string): Promise<string | null> {
-      const notebook = notebookTracker.currentWidget;
-      if (notebook && notebook.sessionContext.session?.kernel) {
-        const kernel = notebook.sessionContext.session.kernel;
-        try {
-          // get the type - if dataframe, we get columns
-          // if other, we get the string representation
-          const executeRequest = kernel.requestExecute({
-            code: `print(${variableName})`
-          });
-          let variableValue: string | null = null;
-
-          // Registering a message hook to intercept messages
-          kernel.registerMessageHook(executeRequest.msg.header.msg_id, (msg: IIOPubMessage) => {
-            if (
-              msg.header.msg_type === 'stream' &&
-              // @ts-expect-error tserror
-              msg.content.name === 'stdout'
-            ) {
-              // @ts-expect-error tserror
-              variableValue = msg.content.text.trim();
-            }
-            return true;
-          });
-
-          // Await the completion of the execute request
-          const reply = await executeRequest.done;
-          if (reply && reply.content.status === 'ok') {
-            return variableValue;
-          } else {
-            console.error('Failed to retrieve variable value');
-            return null;
-          }
-        } catch (error) {
-          console.error('Error retrieving variable value:', error);
-          return null;
-        }
-      } else {
-        console.error('No active kernel found');
-        return null;
-      }
     }
 
     // remove this and import from utils, leaving it here to avoid merged conflicts for now
-    const getSelectedCode = () => {
-      const selection = notebookTracker.activeCell?.editor?.getSelection();
-      const cellCode = notebookTracker.activeCell?.model.sharedModel.source;
-      let extractedCode = '';
-      if (
-        selection &&
-        (selection.start.line !== selection.end.line || selection.start.column !== selection.end.column)
-      ) {
-        const startLine = selection.start.line;
-        const endLine = selection.end.line;
-        const startColumn = selection.start.column;
-        const endColumn = selection.end.column;
-        for (let i = startLine; i <= endLine; i++) {
-          const lineContent = cellCode!.split('\n')[i];
-          if (lineContent !== undefined) {
-            if (i === startLine && i === endLine) {
-              extractedCode += lineContent.substring(startColumn, endColumn);
-            } else if (i === startLine) {
-              extractedCode += lineContent.substring(startColumn);
-            } else if (i === endLine) {
-              extractedCode += '\n' + lineContent.substring(0, endColumn);
-            } else {
-              extractedCode += '\n' + lineContent;
-            }
-          }
-        }
-      }
-      // also return the selection
-      return { extractedCode: extractedCode.trimEnd(), selection };
-    };
-
-    async function processTaggedVariables(userInput: string): Promise<string> {
-      const variablePattern = /@(\w+)/g;
-      let match;
-      let modifiedUserInput = 'USER INSTRUCTION START\n' + userInput + '\nUSER INSTRUCTION END\n\n';
-
-      // add context of imports and existing variables in the notebook
-      const imports = notebookTracker.currentWidget!.model!.sharedModel.cells.filter(cell =>
-        cell.source.split('\n').some(line => line.includes('import'))
-      );
-      const importsCode = imports
-        .map(cell =>
-          cell.source
-            .split('\n')
-            .filter(line => line.trim().includes('import'))
-            .join('\n')
-        )
-        .join('\n');
-
-      modifiedUserInput += `ADDITIONAL CONTEXT\n\nThe following imports are already present in the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
-
-      // call getVariableValue to get the list of globals() from python
-      const getVarsCode = `[var for var in globals() if not var.startswith('_') and not callable(globals()[var]) and var not in ['In', 'Out']]`;
-      const listVars = await getVariableValue(getVarsCode);
-
-      modifiedUserInput += `The following variables exist in memory of the notebook kernel:\n\`\`\`\n${listVars}\n\`\`\`\n`;
-
-      let variablesProcessed: string[] = [];
-      while ((match = variablePattern.exec(userInput)) !== null) {
-        const variableName = match[1];
-        if (variablesProcessed.includes(variableName)) {
-          continue;
-        }
-        variablesProcessed.push(variableName);
-        try {
-          // get value of var using the getVariableValue function
-          const variableType = await getVariableValue(`type(${variableName})`);
-
-          // check if variableType is dataframe
-          // if it is, get columns and add to modifiedUserInput
-          if (variableType?.includes('DataFrame')) {
-            const variableColumns = await getVariableValue(`${variableName}.columns`);
-            modifiedUserInput += `\n\`${variableName}\` is a dataframe with the following columns: \`${variableColumns}\`\n`;
-          } else if (variableType) {
-            const variableValue = await getVariableValue(variableName);
-            modifiedUserInput += `\nPrinting \`${variableName}\` in Python returns \`${variableValue}\`\n`;
-          }
-          // replace the @variable in userInput with `variable`
-          modifiedUserInput = modifiedUserInput.replace(`@${variableName}`, `\`${variableName}\``);
-        } catch (error) {
-          console.error(`Error accessing variable ${variableName}:`, error);
-        }
-      }
-      modifiedUserInput += `\nEND ADDITIONAL CONTEXT\n`;
-      return modifiedUserInput;
-    }
 
     commands.addCommand(command, {
       label: 'Replace Cell Code',
@@ -575,13 +299,9 @@ const extension: JupyterFrontEndPlugin<void> = {
         const activeCell = notebookTracker.activeCell;
 
         if (activeCell) {
-          // Cmd K twice should toggle the box
           const existingDiv = activeCell.node.querySelector('.pretzelParentContainerAI');
-          // this code is repeated with the removeHandler
           if (existingDiv) {
-            // If so, delete that div
             existingDiv.remove();
-            // Switch focus back to the Jupyter cell
             posthog.capture('Remove via Cmd K', {
               event_type: 'keypress',
               event_value: 'Cmd+k',
@@ -589,8 +309,6 @@ const extension: JupyterFrontEndPlugin<void> = {
             });
             const statusElements = activeCell.node.querySelectorAll('p.status-element');
             statusElements.forEach(element => element.remove());
-
-            // Switch focus back to the Jupyter cell
             activeCell!.editor!.focus();
             return;
           }
@@ -601,129 +319,37 @@ const extension: JupyterFrontEndPlugin<void> = {
           parentContainer.classList.add('pretzelParentContainerAI');
           activeCell.node.appendChild(parentContainer);
 
-          const statusElement = document.createElement('p');
-          statusElement.className = 'status-element';
-          parentContainer.appendChild(statusElement);
-
-          const inputContainer = document.createElement('div');
-          parentContainer.appendChild(inputContainer);
-          const inputRoot = createRoot(inputContainer);
-
-          const diffContainer = document.createElement('div');
-          diffContainer.className = 'diff-container';
-          parentContainer.appendChild(diffContainer);
-          const diffRoot = createRoot(diffContainer);
-
-          let inputView: EditorView | null = null;
-          let initialPrompt: string | undefined = '';
-
-          const handleSubmit = async (userInput: string) => {
-            parentContainer.removeChild(inputContainer);
-            const { extractedCode } = getSelectedCode();
-            const injectCodeComment = '# INJECT NEW CODE HERE';
-            let oldCodeInject = oldCode;
-            statusElement.textContent = 'Calculating embeddings...';
-            if (userInput !== '') {
-              const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
-              if (isInject && !extractedCode) {
-                userInput = userInput.replace(/inject/i, '').replace(/ij/i, '');
-                (activeCell!.editor! as CodeMirrorEditor).moveToEndAndNewIndentedLine();
-                activeCell!.editor!.replaceSelection!(injectCodeComment);
-                oldCodeInject = activeCell.model.sharedModel.source;
-                activeCell.model.sharedModel.source = oldCode;
-              }
-              userInput = await processTaggedVariables(userInput);
-              try {
-                const topSimilarities = await getTopSimilarities(
-                  userInput,
-                  embeddings,
-                  NUMBER_OF_SIMILAR_CELLS,
-                  aiClient,
-                  aiService,
-                  activeCell.model.id,
-                  codeMatchThreshold
-                );
-
-                const prompt = generatePrompt(
-                  userInput,
-                  isInject ? oldCodeInject : oldCode,
-                  topSimilarities,
-                  extractedCode,
-                  '',
-                  isInject
-                );
-
-                // if posthogPromptTelemetry is true, capture the prompt
-                if (posthogPromptTelemetry) {
-                  posthog.capture('prompt', { property: userInput });
-                } else {
-                  posthog.capture('prompt', { property: 'no_telemetry' });
-                }
-                openAiStream({
-                  aiService,
-                  parentContainer,
-                  diffRoot,
-                  oldCode,
-                  // OpenAI API
-                  openAiApiKey,
-                  openAiBaseUrl,
-                  openAiModel,
-                  prompt,
-                  // Azure API
-                  azureApiKey,
-                  azureBaseUrl,
-                  deploymentId: azureDeploymentName,
-                  activeCell,
-                  commands,
-                  statusElement,
-                  isErrorFixPrompt: false
-                });
-              } catch (error) {
-                activeCell.node.removeChild(parentContainer);
-              }
-            }
-          };
+          const aiAssistantComponentRoot = createRoot(parentContainer);
 
           const handleRemove = () => {
-            activeCell.node.removeChild(parentContainer);
-            const statusElements = activeCell.node.querySelectorAll('p.status-element');
-            statusElements.forEach(element => element.remove());
-            activeCell!.editor!.focus();
+            aiAssistantComponentRoot.unmount();
+            parentContainer.remove();
           };
 
-          const handlePromptHistory = (promptHistoryIndex: number = 0) => {
-            if (promptHistoryStack.length > 0) {
-              const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
-              inputView!.dispatch({
-                changes: { from: 0, to: inputView!.state.doc.length, insert: oldPrompt }
-              });
-              inputView!.dispatch({
-                selection: { anchor: inputView!.state.doc.length }
-              });
-              inputView!.focus();
-            }
-          };
-
-          if (activeCell.model.getMetadata('isPromptEdit')) {
-            const promptHistory = promptHistoryStack.get(0);
-            initialPrompt = promptHistory;
-            activeCell.model.setMetadata('isPromptEdit', false);
-          }
-          inputRoot.render(
-            <InputComponent
+          aiAssistantComponentRoot.render(
+            <AIAssistantComponent
+              aiService={aiService}
+              openAiApiKey={openAiApiKey}
+              openAiBaseUrl={openAiBaseUrl}
+              openAiModel={openAiModel}
+              azureBaseUrl={azureBaseUrl}
+              azureApiKey={azureApiKey}
+              deploymentId={azureDeploymentName}
               activeCell={activeCell}
-              isAIEnabled={isAIEnabled}
+              commands={commands}
+              isErrorFixPrompt={false}
+              oldCode={oldCode}
               placeholderEnabled={placeholderEnabled}
               placeholderDisabled={placeholderDisabled}
-              handleSubmit={handleSubmit}
-              handleRemove={handleRemove}
-              handlePromptHistory={handlePromptHistory}
               promptHistoryStack={promptHistoryStack}
-              setInputView={view => {
-                inputView = view;
-                setTimeout(() => inputView?.focus(), 0);
-              }}
-              initialPrompt={initialPrompt}
+              isAIEnabled={isAIEnabled}
+              handleRemove={handleRemove}
+              notebookTracker={notebookTracker}
+              embeddings={embeddings}
+              aiClient={aiClient}
+              codeMatchThreshold={codeMatchThreshold}
+              numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
+              posthogPromptTelemetry={posthogPromptTelemetry}
             />
           );
         }

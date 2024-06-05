@@ -10,14 +10,12 @@ const AcceptAndRunButton: React.FC<{
   parentContainer: HTMLElement;
   activeCell: any;
   commands: any;
-  statusElement: HTMLElement;
-}> = ({ diffEditor, parentContainer, activeCell, commands, statusElement }) => {
+}> = ({ diffEditor, parentContainer, activeCell, commands }) => {
   const handleClick = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
     commands.execute('notebook:run-cell');
     activeCell.node.removeChild(parentContainer);
-    statusElement.remove();
     posthog.capture('Accept and Run', {
       event_type: 'click',
       method: 'accept_and_run'
@@ -35,13 +33,11 @@ const AcceptButton: React.FC<{
   diffEditor: monaco.editor.IStandaloneDiffEditor;
   parentContainer: HTMLElement;
   activeCell: any;
-  statusElement: HTMLElement;
-}> = ({ diffEditor, parentContainer, activeCell, statusElement }) => {
+}> = ({ diffEditor, parentContainer, activeCell }) => {
   const handleClick = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
     activeCell.node.removeChild(parentContainer);
-    statusElement.remove();
     posthog.capture('Accept', {
       event_type: 'click',
       method: 'accept'
@@ -58,13 +54,11 @@ const AcceptButton: React.FC<{
 const RejectButton: React.FC<{
   parentContainer: HTMLElement;
   activeCell: any;
-  statusElement: HTMLElement;
   oldCode: string;
-}> = ({ parentContainer, activeCell, statusElement, oldCode }) => {
+}> = ({ parentContainer, activeCell, oldCode }) => {
   const handleClick = () => {
     activeCell.node.removeChild(parentContainer);
     activeCell.model.sharedModel.source = oldCode;
-    statusElement.remove();
     posthog.capture('Reject', {
       event_type: 'click',
       method: 'reject'
@@ -167,7 +161,6 @@ interface IButtonsContainerProps extends IStreamingDiffEditorProps {
   parentContainer: HTMLElement;
   activeCell: any;
   commands: any;
-  statusElement: HTMLElement;
   isErrorFixPrompt: boolean;
   oldCode: string;
 }
@@ -177,7 +170,6 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
   parentContainer,
   activeCell,
   commands,
-  statusElement,
   isErrorFixPrompt,
   oldCode
 }) => {
@@ -206,20 +198,9 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
         parentContainer={parentContainer}
         activeCell={activeCell}
         commands={commands}
-        statusElement={statusElement}
       />
-      <AcceptButton
-        diffEditor={diffEditor}
-        parentContainer={parentContainer}
-        activeCell={activeCell}
-        statusElement={statusElement}
-      />
-      <RejectButton
-        parentContainer={parentContainer}
-        activeCell={activeCell}
-        statusElement={statusElement}
-        oldCode={oldCode}
-      />
+      <AcceptButton diffEditor={diffEditor} parentContainer={parentContainer} activeCell={activeCell} />
+      <RejectButton parentContainer={parentContainer} activeCell={activeCell} oldCode={oldCode} />
       {!isErrorFixPrompt && (
         <EditPromptButton parentContainer={parentContainer} activeCell={activeCell} commands={commands} />
       )}

@@ -11,8 +11,6 @@ import { cosineSimilarity } from './utils';
 import { OpenAI } from 'openai';
 import { Embeddings } from '@azure/openai/types/openai';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import * as React from 'react';
-import { DiffContainer } from './components/DiffContainer';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -169,41 +167,25 @@ INSTRUCTION:
 - ONLY IF the error is in a DIFFERENT PART of the Jupyter Notebook: add a comment at the top explaining this and add AS LITTLE CODE AS POSSIBLE in the CURRENT cell to fix the error.`;
 }
 
-export const openAiStream = async ({
+export const setupStream = async ({
   aiService,
   openAiApiKey,
   openAiBaseUrl,
   openAiModel,
   prompt,
-  parentContainer,
-  diffRoot,
-  oldCode,
   azureBaseUrl,
   azureApiKey,
-  deploymentId,
-  activeCell,
-  commands,
-  statusElement,
-  isErrorFixPrompt
+  deploymentId
 }: {
   aiService: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   openAiModel?: string;
-  prompt?: string;
-  parentContainer: HTMLElement;
-  diffRoot: any;
-  oldCode: string;
+  prompt: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
-  activeCell: any;
-  commands: any;
-  statusElement: HTMLElement;
-  isErrorFixPrompt: boolean;
-}): Promise<void> => {
-  statusElement.textContent = 'Calling AI service...';
-
+}): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
 
   if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
@@ -226,43 +208,6 @@ export const openAiStream = async ({
       ],
       stream: true
     });
-  } else if (aiService === 'Use Pretzel AI Server') {
-    const response = await fetch('https://api.pretzelai.app/prompt/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
-    });
-
-    const reader = response!.body!.getReader();
-    const decoder = new TextDecoder('utf-8');
-
-    stream = {
-      async *[Symbol.asyncIterator]() {
-        let isReading = true;
-        while (isReading) {
-          const { done, value } = await reader.read();
-          if (done) {
-            isReading = false;
-          }
-          const chunk = decoder.decode(value);
-          yield { choices: [{ delta: { content: chunk } }] };
-        }
-      }
-    };
   } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
     const result = await client.getCompletions(deploymentId, [prompt]);
@@ -278,20 +223,7 @@ export const openAiStream = async ({
     throw new Error('Invalid AI service');
   }
 
-  statusElement.textContent = 'Generating code...';
-  diffRoot.render(
-    <DiffContainer
-      stream={stream!}
-      oldCode={oldCode}
-      onEditorCreated={() => {}}
-      onStreamingDone={() => {}}
-      parentContainer={parentContainer}
-      activeCell={activeCell}
-      commands={commands}
-      statusElement={statusElement}
-      isErrorFixPrompt={isErrorFixPrompt}
-    />
-  );
+  return stream;
 };
 
 export const openaiEmbeddings = async (

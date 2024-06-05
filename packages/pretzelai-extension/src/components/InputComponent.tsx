@@ -122,11 +122,11 @@ interface IInputComponentProps {
   placeholderDisabled: string;
   handleSubmit: (input: string) => void;
   handleRemove: () => void;
-  handlePromptHistory: (promptHistoryIndex: number) => void;
   promptHistoryStack: FixedSizeStack<string>;
   setInputView: (view: EditorView) => void;
   initialPrompt?: string;
   activeCell: any;
+  setStatusElementText: (text: string) => void;
 }
 const InputComponent: React.FC<IInputComponentProps> = ({
   isAIEnabled,
@@ -134,15 +134,28 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   placeholderDisabled,
   handleSubmit,
   handleRemove,
-  handlePromptHistory,
   promptHistoryStack,
   setInputView,
   initialPrompt = '',
-  activeCell
+  activeCell,
+  setStatusElementText
 }) => {
   const inputFieldRef = useRef<HTMLDivElement>(null);
   const inputViewRef = useRef<EditorView | null>(null);
   const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0); // how many items to skip
+
+  const handlePromptHistory = (promptHistoryIndex: number = 0) => {
+    if (promptHistoryStack.length > 0) {
+      const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
+      inputViewRef.current!.dispatch({
+        changes: { from: 0, to: inputViewRef.current!.state.doc.length, insert: oldPrompt }
+      });
+      inputViewRef.current!.dispatch({
+        selection: { anchor: inputViewRef.current!.state.doc.length }
+      });
+      inputViewRef.current!.focus();
+    }
+  };
 
   useEffect(() => {
     if (inputFieldRef.current) {

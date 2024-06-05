@@ -8,7 +8,6 @@ interface IDiffContainerProps extends IStreamingDiffEditorProps {
   parentContainer: HTMLElement;
   activeCell: any;
   commands: any;
-  statusElement: HTMLElement;
   isErrorFixPrompt: boolean;
   oldCode: string;
 }
@@ -22,8 +21,8 @@ export const DiffContainer: React.FC<IDiffContainerProps> = props => {
       <StreamingDiffEditor
         stream={props.stream}
         oldCode={props.oldCode}
-        onEditorCreated={editor => {
-          setDiffEditor(editor);
+        onEditorCreated={diffEditor => {
+          setDiffEditor(diffEditor);
         }}
         onStreamingDone={() => {
           setStreamingDone(true);
