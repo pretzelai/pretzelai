@@ -151,4 +151,5 @@ examples/**/test-results/
 
 Untitled*
 .embeddings
+.chat_history.json
 testdir

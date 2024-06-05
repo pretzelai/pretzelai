@@ -7,13 +7,17 @@
 
 import React, { useEffect, useState } from 'react';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
+import { CodeToolbar, CodeToolbarProps } from './code-blocks/code-toolbar';
+import { createPortal } from 'react-dom';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 const MD_MIME_TYPE = 'text/markdown';
-const RENDERMIME_MD_CLASS = 'pretzelai-rendermime-markdown';
+const RENDERMIME_MD_CLASS = 'jp-pretzelai-rendermime-markdown';
 
 type RendermimeMarkdownProps = {
   markdownStr: string;
   rmRegistry: IRenderMimeRegistry;
+  notebookTracker: INotebookTracker;
 };
 
 function escapeLatexDelimiters(text: string) {
@@ -23,6 +27,7 @@ function escapeLatexDelimiters(text: string) {
 function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
   const [renderedContent, setRenderedContent] = useState<HTMLElement | null>(null);
   const renderedContentRef = React.useRef<HTMLDivElement>(null);
+  const [codeToolbarDefns, setCodeToolbarDefns] = useState<Array<[HTMLDivElement, CodeToolbarProps]>>([]);
 
   useEffect(() => {
     const renderContent = async () => {
@@ -38,13 +43,19 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
         throw new Error('Error rendering markdown');
       }
 
-      // Attach CodeToolbar root element to each <pre> block
+      const newCodeToolbarDefns: [HTMLDivElement, CodeToolbarProps][] = [];
+
       const preBlocks = renderer.node.querySelectorAll('pre');
       preBlocks.forEach(preBlock => {
         const codeToolbarRoot = document.createElement('div');
         preBlock.parentNode?.insertBefore(codeToolbarRoot, preBlock.nextSibling);
+        newCodeToolbarDefns.push([
+          codeToolbarRoot,
+          { content: preBlock.textContent || '', notebookTracker: props.notebookTracker }
+        ]);
       });
 
+      setCodeToolbarDefns(newCodeToolbarDefns);
       setRenderedContent(renderer.node);
     };
 
@@ -53,9 +64,7 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
 
   useEffect(() => {
     if (renderedContent && renderedContentRef.current) {
-      // Clear previous content
       renderedContentRef.current.innerHTML = '';
-      // Append new content
       renderedContentRef.current.appendChild(renderedContent);
     }
   }, [renderedContent]);
@@ -63,6 +72,10 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
   return (
     <div className={RENDERMIME_MD_CLASS}>
       <div ref={renderedContentRef} />
+      {codeToolbarDefns.map(codeToolbarDefn => {
+        const [codeToolbarRoot, codeToolbarProps] = codeToolbarDefn;
+        return createPortal(<CodeToolbar {...codeToolbarProps} />, codeToolbarRoot);
+      })}
     </div>
   );
 }
