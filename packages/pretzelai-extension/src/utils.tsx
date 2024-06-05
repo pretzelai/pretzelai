@@ -12,9 +12,10 @@ import { IIOPubMessage } from '@jupyterlab/services/src/kernel/messages';
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { AiService, Embedding, openaiEmbeddings } from './prompt';
+import { AiService, Embedding, generatePrompt, openaiEmbeddings, systemPrompt } from './prompt';
 import OpenAI from 'openai';
-import { OpenAIClient } from '@azure/openai';
+import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
+import posthog from 'posthog-js';
 
 export async function calculateHash(input: string) {
   const encoder = new TextEncoder();
@@ -301,6 +302,137 @@ export async function getEmbeddings(
     setTimeout(getEmbeddings, 1000);
   }
   return embeddings;
+}
+const getTopSimilarities = async (
+  userInput: string,
+  embeddings: Embedding[],
+  numberOfSimilarities: number,
+  aiClient: OpenAI | OpenAIClient | null,
+  aiService: AiService,
+  cellId: string,
+  codeMatchThreshold: number
+): Promise<string[]> => {
+  const response = await openaiEmbeddings(userInput, aiService, aiClient);
+  const userInputEmbedding = response.data[0].embedding; // same API for openai and azure
+  const similarities = embeddings
+    .filter(embedding => embedding.id !== cellId) // Exclude current cell's embedding
+    .map((embedding, index) => ({
+      value: cosineSimilarity(embedding.embedding, userInputEmbedding),
+      index
+    }));
+  return similarities
+    .filter(e => e.value > codeMatchThreshold)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, numberOfSimilarities)
+    .map(e => embeddings[e.index].source);
+};
+
+const setupStream = async ({
+  aiService,
+  openAiApiKey,
+  openAiBaseUrl,
+  openAiModel,
+  prompt,
+  azureBaseUrl,
+  azureApiKey,
+  deploymentId
+}: {
+  aiService: string;
+  openAiApiKey?: string;
+  openAiBaseUrl?: string;
+  openAiModel?: string;
+  prompt: string;
+  azureBaseUrl?: string;
+  azureApiKey?: string;
+  deploymentId?: string;
+}): Promise<AsyncIterable<any>> => {
+  let stream: AsyncIterable<any> | null = null;
+
+  if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
+    const openai = new OpenAI({
+      apiKey: openAiApiKey,
+      dangerouslyAllowBrowser: true,
+      baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
+    });
+    stream = await openai.chat.completions.create({
+      model: openAiModel,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      stream: true
+    });
+  } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
+    const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
+    const result = await client.getCompletions(deploymentId, [prompt]);
+
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        for (const choice of result.choices) {
+          yield { choices: [{ delta: { content: choice.text } }] };
+        }
+      }
+    };
+  } else {
+    throw new Error('Invalid AI service');
+  }
+
+  return stream;
+};
+
+export async function generateAIStream({
+  aiService,
+  aiClient,
+  embeddings,
+  userInput,
+  oldCodeForPrompt,
+  notebookTracker,
+  codeMatchThreshold,
+  numberOfSimilarCells,
+  posthogPromptTelemetry,
+  openAiApiKey,
+  openAiBaseUrl,
+  openAiModel,
+  azureBaseUrl,
+  azureApiKey,
+  deploymentId,
+  isInject
+}) {
+  const { extractedCode } = getSelectedCode(notebookTracker);
+  const topSimilarities = await getTopSimilarities(
+    userInput,
+    embeddings,
+    numberOfSimilarCells,
+    aiClient,
+    aiService,
+    notebookTracker.activeCell!.model.id,
+    codeMatchThreshold
+  );
+
+  const prompt = generatePrompt(userInput, oldCodeForPrompt, topSimilarities, extractedCode, '', isInject);
+
+  if (posthogPromptTelemetry) {
+    posthog.capture('prompt', { property: userInput });
+  } else {
+    posthog.capture('prompt', { property: 'no_telemetry' });
+  }
+
+  return setupStream({
+    aiService,
+    openAiApiKey,
+    openAiBaseUrl,
+    openAiModel,
+    prompt,
+    azureBaseUrl,
+    azureApiKey,
+    deploymentId
+  });
 }
 
 export class FixedSizeStack<T> {

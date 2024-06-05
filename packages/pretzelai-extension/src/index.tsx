@@ -19,7 +19,7 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import { FixedSizeStack, getEmbeddings } from './utils';
 
-import { AiService, Embedding, generatePrompt, getTopSimilarities } from './prompt';
+import { AiService, Embedding } from './prompt';
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
 import { OutputAreaModel } from '@jupyterlab/outputarea';
@@ -269,29 +269,43 @@ const extension: JupyterFrontEndPlugin<void> = {
         traceback = traceback.toString();
       }
       const originalCode = cellModel.sharedModel.source;
-      let activeCell = notebookTracker.activeCell!;
-      const statusElement = document.createElement('p');
-      statusElement.style.marginLeft = '70px';
-      statusElement.textContent = 'Calculating embeddings...';
-      activeCell.node.appendChild(statusElement);
-
-      const topSimilarities = await getTopSimilarities(
-        originalCode,
-        embeddings,
-        NUMBER_OF_SIMILAR_CELLS,
-        aiClient,
-        aiService,
-        cellModel.id,
-        codeMatchThreshold
-      );
-      const prompt = generatePrompt('', originalCode, topSimilarities, '', traceback);
 
       const parentContainer = document.createElement('div');
       parentContainer.classList.add('pretzelParentContainerAI');
-      activeCell.node.appendChild(parentContainer);
-    }
+      const aiAssistantComponentRoot = createRoot(parentContainer);
+      const handleRemove = () => {
+        aiAssistantComponentRoot.unmount();
+        parentContainer.remove();
+      };
 
-    // remove this and import from utils, leaving it here to avoid merged conflicts for now
+      aiAssistantComponentRoot.render(
+        <AIAssistantComponent
+          aiService={aiService}
+          openAiApiKey={openAiApiKey}
+          openAiBaseUrl={openAiBaseUrl}
+          openAiModel={openAiModel}
+          azureBaseUrl={azureBaseUrl}
+          azureApiKey={azureApiKey}
+          deploymentId={azureDeploymentName}
+          activeCell={notebookTracker.activeCell!}
+          commands={commands}
+          isErrorFixPrompt={true}
+          oldCode={originalCode}
+          placeholderEnabled={placeholderEnabled}
+          placeholderDisabled={placeholderDisabled}
+          promptHistoryStack={promptHistoryStack}
+          isAIEnabled={isAIEnabled}
+          handleRemove={handleRemove}
+          notebookTracker={notebookTracker}
+          embeddings={embeddings}
+          aiClient={aiClient}
+          codeMatchThreshold={codeMatchThreshold}
+          numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
+          posthogPromptTelemetry={posthogPromptTelemetry}
+          skipInput={true} // Pass true to skip input component
+        />
+      );
+    }
 
     commands.addCommand(command, {
       label: 'Replace Cell Code',

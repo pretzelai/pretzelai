@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import InputComponent from './InputComponent';
 import { DiffContainer } from './DiffContainer';
-import { setupStream } from '../prompt';
-import { FixedSizeStack, getSelectedCode, processTaggedVariables } from '../utils';
-import { INotebookTracker, NotebookTracker } from '@jupyterlab/notebook';
+import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables } from '../utils';
+import { INotebookTracker } from '@jupyterlab/notebook';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
-import { AiService, Embedding, generatePrompt, getTopSimilarities } from '../prompt';
+import { AiService, Embedding, generatePrompt } from '../prompt';
 import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
@@ -33,11 +32,12 @@ interface IAIAssistantComponentProps {
   codeMatchThreshold: number;
   numberOfSimilarCells: number;
   posthogPromptTelemetry: boolean;
+  skipInput?: boolean;
 }
 
 export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props => {
-  const [showInputComponent, setShowInputComponent] = useState(true);
-  const [showDiffContainer, setShowDiffContainer] = useState(false);
+  const [showInputComponent, setShowInputComponent] = useState(!props.skipInput);
+  const [showDiffContainer, setShowDiffContainer] = useState(!!props.skipInput);
   const [showStatusElement, setShowStatusElement] = useState(true);
 
   const [stream, setStream] = useState<AsyncIterable<any> | null>(null);
@@ -45,61 +45,46 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   const handleSubmit = async (userInput: string) => {
     const { extractedCode } = getSelectedCode(props.notebookTracker);
-    const injectCodeComment = '# INJECT NEW CODE HERE';
-    let oldCodeInject = props.oldCode;
+
     let activeCell = props.notebookTracker.activeCell;
 
     if (userInput !== '') {
       setShowStatusElement(true);
       setStatusElementText('Calculating embeddings...');
 
+      let oldCodeForPrompt = props.oldCode;
       const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
       if (isInject && !extractedCode) {
+        // here's what we do:
+        // 1. get the old code, add a new line in the cell and add a comment saying 'INJECT NEW CODE HERE'
+        // 2. send this changed code to generate the prompt
+        // 3. restore the old code in the cell
         userInput = userInput.replace(/inject/i, '').replace(/ij/i, '');
         (activeCell!.editor! as CodeMirrorEditor).moveToEndAndNewIndentedLine();
-        activeCell!.editor!.replaceSelection!(injectCodeComment);
-        oldCodeInject = activeCell!.model.sharedModel.source;
+        activeCell!.editor!.replaceSelection!('# INJECT NEW CODE HERE');
+        oldCodeForPrompt = activeCell!.model.sharedModel.source;
         activeCell!.model.sharedModel.source = props.oldCode;
       }
-      userInput = await processTaggedVariables(userInput, props.notebookTracker);
       try {
-        const topSimilarities = await getTopSimilarities(
-          userInput,
-          props.embeddings,
-          props.numberOfSimilarCells,
-          props.aiClient,
-          props.aiService,
-          activeCell!.model.id,
-          props.codeMatchThreshold
-        );
-
-        const prompt = generatePrompt(
-          userInput,
-          isInject ? oldCodeInject : props.oldCode,
-          topSimilarities,
-          extractedCode,
-          '',
-          isInject
-        );
-
-        // if posthogPromptTelemetry is true, capture the prompt
-        if (props.posthogPromptTelemetry) {
-          posthog.capture('prompt', { property: userInput });
-        } else {
-          posthog.capture('prompt', { property: 'no_telemetry' });
-        }
-
-        setStatusElementText('Calling AI service...');
-        const stream = await setupStream({
+        const stream = await generateAIStream({
           aiService: props.aiService,
+          aiClient: props.aiClient,
+          embeddings: props.embeddings,
+          userInput,
+          oldCodeForPrompt,
+          notebookTracker: props.notebookTracker,
+          codeMatchThreshold: props.codeMatchThreshold,
+          numberOfSimilarCells: props.numberOfSimilarCells,
+          posthogPromptTelemetry: props.posthogPromptTelemetry,
           openAiApiKey: props.openAiApiKey,
           openAiBaseUrl: props.openAiBaseUrl,
           openAiModel: props.openAiModel,
-          prompt: prompt,
           azureBaseUrl: props.azureBaseUrl,
           azureApiKey: props.azureApiKey,
-          deploymentId: props.deploymentId
+          deploymentId: props.deploymentId,
+          isInject: isInject
         });
+
         setStream(stream);
         setShowInputComponent(false);
         setStatusElementText('Generating code...');

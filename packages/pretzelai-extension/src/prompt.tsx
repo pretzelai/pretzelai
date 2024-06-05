@@ -7,10 +7,9 @@
  * Contributions by contributors listed in the PRETZEL_CONTRIBUTORS file (found at
  * the root of the project) are licensed under AGPLv3.
  */
-import { cosineSimilarity } from './utils';
 import { OpenAI } from 'openai';
 import { Embeddings } from '@azure/openai/types/openai';
-import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
+import { OpenAIClient } from '@azure/openai';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -167,65 +166,6 @@ INSTRUCTION:
 - ONLY IF the error is in a DIFFERENT PART of the Jupyter Notebook: add a comment at the top explaining this and add AS LITTLE CODE AS POSSIBLE in the CURRENT cell to fix the error.`;
 }
 
-export const setupStream = async ({
-  aiService,
-  openAiApiKey,
-  openAiBaseUrl,
-  openAiModel,
-  prompt,
-  azureBaseUrl,
-  azureApiKey,
-  deploymentId
-}: {
-  aiService: string;
-  openAiApiKey?: string;
-  openAiBaseUrl?: string;
-  openAiModel?: string;
-  prompt: string;
-  azureBaseUrl?: string;
-  azureApiKey?: string;
-  deploymentId?: string;
-}): Promise<AsyncIterable<any>> => {
-  let stream: AsyncIterable<any> | null = null;
-
-  if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
-    const openai = new OpenAI({
-      apiKey: openAiApiKey,
-      dangerouslyAllowBrowser: true,
-      baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
-    });
-    stream = await openai.chat.completions.create({
-      model: openAiModel,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      stream: true
-    });
-  } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
-    const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
-    const result = await client.getCompletions(deploymentId, [prompt]);
-
-    stream = {
-      async *[Symbol.asyncIterator]() {
-        for (const choice of result.choices) {
-          yield { choices: [{ delta: { content: choice.text } }] };
-        }
-      }
-    };
-  } else {
-    throw new Error('Invalid AI service');
-  }
-
-  return stream;
-};
-
 export const openaiEmbeddings = async (
   source: string,
   aiService: AiService,
@@ -253,30 +193,6 @@ export const openaiEmbeddings = async (
   } else {
     throw new Error('Invalid AI service');
   }
-};
-
-export const getTopSimilarities = async (
-  userInput: string,
-  embeddings: Embedding[],
-  numberOfSimilarities: number,
-  aiClient: OpenAI | OpenAIClient | null,
-  aiService: AiService,
-  cellId: string,
-  codeMatchThreshold: number
-): Promise<string[]> => {
-  const response = await openaiEmbeddings(userInput, aiService, aiClient);
-  const userInputEmbedding = response.data[0].embedding; // same API for openai and azure
-  const similarities = embeddings
-    .filter(embedding => embedding.id !== cellId) // Exclude current cell's embedding
-    .map((embedding, index) => ({
-      value: cosineSimilarity(embedding.embedding, userInputEmbedding),
-      index
-    }));
-  return similarities
-    .filter(e => e.value > codeMatchThreshold)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, numberOfSimilarities)
-    .map(e => embeddings[e.index].source);
 };
 
 export const systemPrompt =
