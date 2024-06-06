@@ -99,7 +99,7 @@ const RejectButton: React.FC<{
   const [showTooltip, setShowTooltip] = useState(false);
   const isMac = /Mac/i.test(navigator.userAgent);
   const keyCombination = isMac ? 'Esc' : 'Esc';
-  const shortcut = isMac ? '⎋' : 'Esc';
+  const shortcut = isMac ? 'Esc' : 'Esc';
 
   const handleClick = () => {
     activeCell.model.sharedModel.source = oldCode;
@@ -140,7 +140,7 @@ const EditPromptButton: React.FC<{
   const [showTooltip, setShowTooltip] = useState(false);
   const isMac = /Mac/i.test(navigator.userAgent);
   const keyCombination = isMac ? 'Cmd + Esc' : 'Ctrl+Esc';
-  const shortcut = isMac ? '⌘⎋' : '⌃⎋';
+  const shortcut = isMac ? '⌘Esc' : '⌃Esc';
 
   const handleClick = () => {
     activeCell.model.setMetadata('isPromptEdit', true);
