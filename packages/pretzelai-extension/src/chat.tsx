@@ -18,7 +18,7 @@ import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { getSelectedCode, getTopSimilarities } from './utils';
+import { getSelectedCode, getTopSimilarities, PRETZEL_FOLDER, readEmbeddings } from './utils';
 import { RendermimeMarkdown } from './components/rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { AiService } from './prompt';
@@ -88,7 +88,7 @@ export function Chat({
     if (notebook?.model && !isAiGenerating) {
       const currentNotebookPath = notebook.context.path;
       const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
-      const chatHistoryPath = currentDir + '/' + '.chat_history.json';
+      const chatHistoryPath = currentDir + '/' + PRETZEL_FOLDER + '/' + '.chat_history.json';
 
       const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', chatHistoryPath);
       const response = await ServerConnection.makeRequest(
@@ -112,7 +112,7 @@ export function Chat({
     if (notebook?.model && !isAiGenerating) {
       const currentNotebookPath = notebook.context.path;
       const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
-      const chatHistoryPath = currentDir + '/' + '.chat_history.json';
+      const chatHistoryPath = currentDir + '/' + PRETZEL_FOLDER + '/' + '.chat_history.json';
 
       const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', chatHistoryPath);
       const response = await ServerConnection.makeRequest(
@@ -182,15 +182,7 @@ export function Chat({
   const onSend = async () => {
     setIsAiGenerating(true);
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
-    const notebook = notebookTracker.currentWidget;
-    const currentNotebookPath = notebook!.context.path;
-    const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
-    const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
-    const embeddingsFolderName = '.embeddings';
-    const embeddingsPath = currentDir + '/' + embeddingsFolderName + '/' + notebookName + '_embeddings.json';
-
-    const file = await app.serviceManager.contents.get(embeddingsPath);
-    const embeddings = JSON.parse(file.content);
+    const embeddings = await readEmbeddings(notebookTracker, app);
     const selectedCode = getSelectedCode(notebookTracker).extractedCode;
 
     const formattedMessages = [
@@ -224,6 +216,8 @@ export function Chat({
       codeMatchThreshold
     );
 
+    // eslint-disable-next-line no-debugger
+    debugger;
     const controller = new AbortController();
     let signal = controller.signal;
     setStopGeneration(() => () => controller.abort());
