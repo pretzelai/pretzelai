@@ -10,7 +10,7 @@ import { Box } from '@mui/material';
 import { addAboveIcon, addBelowIcon } from '@jupyterlab/ui-components';
 
 import { CopyButton } from './copy-button';
-import replaceCellIconRaw from '../../style/icons/replace-cell.svg';
+import replaceCellIconRaw from '../../../style/icons/replace-cell.svg';
 import { LabIcon } from '@jupyterlab/ui-components';
 import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
 
