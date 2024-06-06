@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
 import { DiffComponent } from './DiffComponent';
-import { FixedSizeStack, generateAIStream, getSelectedCode } from '../utils';
+import { FixedSizeStack, generateAIStream, getEmbeddings, getSelectedCode } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
-import { AiService, Embedding } from '../prompt';
+import { AiService } from '../prompt';
 import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { CommandRegistry } from '@lumino/commands';
-import { Cell, ICellModel } from '@jupyterlab/cells';
+import { JupyterFrontEnd } from '@jupyterlab/application';
 
 interface IAIAssistantComponentProps {
   aiService: AiService;
@@ -18,27 +18,24 @@ interface IAIAssistantComponentProps {
   azureBaseUrl: string;
   azureApiKey: string;
   deploymentId: string;
-  activeCell: Cell<ICellModel>;
   commands: CommandRegistry;
-  isErrorFixPrompt: boolean;
-  oldCode: string;
+  traceback: string;
   placeholderEnabled: string;
   placeholderDisabled: string;
   promptHistoryStack: FixedSizeStack<string>;
   isAIEnabled: boolean;
   handleRemove: () => void;
   notebookTracker: INotebookTracker;
-  embeddings: Embedding[];
+  app: JupyterFrontEnd;
   aiClient: OpenAI | OpenAIClient | null;
   codeMatchThreshold: number;
   numberOfSimilarCells: number;
   posthogPromptTelemetry: boolean;
-  skipInput?: boolean;
 }
 
 export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props => {
-  const [showInputComponent, setShowInputComponent] = useState(!props.skipInput);
-  const [showDiffContainer, setShowDiffContainer] = useState(!!props.skipInput);
+  const [showInputComponent, setShowInputComponent] = useState(true);
+  const [showDiffContainer, setShowDiffContainer] = useState(false);
   const [showStatusElement, setShowStatusElement] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>('');
 
@@ -46,23 +43,64 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   const [statusElementText, setStatusElementText] = useState<string>('');
 
   useEffect(() => {
-    if (props.activeCell.model.getMetadata('isPromptEdit')) {
+    if (props.notebookTracker.activeCell!.model.getMetadata('isPromptEdit')) {
       setInitialPrompt(props.promptHistoryStack.get(0));
-      props.activeCell.model.setMetadata('isPromptEdit', false);
+      props.notebookTracker.activeCell!.model.setMetadata('isPromptEdit', false);
+    }
+    if (props.traceback) {
+      handleFixError();
     }
   }, []);
+
+  const handleFixError = async () => {
+    setShowInputComponent(false);
+    setShowStatusElement(true);
+    setStatusElementText('Calculating embeddings...');
+    let embeddings = await getEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiService);
+    let oldCodeForPrompt = props.notebookTracker.activeCell!.model.sharedModel.source;
+    try {
+      const stream = await generateAIStream({
+        aiService: props.aiService,
+        aiClient: props.aiClient,
+        embeddings: embeddings,
+        userInput: '',
+        oldCodeForPrompt,
+        traceback: props.traceback,
+        notebookTracker: props.notebookTracker,
+        codeMatchThreshold: props.codeMatchThreshold,
+        numberOfSimilarCells: props.numberOfSimilarCells,
+        posthogPromptTelemetry: props.posthogPromptTelemetry,
+        openAiApiKey: props.openAiApiKey,
+        openAiBaseUrl: props.openAiBaseUrl,
+        openAiModel: props.openAiModel,
+        azureBaseUrl: props.azureBaseUrl,
+        azureApiKey: props.azureApiKey,
+        deploymentId: props.deploymentId,
+        isInject: false
+      });
+
+      setStream(stream);
+      setStatusElementText('Generating code...');
+      setShowDiffContainer(true);
+    } catch (error) {
+      props.handleRemove();
+      throw new Error('Error generating prompt');
+    }
+  };
 
   const handleSubmit = async (userInput: string) => {
     const { extractedCode } = getSelectedCode(props.notebookTracker);
 
     let activeCell = props.notebookTracker.activeCell;
+    let embeddings = await getEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiService);
 
     if (userInput !== '') {
       setShowInputComponent(false);
       setShowStatusElement(true);
       setStatusElementText('Calculating embeddings...');
+      const oldCode = activeCell!.model.sharedModel.source;
 
-      let oldCodeForPrompt = props.oldCode;
+      let oldCodeForPrompt = activeCell!.model.sharedModel.source;
       const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
       if (isInject && !extractedCode) {
         // here's what we do:
@@ -73,15 +111,16 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         (activeCell!.editor! as CodeMirrorEditor).moveToEndAndNewIndentedLine();
         activeCell!.editor!.replaceSelection!('# INJECT NEW CODE HERE');
         oldCodeForPrompt = activeCell!.model.sharedModel.source;
-        activeCell!.model.sharedModel.source = props.oldCode;
+        activeCell!.model.sharedModel.source = oldCode;
       }
       try {
         const stream = await generateAIStream({
           aiService: props.aiService,
           aiClient: props.aiClient,
-          embeddings: props.embeddings,
+          embeddings: embeddings,
           userInput,
           oldCodeForPrompt,
+          traceback: '',
           notebookTracker: props.notebookTracker,
           codeMatchThreshold: props.codeMatchThreshold,
           numberOfSimilarCells: props.numberOfSimilarCells,
@@ -116,7 +155,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           promptHistoryStack={props.promptHistoryStack}
           setInputView={() => {}}
           initialPrompt={initialPrompt}
-          activeCell={props.activeCell}
+          activeCell={props.notebookTracker.activeCell}
           placeholderEnabled={props.placeholderEnabled}
           placeholderDisabled={props.placeholderDisabled}
         />
@@ -124,11 +163,11 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       {showDiffContainer && stream && (
         <DiffComponent
           stream={stream}
-          oldCode={props.oldCode}
+          oldCode={props.notebookTracker.activeCell!.model.sharedModel.source}
           parentContainer={document.createElement('div')}
-          activeCell={props.activeCell}
+          activeCell={props.notebookTracker.activeCell}
           commands={props.commands}
-          isErrorFixPrompt={props.isErrorFixPrompt}
+          isErrorFixPrompt={!!props.traceback}
           handleRemove={props.handleRemove}
           setShowStatusElement={setShowStatusElement}
         />

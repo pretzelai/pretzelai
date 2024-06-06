@@ -17,9 +17,9 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { FixedSizeStack, getEmbeddings } from './utils';
+import { FixedSizeStack } from './utils';
 
-import { AiService, Embedding } from './prompt';
+import { AiService } from './prompt';
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
 import { OutputAreaModel } from '@jupyterlab/outputarea';
@@ -77,7 +77,6 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureDeploymentName = '';
     let azureApiKey = '';
     let aiClient: OpenAI | OpenAIClient | null = null;
-    let embeddings: Embedding[];
     let posthogPromptTelemetry: boolean = true;
     let codeMatchThreshold: number;
     let isAIEnabled: boolean = false;
@@ -204,8 +203,6 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     });
 
-    embeddings = await getEmbeddings(notebookTracker, app, aiClient, aiService);
-
     function findErrorOutput(outputs: OutputAreaModel): IOutputModel | undefined {
       for (let i = 0; i < outputs.length; i++) {
         const output = outputs.get(i);
@@ -299,10 +296,10 @@ const extension: JupyterFrontEndPlugin<void> = {
       else {
         traceback = traceback.toString();
       }
-      const originalCode = cellModel.sharedModel.source;
-
       const parentContainer = document.createElement('div');
       parentContainer.classList.add('pretzelParentContainerAI');
+      notebookTracker.activeCell!.node.appendChild(parentContainer);
+
       const aiAssistantComponentRoot = createRoot(parentContainer);
       const handleRemove = () => {
         aiAssistantComponentRoot.unmount();
@@ -318,22 +315,19 @@ const extension: JupyterFrontEndPlugin<void> = {
           azureBaseUrl={azureBaseUrl}
           azureApiKey={azureApiKey}
           deploymentId={azureDeploymentName}
-          activeCell={notebookTracker.activeCell!}
           commands={commands}
-          isErrorFixPrompt={true}
-          oldCode={originalCode}
+          traceback={traceback}
           placeholderEnabled={placeholderEnabled}
           placeholderDisabled={placeholderDisabled}
           promptHistoryStack={promptHistoryStack}
           isAIEnabled={isAIEnabled}
           handleRemove={handleRemove}
           notebookTracker={notebookTracker}
-          embeddings={embeddings}
+          app={app}
           aiClient={aiClient}
           codeMatchThreshold={codeMatchThreshold}
           numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
           posthogPromptTelemetry={posthogPromptTelemetry}
-          skipInput={true} // Pass true to skip input component
         />
       );
     }
@@ -341,10 +335,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     commands.addCommand(command, {
       label: 'Replace Cell Code',
       execute: () => {
-        const activeCell = notebookTracker.activeCell;
-
-        if (activeCell) {
-          const existingDiv = activeCell.node.querySelector('.pretzelParentContainerAI');
+        if (notebookTracker.activeCell) {
+          const existingDiv = notebookTracker.activeCell.node.querySelector('.pretzelParentContainerAI');
           if (existingDiv) {
             existingDiv.remove();
             posthog.capture('Remove via Cmd K', {
@@ -352,17 +344,15 @@ const extension: JupyterFrontEndPlugin<void> = {
               event_value: 'Cmd+k',
               method: 'remove'
             });
-            const statusElements = activeCell.node.querySelectorAll('p.status-element');
+            const statusElements = notebookTracker.activeCell.node.querySelectorAll('p.status-element');
             statusElements.forEach(element => element.remove());
-            activeCell!.editor!.focus();
+            notebookTracker.activeCell!.editor!.focus();
             return;
           }
 
-          let oldCode = activeCell.model.sharedModel.source;
-
           const parentContainer = document.createElement('div');
           parentContainer.classList.add('pretzelParentContainerAI');
-          activeCell.node.appendChild(parentContainer);
+          notebookTracker.activeCell.node.appendChild(parentContainer);
 
           const aiAssistantComponentRoot = createRoot(parentContainer);
 
@@ -380,17 +370,15 @@ const extension: JupyterFrontEndPlugin<void> = {
               azureBaseUrl={azureBaseUrl}
               azureApiKey={azureApiKey}
               deploymentId={azureDeploymentName}
-              activeCell={activeCell}
               commands={commands}
-              isErrorFixPrompt={false}
-              oldCode={oldCode}
+              traceback={''}
               placeholderEnabled={placeholderEnabled}
               placeholderDisabled={placeholderDisabled}
               promptHistoryStack={promptHistoryStack}
               isAIEnabled={isAIEnabled}
               handleRemove={handleRemove}
               notebookTracker={notebookTracker}
-              embeddings={embeddings}
+              app={app}
               aiClient={aiClient}
               codeMatchThreshold={codeMatchThreshold}
               numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
