@@ -19,7 +19,7 @@ import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { getSelectedCode, getTopSimilarities } from './utils';
-import { RendermimeMarkdown } from './rendermime-markdown';
+import { RendermimeMarkdown } from './components/rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { AiService } from './prompt';
 

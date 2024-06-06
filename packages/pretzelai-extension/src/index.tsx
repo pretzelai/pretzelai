@@ -127,6 +127,12 @@ const extension: JupyterFrontEndPlugin<void> = {
         updateFunc?.();
         loadAIClient();
         showSplashScreen(posthogCookieConsent);
+        const existingSidePanel = Array.from(app.shell.widgets('right')).find(
+          widget => widget.id === 'pretzelai-chat-panel'
+        );
+        if (existingSidePanel) {
+          existingSidePanel.close();
+        }
         const sidePanel = createChat({
           aiService,
           openAiApiKey,
@@ -141,6 +147,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           aiClient,
           codeMatchThreshold
         });
+        sidePanel.id = 'pretzelai-chat-panel';
         app.shell.add(sidePanel, 'right', { rank: 1000 });
       } catch (reason) {
         console.error('Failed to load settings for Pretzel', reason);
