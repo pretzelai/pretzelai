@@ -282,7 +282,7 @@ export async function getEmbeddings(
         headers: { 'Content-Type': 'application/json' }
       };
 
-      // then create embeddings file which will be used in the next call of this function
+      // create embeddings file which will be used in the next call of this function
       try {
         const response = await ServerConnection.makeRequest(requestUrl, init, app.serviceManager.serverSettings);
         if (!response.ok) {

@@ -88,7 +88,7 @@ export function Chat({
     if (notebook?.model && !isAiGenerating) {
       const currentNotebookPath = notebook.context.path;
       const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
-      const chatHistoryPath = currentDir + '/' + PRETZEL_FOLDER + '/' + '.chat_history.json';
+      const chatHistoryPath = currentDir + '/' + PRETZEL_FOLDER + '/' + 'chat_history.json';
 
       const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', chatHistoryPath);
       const response = await ServerConnection.makeRequest(
@@ -97,7 +97,7 @@ export function Chat({
         app.serviceManager.serverSettings
       );
       if (response.ok) {
-        // .chat_history.json exists
+        // chat_history.json exists
         const file = await app.serviceManager.contents.get(chatHistoryPath);
 
         const chatHistoryJson = JSON.parse(file.content);
@@ -112,7 +112,7 @@ export function Chat({
     if (notebook?.model && !isAiGenerating) {
       const currentNotebookPath = notebook.context.path;
       const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
-      const chatHistoryPath = currentDir + '/' + PRETZEL_FOLDER + '/' + '.chat_history.json';
+      const chatHistoryPath = currentDir + '/' + PRETZEL_FOLDER + '/' + 'chat_history.json';
 
       const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', chatHistoryPath);
       const response = await ServerConnection.makeRequest(
@@ -121,7 +121,7 @@ export function Chat({
         app.serviceManager.serverSettings
       );
       if (response.ok) {
-        // .chat_history.json exists
+        // chat_history.json exists
         const file = await app.serviceManager.contents.get(chatHistoryPath);
         try {
           const chatHistoryJson = JSON.parse(file.content);

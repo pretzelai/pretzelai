@@ -17,7 +17,7 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { FixedSizeStack } from './utils';
+import { FixedSizeStack, getEmbeddings } from './utils';
 
 import { AiService } from './prompt';
 import posthog from 'posthog-js';
@@ -168,6 +168,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     }
     loadAIClient(); // first time load, later settings will trigger this
+
+    getEmbeddings(notebookTracker, app, aiClient, aiService);
 
     // Listen for future changes in settings
     settingRegistry.pluginChanged.connect(async (sender, plugin) => {

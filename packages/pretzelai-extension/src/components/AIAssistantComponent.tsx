@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
 import { DiffComponent } from './DiffComponent';
-import { FixedSizeStack, generateAIStream, getEmbeddings, getSelectedCode } from '../utils';
+import { FixedSizeStack, generateAIStream, getSelectedCode, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { AiService } from '../prompt';
@@ -56,7 +56,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     setShowInputComponent(false);
     setShowStatusElement(true);
     setStatusElementText('Calculating embeddings...');
-    let embeddings = await getEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiService);
+    const embeddings = await readEmbeddings(props.notebookTracker, props.app);
     let oldCodeForPrompt = props.notebookTracker.activeCell!.model.sharedModel.source;
     try {
       const stream = await generateAIStream({
@@ -92,7 +92,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     const { extractedCode } = getSelectedCode(props.notebookTracker);
 
     let activeCell = props.notebookTracker.activeCell;
-    let embeddings = await getEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiService);
+    let embeddings = await readEmbeddings(props.notebookTracker, props.app);
 
     if (userInput !== '') {
       setShowInputComponent(false);
