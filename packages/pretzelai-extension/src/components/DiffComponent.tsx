@@ -51,11 +51,29 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
     if (editorRef.current) {
       const modifiedModel = editorRef.current!.getModel()!.modified;
       modifiedModel.setValue(newCode);
-      const heightPx = (oldCode.split('\n').length + newCode.split('\n').length) * 19;
+      const heightPx = oldCode.split('\n').length + newCode.split('\n').length * 19;
       diffEditorRef.current!.style.height = heightPx + 'px';
-      editorRef.current.layout();
+      editorRef.current!.layout();
     }
   }, [newCode, oldCode]);
+
+  const renderFinallyFixedEditorHeight = () => {
+    const changes = editorRef.current!.getLineChanges();
+    let totalLines = oldCode.split('\n').length;
+    if (changes) {
+      changes.forEach((c: any) => {
+        if (c.modifiedEndLineNumber >= c.modifiedStartLineNumber) {
+          const modified = c.modifiedEndLineNumber - c.modifiedStartLineNumber + 1;
+          totalLines += modified;
+        }
+      });
+    }
+    const heightPx = totalLines * 19;
+    if (diffEditorRef.current) {
+      diffEditorRef.current.style.height = heightPx + 'px';
+      editorRef.current!.layout();
+    }
+  };
 
   useEffect(() => {
     const accumulate = async () => {
@@ -63,6 +81,8 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
         setNewCode(prevCode => prevCode + (chunk.choices[0]?.delta?.content || ''));
       }
       onStreamingDone();
+      // the editor takes some time to calculate the changes correctly, so we need to wait a bit
+      setTimeout(renderFinallyFixedEditorHeight, 500);
     };
     accumulate();
   }, [stream, onStreamingDone]);

@@ -441,6 +441,7 @@ export const generateAIStream = async ({
   embeddings,
   userInput,
   oldCodeForPrompt,
+  traceback,
   notebookTracker,
   codeMatchThreshold,
   numberOfSimilarCells,
@@ -458,6 +459,7 @@ export const generateAIStream = async ({
   embeddings: Embedding[];
   userInput: string;
   oldCodeForPrompt: string;
+  traceback: string;
   notebookTracker: INotebookTracker;
   codeMatchThreshold: number;
   numberOfSimilarCells: number;
@@ -472,7 +474,7 @@ export const generateAIStream = async ({
 }): Promise<AsyncIterable<any>> => {
   const { extractedCode } = getSelectedCode(notebookTracker);
   const topSimilarities = await getTopSimilarities(
-    userInput,
+    traceback ? oldCodeForPrompt : userInput,
     embeddings,
     numberOfSimilarCells,
     aiClient,
@@ -481,7 +483,7 @@ export const generateAIStream = async ({
     codeMatchThreshold
   );
 
-  const prompt = generatePrompt(userInput, oldCodeForPrompt, topSimilarities, extractedCode, '', isInject);
+  const prompt = generatePrompt(userInput, oldCodeForPrompt, topSimilarities, extractedCode, traceback, isInject);
 
   if (posthogPromptTelemetry) {
     posthog.capture('prompt', { property: userInput });
