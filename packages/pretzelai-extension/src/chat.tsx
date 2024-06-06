@@ -216,8 +216,6 @@ export function Chat({
       codeMatchThreshold
     );
 
-    // eslint-disable-next-line no-debugger
-    debugger;
     const controller = new AbortController();
     let signal = controller.signal;
     setStopGeneration(() => () => controller.abort());
