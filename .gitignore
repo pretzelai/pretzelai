@@ -150,6 +150,5 @@ webpack-bundle-analyzer.html
 examples/**/test-results/
 
 Untitled*
-.embeddings
-.chat_history.json
+.pretzel
 testdir

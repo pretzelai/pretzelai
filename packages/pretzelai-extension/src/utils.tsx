@@ -165,6 +165,8 @@ export async function processTaggedVariables(userInput: string, notebookTracker:
   return modifiedUserInput;
 }
 
+export const PRETZEL_FOLDER = '.pretzel';
+
 export async function createAndSaveEmbeddings(
   existingEmbeddingsJSON: Embedding[],
   cells: any[],
@@ -242,9 +244,8 @@ export async function getEmbeddings(
     const currentNotebookPath = notebook.context.path;
     const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
     const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
-    const embeddingsFolderName = '.embeddings';
-    const embeddingsPath = currentDir + '/' + embeddingsFolderName + '/' + notebookName + '_embeddings.json';
-    const newDirPath = currentDir + '/' + embeddingsFolderName;
+    const embeddingsPath = currentDir + '/' + PRETZEL_FOLDER + '/' + notebookName + '_embeddings.json';
+    const newDirPath = currentDir + '/' + PRETZEL_FOLDER;
 
     // check if file exists via ServerConnection
     const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', embeddingsPath);
@@ -303,6 +304,16 @@ export async function getEmbeddings(
   }
   return embeddings;
 }
+
+export const readEmbeddings = async (notebookTracker: INotebookTracker, app: JupyterFrontEnd): Promise<Embedding[]> => {
+  const notebook = notebookTracker.currentWidget;
+  const currentNotebookPath = notebook!.context.path;
+  const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
+  const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+  const embeddingsPath = currentDir + '/' + PRETZEL_FOLDER + '/' + notebookName + '_embeddings.json';
+  const file = await app.serviceManager.contents.get(embeddingsPath);
+  return JSON.parse(file.content);
+};
 
 export const getTopSimilarities = async (
   userInput: string,
