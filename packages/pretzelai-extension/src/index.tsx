@@ -145,7 +145,8 @@ const extension: JupyterFrontEndPlugin<void> = {
           app,
           rmRegistry,
           aiClient,
-          codeMatchThreshold
+          codeMatchThreshold,
+          posthogPromptTelemetry
         });
         sidePanel.id = 'pretzelai-chat-panel';
         sidePanel.node.classList.add('chat-sidepanel');

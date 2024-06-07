@@ -20,11 +20,11 @@ import { getSelectedCode, getTopSimilarities, PRETZEL_FOLDER, readEmbeddings } f
 import { RendermimeMarkdown } from './components/rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { AiService } from './prompt';
-
 import { OpenAI } from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
+import posthog from 'posthog-js';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -52,6 +52,7 @@ interface IChatProps {
   rmRegistry: IRenderMimeRegistry;
   aiClient: OpenAI | OpenAIClient | null;
   codeMatchThreshold: number;
+  posthogPromptTelemetry: boolean;
 }
 
 export function Chat({
@@ -66,7 +67,8 @@ export function Chat({
   app,
   rmRegistry,
   aiClient,
-  codeMatchThreshold
+  codeMatchThreshold,
+  posthogPromptTelemetry
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
@@ -182,6 +184,7 @@ export function Chat({
       return;
     }
     setIsAiGenerating(true);
+    posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? input : 'no_telemetry' });
     const inputMarkdown = input.replace(/\n/g, '  \n');
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
     const embeddings = await readEmbeddings(notebookTracker, app);
