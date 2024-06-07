@@ -12,7 +12,7 @@ import { IIOPubMessage } from '@jupyterlab/services/src/kernel/messages';
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { AiService, Embedding, generatePrompt, openaiEmbeddings, systemPrompt } from './prompt';
+import { AiService, Embedding, generatePrompt, openaiEmbeddings } from './prompt';
 import OpenAI from 'openai';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
@@ -110,13 +110,15 @@ export async function getVariableValue(
 }
 
 export async function processTaggedVariables(userInput: string, notebookTracker: INotebookTracker): Promise<string> {
-  const variablePattern = /@(\w+)/g;
+  const variablePattern = / @([a-zA-Z_][a-zA-Z0-9_]*(\[[^\]]+\]|(\.[a-zA-Z_][a-zA-Z0-9_]*)?)*)[\s,\-]?/g;
   let match;
-  let modifiedUserInput = 'USER INSTRUCTION START\n' + userInput + '\nUSER INSTRUCTION END\n\n';
+  let modifiedUserInput = '*USER INSTRUCTION START*\n' + userInput + '\n*USER INSTRUCTION END*\n\n';
 
   // add context of imports and existing variables in the notebook
-  const imports = notebookTracker.currentWidget!.model!.sharedModel.cells.filter(cell =>
-    cell.source.split('\n').some(line => line.includes('import'))
+  const imports = notebookTracker.currentWidget!.model!.sharedModel.cells.filter(
+    cell =>
+      cell.id !== notebookTracker.currentWidget!.content.activeCell!.model.id &&
+      cell.source.split('\n').some(line => line.includes('import'))
   );
   const importsCode = imports
     .map(cell =>
@@ -127,15 +129,13 @@ export async function processTaggedVariables(userInput: string, notebookTracker:
     )
     .join('\n');
 
-  modifiedUserInput += `ADDITIONAL CONTEXT\n\nThe following imports are already present in the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
-
   // call getVariableValue to get the list of globals() from python
-  const getVarsCode = `[var for var in globals() if not var.startswith('_') and not callable(globals()[var]) and var not in ['In', 'Out']]`;
-  const listVars = await getVariableValue(getVarsCode, notebookTracker);
-
-  modifiedUserInput += `The following variables exist in memory of the notebook kernel:\n\`\`\`\n${listVars}\n\`\`\`\n`;
+  // TODO: I suspect that this ends up removing variables on edit (in code). Look at it later, removing for now
+  // const getVarsCode = `[var for var in globals() if not var.startswith('_') and not callable(globals()[var]) and var not in ['In', 'Out']]`;
+  // const globalVars = await getVariableValue(getVarsCode, notebookTracker);
 
   let variablesProcessed: string[] = [];
+  let varValues = '';
   while ((match = variablePattern.exec(userInput)) !== null) {
     const variableName = match[1];
     if (variablesProcessed.includes(variableName)) {
@@ -150,10 +150,10 @@ export async function processTaggedVariables(userInput: string, notebookTracker:
       // if it is, get columns and add to modifiedUserInput
       if (variableType?.includes('DataFrame')) {
         const variableColumns = await getVariableValue(`${variableName}.columns`, notebookTracker);
-        modifiedUserInput += `\n\`${variableName}\` is a dataframe with the following columns: \`${variableColumns}\`\n`;
+        varValues += `\n\`${variableName}\` is a dataframe with the following columns: \`${variableColumns}\`\n`;
       } else if (variableType) {
         const variableValue = await getVariableValue(variableName, notebookTracker);
-        modifiedUserInput += `\nPrinting \`${variableName}\` in Python returns \`${variableValue}\`\n`;
+        varValues += `\nPrinting \`${variableName}\` in Python returns \`${variableValue}\`\n`;
       }
       // replace the @variable in userInput with `variable`
       modifiedUserInput = modifiedUserInput.replace(`@${variableName}`, `\`${variableName}\``);
@@ -161,7 +161,21 @@ export async function processTaggedVariables(userInput: string, notebookTracker:
       console.error(`Error accessing variable ${variableName}:`, error);
     }
   }
-  modifiedUserInput += `\nEND ADDITIONAL CONTEXT\n`;
+
+  if (importsCode || varValues) {
+    modifiedUserInput += `*ADDITIONAL CONTEXT*\n\n`;
+    if (importsCode) {
+      modifiedUserInput += `The following imports are already present in *OTHER CELLS* the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
+    }
+    // if (globalVars) {
+    //   modifiedUserInput += `The following variables exist in memory of the notebook kernel:\n\`\`\`\n${globalVars}\n\`\`\`\n`;
+    // }
+    if (varValues) {
+      modifiedUserInput += `\n${varValues}\n`;
+    }
+    modifiedUserInput += `\n*END ADDITIONAL CONTEXT*\n`;
+  }
+
   return modifiedUserInput;
 }
 
@@ -370,10 +384,6 @@ const setupStream = async ({
       model: openAiModel,
       messages: [
         {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
           role: 'user',
           content: prompt
         }
@@ -389,10 +399,6 @@ const setupStream = async ({
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
           {
             role: 'user',
             content: prompt

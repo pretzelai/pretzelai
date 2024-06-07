@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
 import { DiffComponent } from './DiffComponent';
-import { FixedSizeStack, generateAIStream, getSelectedCode, readEmbeddings } from '../utils';
+import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { AiService } from '../prompt';
@@ -58,6 +58,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     setStatusElementText('Calculating embeddings...');
     const embeddings = await readEmbeddings(props.notebookTracker, props.app);
     let oldCodeForPrompt = props.notebookTracker.activeCell!.model.sharedModel.source;
+
     try {
       const stream = await generateAIStream({
         aiService: props.aiService,
@@ -113,6 +114,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         oldCodeForPrompt = activeCell!.model.sharedModel.source;
         activeCell!.model.sharedModel.source = oldCode;
       }
+      userInput = await processTaggedVariables(userInput, props.notebookTracker);
       try {
         const stream = await generateAIStream({
           aiService: props.aiService,

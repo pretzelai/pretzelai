@@ -39,69 +39,102 @@ export function generatePrompt(
   if (isInject) {
     return generatePromptInject(userInput, oldCode, topSimilarities);
   }
-  return generatePromptNewAndFullEdit(userInput, oldCode, topSimilarities);
+  if (oldCode) {
+    return generatePromptFullEdit(userInput, oldCode, topSimilarities);
+  }
+  return generatePromptNew(userInput, oldCode, topSimilarities);
 }
 
-function generatePromptInject(userInput: string, oldCode: string, topSimilarities: string[]): string {
-  return `The user is in a Jupyter notebook cell that has the following code:
-EXISTING CODE START
+function generatePromptFullEdit(userInput: string, oldCode: string, topSimilarities: string[]): string {
+  const initPrompt =
+    'You are a Data Science expert and an expert python programmer. ' +
+    'You are helping users edit existing python code in a Jupyter notebook cell. ' +
+    'Given existing code and user instructions, you modify the existing code with clean, production quality, working python code. ';
+
+  return `${initPrompt}
+
+The user is in a Jupyter notebook cell that has the following code:
+*EXISTING CODE START*
 \`\`\`
 ${oldCode}
 \`\`\`
-EXISTING CODE END
+*EXISTING CODE END*
 
-
-The user wants to add some code in the middle of the existing code according to the following instructions:
+The user wants to modify the existing code according to the following instructions:
 ${userInput}
 
 ${
   topSimilarities.length > 0
-    ? `
-OTHER CODE CELLS START
-The following code cells also exist in the notebook in OTHER CELLS and may be relevant:\n\`\`\`\n${topSimilarities.join(
-        '\n```\n\n```\n'
-      )}\n\`\`\`\n
-OTHER CODE CELLS END`
+    ? `The following code cells ALREADY EXISTS in *OTHER* notebook cells and *MAY* be relevant:
+\`\`\`
+${topSimilarities.join('\n```\n\n```\n')}
+\`\`\`
+You *MAY* reference this code from *OTHER* notebook cells to call existing functions or use existing variables.
+`
     : ''
 }
 
-INSTRUCTION: Add the new code according to the user's instructions. IMPORTANT!! The new code MUST BE WRITTEN BY REPLACING THE COMMENT "# INJECT NEW CODE HERE" in the EXISTING CODE. WRITE MINIMAL CODE - for eg, CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES. Return FULL CODE CHUNK by replacing the comment with the new code.`;
+Modify the EXISTING CODE according to USER INSTRUCTION. Take a deep breath, think step-by-step and respond with the working python code, no explanations.
+
+**VERY IMPORTANT**: This code will be run directly in a Jupyter cell. So: Return ONLY RUNNABLE AND VALID python code WITHOUT ANY BACKTICKS.`;
 }
 
-function generatePromptNewAndFullEdit(userInput: string, oldCode: string, topSimilarities: string[]): string {
-  return `The user is in a Jupyter notebook cell wants to write code to do the following:
+function generatePromptInject(userInput: string, oldCode: string, topSimilarities: string[]): string {
+  const initPrompt =
+    'You are a Data Science expert and an expert python programmer. ' +
+    'You are helping users write python code in a Jupyter notebook cell. ' +
+    'Given existing code and user instructions, you write clean, production quality, working python code in the middle of the existing code. ';
+
+  return `${initPrompt}
+The user is in a Jupyter notebook cell that has the following code:
+*EXISTING CODE START*
+\`\`\`
+${oldCode}
+\`\`\`
+*EXISTING CODE END*
+
+The user wants to add some code IN THE MIDDLE OF THE EXISTING CODE according to the following instructions:
 ${userInput}
 
 ${
-  oldCode
-    ? `The notebook cell already has the following code in it:
+  topSimilarities.length > 0
+    ? `The following code cells ALREADY EXISTS in *OTHER* notebook cells and *MAY* be relevant:
 \`\`\`
-${oldCode}
+${topSimilarities.join('\n```\n\n```\n')}
+\`\`\`
+You *MAY* reference this code from *OTHER* notebook cells to call existing functions or use existing variables.
+`
+    : ''
+}
+
+*REPLACE* the comment "# INJECT NEW CODE HERE" in the EXISTING CODE (*THIS IS VERY IMPORTANT!!!*) with the new code according to USER INSTRUCTION. Take a deep breath, think step-by-step and respond with the working python code, no explanation.
+
+**VERY IMPORTANT**: This code will be run directly in a Jupyter cell. So: Return ONLY RUNNABLE AND VALID python code WITHOUT ANY BACKTICKS.`;
+}
+
+function generatePromptNew(userInput: string, oldCode: string, topSimilarities: string[]): string {
+  const initPrompt =
+    'You are a Data Science expert and an expert Python programmer. ' +
+    'You help users write python code in Jupyter notebook cells. ' +
+    'You respond with the clean, production quality, working python code.';
+
+  return `${initPrompt}
+The user has provided the following instruction:
+${userInput}
+
+${
+  topSimilarities.length > 0
+    ? `The following code cells ALREADY EXISTS in *OTHER* notebook cells and *MAY* be relevant:
+\`\`\`
+${topSimilarities.join('\n```\n\n```\n')}
 \`\`\`
 `
     : ''
 }
 
-${
-  topSimilarities.length > 0
-    ? `
-OTHER CODE CELLS START
-The following code cells also exist in the notebook and may be relevant:\n\`\`\`\n${topSimilarities.join(
-        '\n```\n\n```\n'
-      )}\n\`\`\`\n
-OTHER CODE CELLS END`
-    : ''
-}
+Write code according to the USER INSTRUCTION. CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES when possible. Take a deep breath, think step-by-step and respond with the working python code, no explanation or comments.
 
-INSTRUCTION: ${
-    oldCode ? 'Modify' : 'Write'
-  } code according to the user's instructions. Pay close attention to user instructions and WRITE MINIMAL CODE - for eg, CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES. DO NOT REMOVE COMMENTS OR EXISTING IMPORT STATEMENTS. Return ONLY executable python code, no backticks.
-${
-  topSimilarities.length > 0
-    ? `The code in OTHER CODE CELLS already exists in the notebook - DO NOT REWRITE this code since it's already there. **ONLY REFER TO THIS CODE IF IT's RELEVANT TO USER INSTRUCTION**`
-    : ''
-}
-`;
+**VERY IMPORTANT**: This code will be run directly in a Jupyter cell. So: Return ONLY RUNNABLE AND VALID python code WITHOUT ANY BACKTICKS.`;
 }
 
 function generatePromptEditPartial(
@@ -110,60 +143,80 @@ function generatePromptEditPartial(
   oldCode: string,
   topSimilarities: string[]
 ): string {
-  return `The user has selected the following code chunk in the CURRENT Jupyter notebook cell (pay attention to the indents and newlines):
-SELECTED CODE START
+  const initPrompt =
+    'You are a Data Science expert and an expert python programmer. ' +
+    'You are helping users edit existing python code in a Jupyter notebook cell. ' +
+    'Given existing code and user instructions, you modify the existing code with clean, production quality, working python code. ';
+
+  return `${initPrompt}
+The user has selected the following code chunk in the CURRENT Jupyter notebook cell:
+*SELECTED CODE START*
 \`\`\`
 ${selectedCode}
 \`\`\`
-SELECTED CODE END
+*SELECTED CODE END*
 
-This code is part of the following larger code chunk
-FULL CODE CHUNK START
+This SELECTED CODE is part of the following larger code chunk:
+*FULL CODE CHUNK START*
 \`\`\`
 ${oldCode}
 \`\`\`
-FULL CODE CHUNK END
+*FULL CODE CHUNK END*
 
 The user wants to MODIFY the SELECTED CODE ONLY (IMPORTANT) with the following instruction:
 ${userInput}
 
 ${
   topSimilarities.length > 0
-    ? `The following code chunks were also found in the notebook and may be relevant:\n\`\`\`\n${topSimilarities.join(
-        '\n```\n\n```\n'
-      )}\n\`\`\`\n`
+    ? `The following code cells ALREADY EXISTS in *OTHER* notebook cells and *MAY* be relevant:
+\`\`\`
+${topSimilarities.join('\n```\n\n```\n')}
+\`\`\`
+`
     : ''
 }
 
-INSTRUCTION: Modify the SELECTED CODE (AND ONLY THE SELECTED CODE) according to the user's instructions. WRITE MINIMAL CODE - for eg, CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES. Return FULL CODE CHUNK but with the selected code modified.`;
+Modify the SELECTED CODE (*THIS IS VERY IMPORTANT!!!*) according to the user's instructions. Respond with FULL CODE CHUNK but with the SELECTED CODE modified according to USER INSTRUCTION. Take a deep breath, think step-by-step and respond with the working python code, no explanation.
+
+**VERY IMPORTANT**: This code will be run directly in a Jupyter cell. So: Return ONLY RUNNABLE AND VALID python code WITHOUT ANY BACKTICKS.`;
 }
 
 function generatePromptErrorFix(traceback: string, oldCode: string, topSimilarities: string[]): string {
-  return `The user ran the following code in the CURRENT Jupyter notebook cell:
-CURRENT CELL CODE START
+  const initPrompt =
+    'You are a Data Science expert and an expert python programmer. ' +
+    'You are helping users fix errors in Jupyter notebook cells. ' +
+    'Given existing code and the traceback, you responde with code that fixes the error. ' +
+    'Respond with the clean, production quality, working python code.';
+
+  return `${initPrompt}
+
+The user ran the following code in the CURRENT Jupyter notebook cell:
+*CURRENT CELL CODE START*
 \`\`\`
 ${oldCode}
 \`\`\`
-CURRENT CELL CODE END
+*CURRENT CELL CODE END*
 
-Running the code produces the following traceback:
-TRACEBACK START
+Running the code produces an error with the following traceback:
+*TRACEBACK START*
 \`\`\`
 ${traceback}
 \`\`\`
-TRACEBACK END
+*TRACEBACK END*
 
 ${
   topSimilarities.length > 0
-    ? `The following code chunks were also found in the notebook and may be relevant:\n\`\`\`\n${topSimilarities.join(
-        '\n```\n\n```\n'
-      )}\n\`\`\`\n`
+    ? `The following code cells ALREADY EXISTS in *OTHER* notebook cells and *MAY* be relevant:
+\`\`\`
+${topSimilarities.join('\n```\n\n```\n')}
+\`\`\`
+`
     : ''
 }
 
-INSTRUCTION:
-- Fix the error and return ONLY correct, executable python code, NO BACKTICKS. DO NOT ADD ANY COMMENTS TO EXPLAIN YOUR FIX. DO NOT REMOVE EXISTING IMPORTS
-- ONLY IF the error is in a DIFFERENT PART of the Jupyter Notebook: add a comment at the top explaining this and add AS LITTLE CODE AS POSSIBLE in the CURRENT cell to fix the error.`;
+Take a deep breath, think step-by-step and respond with MODIFIED version of CURRENT CELL CODE to fix the error. Add a PYTHON COMMENT explaining what you did. IF NEEDED, use of Jupyter bang and magic.
+
+**VERY IMPORTANT**: This code will be run directly in a Jupyter cell. So: Return ONLY RUNNABLE AND VALID python code WITHOUT ANY BACKTICKS.`;
 }
 
 export const openaiEmbeddings = async (
@@ -194,10 +247,3 @@ export const openaiEmbeddings = async (
     throw new Error('Invalid AI service');
   }
 };
-
-export const systemPrompt =
-  'You are a helpful assistant that helps users write python code in Jupyter notebook cells. ' +
-  'You are helping the user write new code, edit old code in Jupyter and fix errors in Jupyter notebooks. ' +
-  'You write code exactly as if an expert python programmer would write. KEEP existing comments and documentation.' +
-  'You respond with the clean, amazing quality, minimal working python code only, NO BACKTICKS. \n' +
-  'Take a deep breath and think step-by-step. ';

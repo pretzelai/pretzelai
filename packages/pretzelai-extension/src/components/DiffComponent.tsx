@@ -58,6 +58,26 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
   }, [newCode, oldCode]);
 
   const renderFinallyFixedEditorHeight = () => {
+    // handle the occasional backticks
+    const modifiedModel = editorRef.current!.getModel()!.modified;
+    let finalNewCode = modifiedModel.getValue();
+    if (finalNewCode.startsWith('```') || finalNewCode.endsWith('```')) {
+      if (finalNewCode.startsWith('```python')) {
+        // remove the starting ```python
+        finalNewCode = finalNewCode.slice(9).trim();
+      }
+      if (finalNewCode.startsWith('```')) {
+        // remove the starting ```
+        finalNewCode = finalNewCode.slice(3).trim();
+      }
+      if (finalNewCode.endsWith('```')) {
+        // remove the ending ```
+        finalNewCode = finalNewCode.slice(0, -3).trim();
+      }
+    }
+    // set fixed code in editor via modified model
+    modifiedModel.setValue(finalNewCode);
+
     const changes = editorRef.current!.getLineChanges();
     let totalLines = oldCode.split('\n').length;
     if (changes) {
