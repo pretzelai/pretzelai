@@ -267,7 +267,9 @@ export function Chat({
   };
 
   const restoreChat = (direction: number) => {
-    if (chatIndex + direction >= 0 && chatIndex + direction < chatHistory.length) {
+    if (direction === 1 && chatIndex === chatHistory.length - 1) {
+      clearChat();
+    } else if (chatIndex + direction >= 0 && chatIndex + direction < chatHistory.length) {
       setChatIndex(chatIndex + direction);
       setMessages(chatHistory[chatIndex + direction]);
     }
@@ -357,17 +359,23 @@ export function Chat({
                 }
               }}
             />
-            <IconButton onClick={onSend} sx={{ color: 'var(--jp-ui-font-color1)' }}>
-              <SendIcon />
-            </IconButton>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginTop: '8px' }}>
-            <Button onClick={clearChat} sx={{ marginRight: '8px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <button className="pretzelInputSubmitButton" onClick={onSend} title="Submit ↵">
+              Submit <span style={{ fontSize: '0.8em' }}>↵</span>
+            </button>
+            <button className="pretzelInputSubmitButton" onClick={clearChat} title="Clear">
               Clear
-            </Button>
-            <Button onClick={() => restoreChat(-1)}>{'<'}</Button>
-            <Typography>History</Typography>
-            <Button onClick={() => restoreChat(1)}>{'>'}</Button>
+            </button>
+            <button className="pretzelInputSubmitButton" onClick={() => restoreChat(-1)} title="Clear">
+              {'<'}
+            </button>
+            <Typography sx={{ marginRight: 'var(--jp-ui-margin, 10px)', marginTop: 'var(--jp-ui-margin, 10px)' }}>
+              History
+            </Typography>
+            <button className="pretzelInputSubmitButton" onClick={() => restoreChat(1)} title="Clear">
+              {'>'}
+            </button>
           </Box>
         </Box>
       )}
