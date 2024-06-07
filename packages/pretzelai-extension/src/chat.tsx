@@ -349,6 +349,7 @@ export function Chat({
               onKeyDown={handleKeyDown}
               fullWidth
               placeholder="Type message to ask AI..."
+              autoComplete="off"
               sx={{
                 color: 'var(--jp-ui-font-color1)',
                 '& .MuiInputBase-input': {
