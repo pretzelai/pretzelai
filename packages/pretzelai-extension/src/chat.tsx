@@ -11,9 +11,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import pretzelSvg from '../style/icons/pretzel.svg';
-import { Box, Button, IconButton, TextField, Typography } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
-import StopIcon from '@mui/icons-material/Stop';
+import { Box, TextField, Typography } from '@mui/material';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
@@ -22,11 +20,11 @@ import { getSelectedCode, getTopSimilarities, PRETZEL_FOLDER, readEmbeddings } f
 import { RendermimeMarkdown } from './components/rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { AiService } from './prompt';
-
 import { OpenAI } from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
+import posthog from 'posthog-js';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -54,6 +52,7 @@ interface IChatProps {
   rmRegistry: IRenderMimeRegistry;
   aiClient: OpenAI | OpenAIClient | null;
   codeMatchThreshold: number;
+  posthogPromptTelemetry: boolean;
 }
 
 export function Chat({
@@ -68,7 +67,8 @@ export function Chat({
   app,
   rmRegistry,
   aiClient,
-  codeMatchThreshold
+  codeMatchThreshold,
+  posthogPromptTelemetry
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
@@ -180,7 +180,12 @@ export function Chat({
   }, [messages]);
 
   const onSend = async () => {
+    if (input.trim() === '' || isAiGenerating) {
+      return;
+    }
     setIsAiGenerating(true);
+    posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? input : 'no_telemetry' });
+    const inputMarkdown = input.replace(/\n/g, '  \n');
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
     const embeddings = await readEmbeddings(notebookTracker, app);
     const selectedCode = getSelectedCode(notebookTracker).extractedCode;
@@ -199,7 +204,7 @@ export function Chat({
 
     const newMessage = {
       id: String(messages.length + 1),
-      content: input,
+      content: inputMarkdown,
       role: 'user'
     };
 
@@ -239,11 +244,20 @@ export function Chat({
     });
   };
 
+  const cancelGeneration = () => {
+    setIsAiGenerating(false);
+    stopGeneration();
+    setReferenceSource('');
+  };
+
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
       onSend();
       event.stopPropagation();
       event.preventDefault();
+    }
+    if (event.key === 'Escape') {
+      cancelGeneration();
     }
   }
 
@@ -267,7 +281,9 @@ export function Chat({
   };
 
   const restoreChat = (direction: number) => {
-    if (chatIndex + direction >= 0 && chatIndex + direction < chatHistory.length) {
+    if (direction === 1 && chatIndex === chatHistory.length - 1) {
+      clearChat();
+    } else if (chatIndex + direction >= 0 && chatIndex + direction < chatHistory.length) {
       setChatIndex(chatIndex + direction);
       setMessages(chatHistory[chatIndex + direction]);
     }
@@ -317,60 +333,58 @@ export function Chat({
         ))}
         <div ref={messagesEndRef} />
       </Box>
-      {isAiGenerating ? (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 1 }}>
-          <Typography>Generating AI response...</Typography>
-          <IconButton
-            onClick={() => {
-              setIsAiGenerating(false);
-              stopGeneration();
-              setReferenceSource('');
-            }}
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <TextField
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            fullWidth
+            multiline
+            rows={4}
+            placeholder="Type message to ask AI..."
+            autoComplete="off"
             sx={{
-              color: 'red',
-              backgroundColor: '#ffcccc',
-              borderRadius: '10%',
-              fontSize: '1rem',
-              alignSelf: 'center'
+              color: 'var(--jp-ui-font-color1)',
+              '& .MuiInputBase-input': {
+                color: 'var(--jp-ui-font-color1)'
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'var(--jp-ui-font-color1)'
+              }
             }}
-          >
-            <StopIcon />
-            Cancel
-          </IconButton>
+          />
         </Box>
-      ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <TextField
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              fullWidth
-              placeholder="Type message to ask AI..."
-              sx={{
-                color: 'var(--jp-ui-font-color1)',
-                '& .MuiInputBase-input': {
-                  color: 'var(--jp-ui-font-color1)'
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'var(--jp-ui-font-color1)'
-                }
-              }}
-            />
-            <IconButton onClick={onSend} sx={{ color: 'var(--jp-ui-font-color1)' }}>
-              <SendIcon />
-            </IconButton>
+        {isAiGenerating ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <button className="remove-button" onClick={cancelGeneration} title="Cancel">
+              Cancel <span style={{ fontSize: '0.8em' }}>Esc</span>
+            </button>
+            <Typography sx={{ marginRight: 'var(--jp-ui-margin, 10px)', marginTop: 'var(--jp-ui-margin, 10px)' }}>
+              Generating AI response...
+            </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginTop: '8px' }}>
-            <Button onClick={clearChat} sx={{ marginRight: '8px' }}>
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <button className="pretzelInputSubmitButton" onClick={onSend} title="Submit ↵">
+              Submit <span style={{ fontSize: '0.8em' }}>↵</span>
+            </button>
+            <button className="pretzelInputSubmitButton" onClick={clearChat} title="Clear">
               Clear
-            </Button>
-            <Button onClick={() => restoreChat(-1)}>{'<'}</Button>
-            <Typography>History</Typography>
-            <Button onClick={() => restoreChat(1)}>{'>'}</Button>
+            </button>
+            <button className="pretzelInputSubmitButton" onClick={() => restoreChat(-1)} title="Clear">
+              {'<'}
+            </button>
+            <Typography sx={{ marginRight: 'var(--jp-ui-margin, 10px)', marginTop: 'var(--jp-ui-margin, 10px)' }}>
+              History
+            </Typography>
+            <button className="pretzelInputSubmitButton" onClick={() => restoreChat(1)} title="Clear">
+              {'>'}
+            </button>
           </Box>
-        </Box>
-      )}
+        )}
+      </Box>
     </Box>
   );
 }
