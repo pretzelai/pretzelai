@@ -148,6 +148,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           codeMatchThreshold
         });
         sidePanel.id = 'pretzelai-chat-panel';
+        sidePanel.node.classList.add('chat-sidepanel');
         app.shell.add(sidePanel, 'right', { rank: 1000 });
       } catch (reason) {
         console.error('Failed to load settings for Pretzel', reason);
