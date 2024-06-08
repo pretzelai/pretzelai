@@ -18,7 +18,6 @@ import { FixedSizeStack } from '../utils';
 
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
-import '../../style/base.css';
 
 interface ISubmitButtonProps {
   handleClick: () => void;

@@ -134,6 +134,7 @@ const UNUSED: Dict<string[]> = {
     'jest-environment-jsdom',
     'jest-junit'
   ],
+  '@jupyterlab/pretzelai-extension': ['@lumino/widgets'],
   '@jupyterlab/testutils': [
     '@jupyterlab/application',
     '@jupyterlab/apputils',
