@@ -132,7 +132,7 @@ ${topSimilarities.join('\n```\n\n```\n')}
     : ''
 }
 
-Write code according to the USER INSTRUCTION. CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES when possible. Take a deep breath, think step-by-step and respond with the working python code, no explanation or comments.
+Write code according to the USER INSTRUCTION. CALL EXISTING FUNCTIONS AND REUSE EXISTING VARIABLES when possible. Take a deep breath, think step-by-step and respond with the working python code. DO NOT ADD explanation or comments.
 
 **VERY IMPORTANT**: This code will be run directly in a Jupyter cell. So: Return ONLY RUNNABLE AND VALID python code WITHOUT ANY BACKTICKS.`;
 }

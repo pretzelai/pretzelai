@@ -15,11 +15,13 @@ const AcceptAndRunButton: React.FC<{
   const [showTooltip, setShowTooltip] = useState(false);
   const keyCombination = 'Shift + Enter';
   const shortcut = '⇧↵';
+  const isMac = /Mac/i.test(navigator.userAgent);
+  const runOnlyKeyCombination = isMac ? 'Cmd + Enter' : 'Ctrl + Enter';
 
   const handleClick = () => {
     const modifiedCode = diffEditor!.getModel()!.modified.getValue();
     activeCell.model.sharedModel.source = modifiedCode;
-    commands.execute('notebook:run-cell');
+    commands.execute('notebook:run-cell-and-select-next');
     posthog.capture('Accept and Run', {
       event_type: 'click',
       method: 'accept_and_run'
@@ -40,7 +42,56 @@ const AcceptAndRunButton: React.FC<{
       </button>
       {showTooltip && (
         <div className="tooltip">
-          Accept generated code into the cell <strong>and run it</strong>
+          Run code in the current cell and insert a new cell below.
+          <br />
+          Shortcut: <strong>{keyCombination}</strong>
+          <br />
+          Run code in the current cell only.
+          <br />
+          Shortcut: <strong>{runOnlyKeyCombination}</strong>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// this button stays hidden and handles the Cmd+Enter shortcut
+const AcceptRunCodeSameCellButton: React.FC<{
+  diffEditor: monaco.editor.IStandaloneDiffEditor;
+  activeCell: Cell<ICellModel>;
+  commands: CommandRegistry;
+  handleRemove: () => void;
+}> = ({ diffEditor, activeCell, commands, handleRemove }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const isMac = /Mac/i.test(navigator.userAgent);
+  const keyCombination = isMac ? 'Cmd + Enter' : 'Ctrl + Enter';
+  const shortcut = isMac ? '⌘↵' : '^↵';
+
+  const handleClick = () => {
+    const modifiedCode = diffEditor!.getModel()!.modified.getValue();
+    activeCell.model.sharedModel.source = modifiedCode;
+    commands.execute('notebook:run-cell');
+    posthog.capture('Accept and Run Same Cell', {
+      event_type: 'click',
+      method: 'accept_and_run_same_cell'
+    });
+    handleRemove();
+  };
+
+  return (
+    <div className="accept-run-code-same-cell-button-container" style={{ display: 'none' }}>
+      <button
+        onClick={handleClick}
+        className="accept-run-code-same-cell-button"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        title={`Accept and Run Same Cell ${shortcut}`}
+      >
+        Run Cell <span style={{ fontSize: '0.8em' }}>{shortcut}</span>
+      </button>
+      {showTooltip && (
+        <div className="tooltip">
+          Run code in the current cell only
           <br />
           Shortcut: <strong>{keyCombination}</strong>
         </div>
@@ -204,14 +255,20 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
       tabIndex={0}
       ref={containerRef}
       onKeyDown={event => {
-        if (event.key === 'Enter' && !event.shiftKey) {
+        if (event.key === 'Enter') {
           event.preventDefault();
-          const acceptButton = document.querySelector('.accept-button') as HTMLButtonElement;
-          acceptButton.click();
-        } else if (event.key === 'Enter' && event.shiftKey) {
-          event.preventDefault();
-          const acceptAndRunButton = document.querySelector('.accept-and-run-button') as HTMLButtonElement;
-          acceptAndRunButton.click();
+          if (!event.shiftKey && !(event.metaKey || event.ctrlKey)) {
+            const acceptButton = document.querySelector('.accept-button') as HTMLButtonElement;
+            acceptButton.click();
+          } else if (event.shiftKey) {
+            const acceptAndRunButton = document.querySelector('.accept-and-run-button') as HTMLButtonElement;
+            acceptAndRunButton.click();
+          } else if (event.metaKey || event.ctrlKey) {
+            const acceptRunCodeSameCellButton = document.querySelector(
+              '.accept-run-code-same-cell-button'
+            ) as HTMLButtonElement;
+            acceptRunCodeSameCellButton.click();
+          }
         } else if (event.key === 'Escape' && (event.metaKey || event.ctrlKey)) {
           event.preventDefault();
           const editPromptButton = document.querySelector('.edit-prompt-button') as HTMLButtonElement;
@@ -224,6 +281,12 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
       }}
     >
       <AcceptAndRunButton
+        diffEditor={diffEditor}
+        activeCell={activeCell}
+        commands={commands}
+        handleRemove={handleRemove}
+      />
+      <AcceptRunCodeSameCellButton
         diffEditor={diffEditor}
         activeCell={activeCell}
         commands={commands}

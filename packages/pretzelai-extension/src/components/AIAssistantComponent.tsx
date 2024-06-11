@@ -157,7 +157,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           promptHistoryStack={props.promptHistoryStack}
           setInputView={() => {}}
           initialPrompt={initialPrompt}
-          activeCell={props.notebookTracker.activeCell}
+          activeCell={props.notebookTracker.activeCell!}
           placeholderEnabled={props.placeholderEnabled}
           placeholderDisabled={props.placeholderDisabled}
         />
