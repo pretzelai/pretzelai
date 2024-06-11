@@ -217,6 +217,10 @@ div.pretzelInputField > .cm-editor {
   background-color: var(--jp-layout-color1);
 }
 
+.chat-sidepanel {
+  min-width: 20vw !important;
+}
+
 /* splash screen styles */
 
 #splash-screen {
