@@ -13,19 +13,20 @@ import { drawSelection, EditorView, keymap, placeholder } from '@codemirror/view
 import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
+import { Cell, ICellModel } from '@jupyterlab/cells';
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
 
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
-import '../../style/base.css';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
   isDisabled: boolean;
+  buttonText: string;
 }
 
-const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled }) => {
+const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled, buttonText }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
@@ -38,11 +39,11 @@ const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled })
         onMouseLeave={() => setShowTooltip(false)}
         title="Submit ↵"
       >
-        Submit <span style={{ fontSize: '0.8em' }}>↵</span>
+        {buttonText} <span style={{ fontSize: '0.8em' }}>↵</span>
       </button>
       {showTooltip && (
         <div className="tooltip">
-          Send prompt to AI for completion
+          {buttonText === 'Generate' ? 'Generate code with AI' : 'Edit code with AI'}
           <br />
           Shortcut: <strong>Enter</strong>
         </div>
@@ -129,7 +130,7 @@ interface IInputComponentProps {
   promptHistoryStack: FixedSizeStack<string>;
   setInputView: (view: EditorView) => void;
   initialPrompt: string;
-  activeCell: any;
+  activeCell: Cell<ICellModel>;
 }
 const InputComponent: React.FC<IInputComponentProps> = ({
   isAIEnabled,
@@ -144,6 +145,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 }) => {
   const inputFieldRef = useRef<HTMLDivElement>(null);
   const inputViewRef = useRef<EditorView | null>(null);
+  const [submitButtonText, setSubmitButtonText] = useState('Generate');
   const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0); // how many items to skip
 
   const handlePromptHistory = (promptHistoryIndex: number = 0) => {
@@ -158,6 +160,24 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       inputViewRef.current!.focus();
     }
   };
+
+  useEffect(() => {
+    const updateSubmitButtonText = () => {
+      if (activeCell && activeCell.model.sharedModel.source) {
+        setSubmitButtonText('Edit Code');
+      } else {
+        setSubmitButtonText('Generate');
+      }
+    };
+
+    // Call the function initially
+    updateSubmitButtonText();
+
+    // Listen to the stateChanged signal
+    activeCell?.model.contentChanged.connect(() => {
+      updateSubmitButtonText();
+    });
+  }, [activeCell]);
 
   useEffect(() => {
     if (inputFieldRef.current) {
@@ -263,6 +283,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             handleSubmit(inputViewRef.current?.state.doc.toString() || '');
           }}
           isDisabled={!isAIEnabled}
+          buttonText={submitButtonText}
         />
         <RemoveButton
           handleClick={() => {

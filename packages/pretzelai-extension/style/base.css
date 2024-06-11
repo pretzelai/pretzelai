@@ -200,6 +200,10 @@ div.cm-scroller > div {
   z-index: 1000;
 }
 
+.accept-and-run-button-container .tooltip {
+  top: -70px !important;
+}
+
 .diff-buttons-container {
   margin-left: 70px;
   display: flex;

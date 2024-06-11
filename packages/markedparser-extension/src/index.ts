@@ -19,7 +19,9 @@ import { IMarkdownParser } from '@jupyterlab/rendermime';
 import { IMermaidMarkdown } from '@jupyterlab/mermaid';
 
 import type { marked, Renderer } from 'marked';
+// @ts-expect-error build problems
 import type { MarkedExtension, MarkedOptions } from 'MarkedOptions';
+// @ts-expect-error build problems
 import type { Token, Tokens } from 'Tokens';
 
 // highlight cache key separator
