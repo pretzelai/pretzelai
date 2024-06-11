@@ -114,7 +114,7 @@ You *MAY* reference this code from *OTHER* notebook cells to call existing funct
 
 function generatePromptNew(userInput: string, oldCode: string, topSimilarities: string[]): string {
   const initPrompt =
-    'You are a Data Science expert and an expert Python programmer. ' +
+    'You are a Data Science expert and an expert python programmer. ' +
     'You help users write python code in Jupyter notebook cells. ' +
     'You respond with the clean, production quality, working python code.';
 
