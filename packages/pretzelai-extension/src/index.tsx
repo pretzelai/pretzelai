@@ -11,7 +11,7 @@
  * @packageDocumentation
  * @module pretzelai-extension
  */
-import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
+import { ILabShell, JupyterFrontEnd, JupyterFrontEndPlugin, LabShell } from '@jupyterlab/application';
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
@@ -59,7 +59,10 @@ const extension: JupyterFrontEndPlugin<void> = {
     settingRegistry: ISettingRegistry
   ) => {
     const { commands } = app;
-    const command = 'pretzelai:replace-code';
+    const command = 'pretzelai:ai-code-gen';
+    const isMac = /Mac/i.test(navigator.userAgent);
+    const rightSidebarShortcut = isMac ? 'Ctrl+Cmd+B' : 'Ctrl+Alt+B';
+
     const placeholderDisabled =
       'To use AI features, please set your OpenAI API key or Azure API details in the Pretzel AI Settings.\n' +
       'You can also use the free Pretzel AI server.\n' +
@@ -67,8 +70,9 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     const placeholderEnabled =
       'Ask AI. Use @variable syntax in prompt to reference variables/dataframes.\n' +
-      'Shift + Enter for new line.\n' +
-      'Use ↑ / ↓ to navigate prompt history for current browser session.';
+      `Use ${rightSidebarShortcut} to toggle AI Chat sidebar.\n` +
+      'Use ↑ / ↓ to cycle through prompt history for current browser session.\n' +
+      'Shift + Enter for new line.';
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let openAiModel = '';
@@ -80,7 +84,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let posthogPromptTelemetry: boolean = true;
     let codeMatchThreshold: number;
     let isAIEnabled: boolean = false;
-    let promptHistoryStack: FixedSizeStack<string> = new FixedSizeStack<string>(50);
+    let promptHistoryStack: FixedSizeStack<string> = new FixedSizeStack<string>(50, '', '');
 
     const showSplashScreen = async (consent: string) => {
       if (consent === 'None') {
@@ -127,30 +131,6 @@ const extension: JupyterFrontEndPlugin<void> = {
         updateFunc?.();
         loadAIClient();
         showSplashScreen(posthogCookieConsent);
-        const existingSidePanel = Array.from(app.shell.widgets('right')).find(
-          widget => widget.id === 'pretzelai-chat-panel'
-        );
-        if (existingSidePanel) {
-          existingSidePanel.close();
-        }
-        const sidePanel = createChat({
-          aiService,
-          openAiApiKey,
-          openAiBaseUrl,
-          openAiModel,
-          azureBaseUrl,
-          azureApiKey,
-          deploymentId: azureDeploymentName,
-          notebookTracker,
-          app,
-          rmRegistry,
-          aiClient,
-          codeMatchThreshold,
-          posthogPromptTelemetry
-        });
-        sidePanel.id = 'pretzelai-chat-panel';
-        sidePanel.node.classList.add('chat-sidepanel');
-        app.shell.add(sidePanel, 'right', { rank: 1000 });
       } catch (reason) {
         console.error('Failed to load settings for Pretzel', reason);
       }
@@ -183,7 +163,7 @@ const extension: JupyterFrontEndPlugin<void> = {
             if (pretzelParentContainerAI) {
               pretzelParentContainerAI.remove();
             }
-            commands.execute('pretzelai:replace-code');
+            commands.execute('pretzelai:ai-code-gen');
           }
         };
         await loadSettings(updateFunc);
@@ -272,7 +252,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           event_type: 'click',
           method: 'ask_ai'
         });
-        commands.execute('pretzelai:replace-code');
+        commands.execute('pretzelai:ai-code-gen');
       };
 
       button.onmouseenter = () => {
@@ -335,9 +315,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         />
       );
     }
-
     commands.addCommand(command, {
-      label: 'Replace Cell Code',
+      label: 'Pretzel AI: Generate Code',
       execute: () => {
         if (notebookTracker.activeCell) {
           const existingDiv = notebookTracker.activeCell.node.querySelector('.pretzelParentContainerAI');
@@ -393,6 +372,81 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     });
 
+    // Function to create and add the side panel
+    function createAndAddSidePanel(init = false) {
+      if (init) {
+        const newSidePanel = createChat({
+          aiService,
+          openAiApiKey,
+          openAiBaseUrl,
+          openAiModel,
+          azureBaseUrl,
+          azureApiKey,
+          deploymentId: azureDeploymentName,
+          notebookTracker,
+          app,
+          rmRegistry,
+          aiClient,
+          codeMatchThreshold,
+          posthogPromptTelemetry
+        });
+        newSidePanel.id = 'pretzelai-chat-panel';
+        newSidePanel.node.classList.add('chat-sidepanel');
+
+        const labShell = app.shell as LabShell;
+        labShell.add(newSidePanel, 'right', { rank: 1000 });
+        if (!init) {
+          app.shell.activateById(newSidePanel.id);
+        }
+      }
+    }
+
+    function initAndToggleChatPanel(init = false) {
+      const labShell = app.shell as ILabShell;
+      const sidePanel = Array.from(labShell.widgets('right')).find(widget => widget.id === 'pretzelai-chat-panel');
+
+      if (sidePanel) {
+        const inputArea = sidePanel.node.querySelector('textarea');
+        if (document.activeElement === inputArea) {
+          // If the input is focused, just collapse the right area without removing the panel
+          labShell.collapseRight();
+          notebookTracker.activeCell?.editor?.focus();
+        } else {
+          // If the side panel is open but input is not focused, focus the input
+          labShell.activateById(sidePanel.id);
+          inputArea?.focus();
+        }
+      } else {
+        // If the side panel does not exist, create and add it
+        createAndAddSidePanel(init);
+        // Ensure the side panel is focused after creation
+        requestAnimationFrame(() => {
+          const newlyCreatedPanel = Array.from(labShell.widgets('right')).find(
+            widget => widget.id === 'pretzelai-chat-panel'
+          );
+          if (newlyCreatedPanel) {
+            const inputArea = newlyCreatedPanel.node.querySelector('textarea');
+            inputArea?.focus();
+          }
+        });
+      }
+    }
+    initAndToggleChatPanel(true);
+
+    commands.addCommand('pretzelai:toggle-chat-panel', {
+      label: 'Toggle Chat Panel',
+      execute: () => {
+        initAndToggleChatPanel();
+      }
+    });
+
+    // Add key binding for the toggle command
+    app.commands.addKeyBinding({
+      command: 'pretzelai:toggle-chat-panel',
+      keys: ['Ctrl Cmd B'],
+      selector: 'body',
+      winKeys: ['Ctrl Alt B']
+    });
     const category = 'Cell Operations';
     palette.addItem({ command, category });
 

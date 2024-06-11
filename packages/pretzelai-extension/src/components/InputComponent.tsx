@@ -149,8 +149,9 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0); // how many items to skip
 
   const handlePromptHistory = (promptHistoryIndex: number = 0) => {
-    if (promptHistoryStack.length > 0) {
-      const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
+    let oldPrompt = '';
+    if (promptHistoryIndex >= 0 && promptHistoryIndex < promptHistoryStack.length) {
+      oldPrompt = promptHistoryStack.get(promptHistoryIndex);
       inputViewRef.current!.dispatch({
         changes: { from: 0, to: inputViewRef.current!.state.doc.length, insert: oldPrompt }
       });
@@ -233,29 +234,59 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           }
         }
         if (event.key === 'ArrowUp') {
-          event.preventDefault();
-          posthog.capture('Prompt History Back via Shortcut', {
-            event_type: 'keypress',
-            event_value: 'up_arrow',
-            method: 'prompt_history'
-          });
-          setPromptHistoryIndex(prevIndex => {
-            handlePromptHistory(prevIndex);
-            return prevIndex + 1;
-          });
+          const { state } = inputViewRef.current!;
+          const firstLine = state.doc.lineAt(0);
+          const cursorPos = state.selection.main.head;
+
+          if (cursorPos <= firstLine.to) {
+            const currentPrompt = state.doc.toString();
+            event.preventDefault();
+            posthog.capture('Prompt History Back via Shortcut', {
+              event_type: 'keypress',
+              event_value: 'up_arrow',
+              method: 'prompt_history'
+            });
+            setPromptHistoryIndex(prevIndex => {
+              let finalIndex: number;
+              if (prevIndex + 1 >= promptHistoryStack.length) {
+                finalIndex = promptHistoryStack.length - 1;
+              } else {
+                finalIndex = prevIndex + 1;
+              }
+              handlePromptHistory(finalIndex);
+              if (currentPrompt && prevIndex == 0) {
+                promptHistoryStack.push(currentPrompt);
+                finalIndex += 1;
+              }
+              return finalIndex;
+            });
+          }
         }
 
         if (event.key === 'ArrowDown') {
-          event.preventDefault();
-          posthog.capture('Prompt History Forward via Shortcut', {
-            event_type: 'keypress',
-            event_value: 'down_arrow',
-            method: 'prompt_history'
-          });
-          setPromptHistoryIndex(prevIndex => {
-            handlePromptHistory(prevIndex);
-            return prevIndex - 1;
-          });
+          const { state } = inputViewRef.current!;
+          const firstLine = state.doc.lineAt(0);
+          const lastLine = state.doc.lineAt(state.doc.length);
+          const cursorPos = state.selection.main.head;
+
+          if (cursorPos >= lastLine.from || cursorPos === firstLine.to) {
+            event.preventDefault();
+            posthog.capture('Prompt History Forward via Shortcut', {
+              event_type: 'keypress',
+              event_value: 'down_arrow',
+              method: 'prompt_history'
+            });
+            setPromptHistoryIndex(prevIndex => {
+              let finalIndex: number;
+              if (prevIndex - 1 < 0) {
+                finalIndex = 0;
+              } else {
+                finalIndex = prevIndex - 1;
+              }
+              handlePromptHistory(finalIndex);
+              return finalIndex;
+            });
+          }
         }
       });
 
@@ -300,6 +331,22 @@ const InputComponent: React.FC<IInputComponentProps> = ({
               event_type: 'click',
               method: 'prompt_history'
             });
+            const currentPrompt = inputViewRef.current?.state.doc.toString();
+            setPromptHistoryIndex(prevIndex => {
+              let finalIndex: number;
+              if (prevIndex + 1 >= promptHistoryStack.length) {
+                finalIndex = promptHistoryStack.length - 1;
+              } else {
+                finalIndex = prevIndex + 1;
+              }
+              handlePromptHistory(finalIndex);
+              if (currentPrompt && prevIndex == 0) {
+                promptHistoryStack.push(currentPrompt);
+                finalIndex += 1;
+              }
+              return finalIndex;
+            });
+
             handlePromptHistory(promptHistoryIndex);
             setPromptHistoryIndex(promptHistoryIndex + 1);
           }}

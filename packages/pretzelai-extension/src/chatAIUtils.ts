@@ -10,7 +10,7 @@ import { OpenAI } from 'openai';
 import { ChatCompletionMessage } from 'openai/resources';
 
 export const CHAT_SYSTEM_MESSAGE =
-  'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown.';
+  'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
 
 const generateChatPrompt = (
   lastContent: string,
@@ -35,12 +35,12 @@ ${topSimilarities.join('\n```\n')}
 `;
   } else {
     setReferenceSource('current cell code');
-    output += `My main question is the above.
-If you need context this is the cell I am focused on.
-Your goal is to answer my question briefly and don't mention the code unless necessary.
-\`\`\`
-${activeCellCode}
-\`\`\`
+    output += `My main question is the above. Your goal is to answer my question briefly and don't mention the code unless necessary.
+    ${
+      activeCellCode
+        ? `If you need context this is the code in the cell I am focused on.\n\`\`\`\n${activeCellCode}\n\`\`\``
+        : ''
+    }
 `;
   }
 
@@ -109,6 +109,7 @@ export const chatAIStream = async ({
       renderChat(chunk.choices[0]?.delta?.content || '');
     }
     setReferenceSource('');
+
     setIsAiGenerating(false);
   } else if (aiService === 'Use Pretzel AI Server') {
     const response = await fetch('https://api.pretzelai.app/chat/', {

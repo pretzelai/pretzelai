@@ -200,7 +200,7 @@ const EditPromptButton: React.FC<{
       event_type: 'click',
       method: 'edit_prompt'
     });
-    commands.execute('pretzelai:replace-code');
+    commands.execute('pretzelai:ai-code-gen');
   };
 
   return (

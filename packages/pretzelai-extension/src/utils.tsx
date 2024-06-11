@@ -510,34 +510,38 @@ export const generateAIStream = async ({
 };
 
 export class FixedSizeStack<T> {
-  private stack: T[] = [];
-  private maxSize: number;
+  public stack: T[] = [];
+  public maxSize: number;
+  public startSentinel: T;
+  public endSentinel: T;
 
-  constructor(maxSize: number) {
-    this.maxSize = maxSize;
+  constructor(maxSize: number, startSentinel: T, endSentinel: T) {
+    this.maxSize = maxSize + 2; // Add two extra spaces for the sentinels
+    this.startSentinel = startSentinel;
+    this.endSentinel = endSentinel;
+    this.stack.push(startSentinel); // Add the start sentinel
+    this.stack.push(endSentinel); // Add the end sentinel
   }
 
   push(item: T): void {
-    this.stack.push(item);
+    this.stack.splice(this.stack.length - 1, 0, item); // Insert the item before the end sentinel
     if (this.stack.length > this.maxSize) {
-      this.stack.shift(); // Remove the oldest item
+      this.stack.splice(1, 1); // Remove the oldest item (excluding the start sentinel)
     }
   }
 
   get length(): number {
-    return this.stack.length;
+    return this.stack.length; // Exclude the sentinels from the length
   }
 
   get(index: number): T {
-    if (index >= 0) {
-      index = index % this.stack.length;
-    } else {
-      index = (index % this.stack.length) + this.stack.length;
-    }
-    const reverseIndex = this.stack.length - 1 - index;
-    if (reverseIndex < 0 || reverseIndex >= this.stack.length) {
+    if (index < 0 || index >= this.stack.length) {
       throw new Error('Index out of bounds');
     }
-    return this.stack[reverseIndex];
+    return this.stack[this.length - 1 - index];
+  }
+
+  isFull(): boolean {
+    return this.stack.length >= this.maxSize;
   }
 }

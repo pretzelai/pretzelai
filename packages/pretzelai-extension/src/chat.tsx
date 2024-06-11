@@ -38,6 +38,10 @@ interface IMessage {
 }
 
 const initialMessage: IMessage[] = [{ id: '1', content: 'Hello, how can I assist you today?', role: 'assistant' }];
+const isMac = /Mac/i.test(navigator.userAgent);
+const keyCombination = isMac ? 'Ctrl+Cmd+B' : 'Ctrl+Alt+B';
+const historyPrevKeyCombination = isMac ? '⇧⌘,' : '⇧^,';
+const historyNextKeyCombination = isMac ? '⇧⌘.' : '⇧^,';
 
 interface IChatProps {
   aiService: AiService;
@@ -167,6 +171,17 @@ export function Chat({
   useEffect(() => {
     // Triggers when AI generation finishes
     if (!isAiGenerating) {
+      // // clean up the message received from AI
+      // const lastMessage = messages[messages.length - 1];
+      // if (lastMessage.role === 'assistant') {
+      //   // clean this by replacing ```python with ```
+      //   const cleanedMessage = lastMessage.content.replace('```python', '```');
+      //   setMessages(prevMessages => {
+      //     const updatedMessages = [...prevMessages];
+      //     updatedMessages[updatedMessages.length - 1].content = cleanedMessage;
+      //     return updatedMessages;
+      //   });
+      // }
       saveMessages();
     }
   }, [isAiGenerating]);
@@ -257,7 +272,22 @@ export function Chat({
       event.preventDefault();
     }
     if (event.key === 'Escape') {
-      cancelGeneration();
+      if (isAiGenerating) {
+        cancelGeneration();
+      } else {
+        notebookTracker?.activeCell?.editor?.focus();
+      }
+    }
+    // Cmd + Esc should clear the chat
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Escape' && !isAiGenerating) {
+      clearChat();
+    }
+    // Navigate chat history with Cmd+Shift+, and Cmd+Shift+. (or Ctrl+Shift on Windows)
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === ',' && !isAiGenerating) {
+      restoreChat(-1);
+    }
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === '.' && !isAiGenerating) {
+      restoreChat(1);
     }
   }
 
@@ -298,19 +328,7 @@ export function Chat({
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
         {messages.map(message => (
-          <Box key={message.id} sx={{ marginBottom: 2 }}>
-            <Box
-              sx={{
-                backgroundColor: 'var(--jp-brand-color2)',
-                borderRadius: '10px',
-                display: 'inline-block',
-                paddingX: '10px'
-              }}
-            >
-              <Typography sx={{ fontWeight: 'bold' }} color={'var(--jp-ui-inverse-font-color1)'}>
-                {message.role === 'user' ? 'You' : 'Pretzel AI'}
-              </Typography>
-            </Box>
+          <Box key={message.id} sx={message.role === 'user' ? { margin: '0 -16px 16px -16px' } : {}}>
             {referenceSource && message.role === 'assistant' && messages[messages.length - 1].id === message.id && (
               <Box
                 sx={{
@@ -326,8 +344,9 @@ export function Chat({
             )}
             <RendermimeMarkdown
               rmRegistry={rmRegistry}
-              markdownStr={message.content}
+              markdownStr={message.role === 'user' ? '***You:*** ' + message.content : '***AI:*** ' + message.content}
               notebookTracker={notebookTracker}
+              role={message.role}
             />
           </Box>
         ))}
@@ -340,10 +359,21 @@ export function Chat({
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            fullWidth
-            multiline
-            rows={4}
-            placeholder="Type message to ask AI..."
+            fullWidth={true}
+            multiline={true}
+            rows={5}
+            InputProps={{
+              style: {
+                fontSize: 14,
+                padding: '10px'
+              }
+            }}
+            placeholder={
+              `Ask AI (toggle with: ${keyCombination}). Use Esc to jump back to cell.\n` +
+              `Current cell's code is avaiable as context to AI.\n` +
+              `Shift + Enter for newline.\n` +
+              `Mention @notebook to automatically add relevant content from other cells.`
+            }
             autoComplete="off"
             sx={{
               color: 'var(--jp-ui-font-color1)',
@@ -367,21 +397,57 @@ export function Chat({
           </Box>
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-            <button className="pretzelInputSubmitButton" onClick={onSend} title="Submit ↵">
-              Submit <span style={{ fontSize: '0.8em' }}>↵</span>
-            </button>
-            <button className="pretzelInputSubmitButton" onClick={clearChat} title="Clear">
-              Clear
-            </button>
-            <button className="pretzelInputSubmitButton" onClick={() => restoreChat(-1)} title="Clear">
-              {'<'}
-            </button>
+            <div className="submit-button-container">
+              <button className="pretzelInputSubmitButton" onClick={onSend} title="Submit ↵">
+                Submit <span style={{ fontSize: '0.8em' }}>↵</span>
+              </button>
+              <div className="tooltip">
+                Submit the message to the AI
+                <br />
+                Shortcut: <strong>Enter</strong>
+              </div>
+            </div>
+            <div className="clear-button-container">
+              <button className="pretzelInputSubmitButton" onClick={clearChat} title="Clear (Esc)">
+                Clear <span style={{ fontSize: '0.8em' }}>{isMac ? '⌘' : '^'}Esc</span>
+              </button>
+              <div className="tooltip">
+                Start a new chat. Previous chat will be saved.
+                <br />
+                Shortcut: <strong>{isMac ? 'Cmd+Esc' : 'Ctrl+Esc'}</strong>
+              </div>
+            </div>
+            <div className="history-prev-button-container">
+              <button
+                className="pretzelInputSubmitButton"
+                onClick={() => restoreChat(-1)}
+                title={`Previous (${historyPrevKeyCombination})`}
+              >
+                {'<'}
+              </button>
+              <div className="tooltip">
+                Navigate to the previous chat in history
+                <br />
+                Shortcut: <strong>{historyPrevKeyCombination}</strong>
+              </div>
+            </div>
             <Typography sx={{ marginRight: 'var(--jp-ui-margin, 10px)', marginTop: 'var(--jp-ui-margin, 10px)' }}>
               History
             </Typography>
-            <button className="pretzelInputSubmitButton" onClick={() => restoreChat(1)} title="Clear">
-              {'>'}
-            </button>
+            <div className="history-next-button-container">
+              <button
+                className="pretzelInputSubmitButton"
+                onClick={() => restoreChat(1)}
+                title={`Next (${historyNextKeyCombination})`}
+              >
+                {'>'}
+              </button>
+              <div className="tooltip">
+                Navigate to the next chat in history
+                <br />
+                Shortcut: <strong>{historyNextKeyCombination}</strong>
+              </div>
+            </div>
           </Box>
         )}
       </Box>
@@ -391,8 +457,9 @@ export function Chat({
 
 export function createChat(props: IChatProps): ReactWidget {
   const widget = ReactWidget.create(<Chat {...props} />);
+
   widget.id = 'pretzelai::chat';
   widget.title.icon = pretzelIcon;
-  widget.title.caption = 'Pretzel AI Chat';
+  widget.title.caption = `Pretzel AI Chat (${keyCombination})`;
   return widget;
 }

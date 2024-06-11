@@ -18,6 +18,7 @@ type RendermimeMarkdownProps = {
   markdownStr: string;
   rmRegistry: IRenderMimeRegistry;
   notebookTracker: INotebookTracker;
+  role?: string;
 };
 
 function escapeLatexDelimiters(text: string) {
@@ -70,7 +71,7 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
   }, [renderedContent]);
 
   return (
-    <div className={RENDERMIME_MD_CLASS}>
+    <div className={`${RENDERMIME_MD_CLASS} ${props.role === 'user' ? 'user-msg' : 'ai-msg'}`}>
       <div ref={renderedContentRef} />
       {codeToolbarDefns.map(codeToolbarDefn => {
         const [codeToolbarRoot, codeToolbarProps] = codeToolbarDefn;
