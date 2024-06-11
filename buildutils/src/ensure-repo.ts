@@ -47,7 +47,9 @@ const LOCAL_PACKAGES: Dict<string> = {
   '@jupyterlab/codemirror': 'codemirror',
   '@jupyterlab/codemirror-extension': 'codemirror-extension',
   '@jupyterlab/help-extension': 'help-extension',
-  '@jupyterlab/pretzelai-extension': 'pretzelai-extension'
+  '@jupyterlab/pretzelai-extension': 'pretzelai-extension',
+  '@jupyterlab/application': 'application',
+  '@jupyterlab/application-extension': 'application-extension'
 };
 
 // Data to ignore.
