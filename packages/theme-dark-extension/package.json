@@ -32,7 +32,7 @@
     "watch": "tsc -b --watch"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.0",
+    "@jupyterlab/application": "^4.2.5",
     "@jupyterlab/apputils": "^4.3.0",
     "@jupyterlab/translation": "^4.2.0"
   },
