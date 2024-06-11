@@ -346,9 +346,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
               }
               return finalIndex;
             });
-
-            handlePromptHistory(promptHistoryIndex);
-            setPromptHistoryIndex(promptHistoryIndex + 1);
           }}
           promptHistoryIndex={promptHistoryIndex}
         />

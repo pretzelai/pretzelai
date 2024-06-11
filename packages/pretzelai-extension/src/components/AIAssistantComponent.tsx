@@ -44,7 +44,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   useEffect(() => {
     if (props.notebookTracker.activeCell!.model.getMetadata('isPromptEdit')) {
-      setInitialPrompt(props.promptHistoryStack.get(0));
+      setInitialPrompt(props.promptHistoryStack.get(1));
       props.notebookTracker.activeCell!.model.setMetadata('isPromptEdit', false);
     }
     if (props.traceback) {
