@@ -2166,7 +2166,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3A.":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../../packages/pretzelai-extension#../../packages/pretzelai-extension::hash=7c23f1&locator=%40jupyterlab%2Fapplication-top%40workspace%3A."
+  resolution: "@jupyterlab/pretzelai-extension@file:../../packages/pretzelai-extension#../../packages/pretzelai-extension::hash=28ea7e&locator=%40jupyterlab%2Fapplication-top%40workspace%3A."
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
@@ -2194,7 +2194,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 6f3da0584dd5264f6a349be2c065b33bffa7a3052e899ee86b7053804033de7f2c5d9b5438412996ea88adf5fa0c4ab87102fc8b3e3643378afee415ef2a6988
+  checksum: c1a752cbd739ca957fc83d89263275647797b7a67e07b9a6ed0cb6209b88a1e44238dbad42160a6c1553b6aecfaa5390c8e39f90e3de13247948a3a4850e9092
   languageName: node
   linkType: hard
 
@@ -6874,7 +6874,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^7.1.3, glob@npm:^7.1.4, glob@npm:~7.1.6":
+"glob@npm:^7.1.3, glob@npm:~7.1.6, glob@npm:^7.1.4":
   version: 7.1.7
   resolution: "glob@npm:7.1.7"
   dependencies:
