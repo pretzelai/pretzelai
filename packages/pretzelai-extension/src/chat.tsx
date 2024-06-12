@@ -40,8 +40,8 @@ interface IMessage {
 const initialMessage: IMessage[] = [{ id: '1', content: 'Hello, how can I assist you today?', role: 'assistant' }];
 const isMac = /Mac/i.test(navigator.userAgent);
 const keyCombination = isMac ? 'Ctrl+Cmd+B' : 'Ctrl+Alt+B';
-const historyPrevKeyCombination = isMac ? '⇧⌘,' : '⇧^,';
-const historyNextKeyCombination = isMac ? '⇧⌘.' : '⇧^,';
+const historyPrevKeyCombination = isMac ? '⇧⌘<' : '⇧^<';
+const historyNextKeyCombination = isMac ? '⇧⌘>' : '⇧^>';
 
 interface IChatProps {
   aiService: AiService;
@@ -283,10 +283,20 @@ export function Chat({
       clearChat();
     }
     // Navigate chat history with Cmd+Shift+, and Cmd+Shift+. (or Ctrl+Shift on Windows)
-    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === ',' && !isAiGenerating) {
+    if (
+      (event.metaKey || event.ctrlKey) &&
+      event.shiftKey &&
+      (event.key === ',' || event.key === '<') &&
+      !isAiGenerating
+    ) {
       restoreChat(-1);
     }
-    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === '.' && !isAiGenerating) {
+    if (
+      (event.metaKey || event.ctrlKey) &&
+      event.shiftKey &&
+      (event.key === '.' || event.key === '>') &&
+      !isAiGenerating
+    ) {
       restoreChat(1);
     }
   }
@@ -361,7 +371,8 @@ export function Chat({
             onKeyDown={handleKeyDown}
             fullWidth={true}
             multiline={true}
-            rows={5}
+            rows={6}
+            variant={'filled'}
             InputProps={{
               style: {
                 fontSize: 14,
@@ -372,7 +383,7 @@ export function Chat({
               `Ask AI (toggle with: ${keyCombination}). Use Esc to jump back to cell.\n` +
               `Current cell's code is avaiable as context to AI.\n` +
               `Shift + Enter for newline.\n` +
-              `Mention @notebook to automatically add relevant content from other cells.`
+              `Mention @notebook to automatically add relevant context from other cells.`
             }
             autoComplete="off"
             sx={{
@@ -380,9 +391,7 @@ export function Chat({
               '& .MuiInputBase-input': {
                 color: 'var(--jp-ui-font-color1)'
               },
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'var(--jp-ui-font-color1)'
-              }
+              border: 'var(--jp-border-width) solid var(--jp-cell-editor-border-color)'
             }}
           />
         </Box>
@@ -391,7 +400,13 @@ export function Chat({
             <button className="remove-button" onClick={cancelGeneration} title="Cancel">
               Cancel <span style={{ fontSize: '0.8em' }}>Esc</span>
             </button>
-            <Typography sx={{ marginRight: 'var(--jp-ui-margin, 10px)', marginTop: 'var(--jp-ui-margin, 10px)' }}>
+            <Typography
+              sx={{
+                marginRight: 'var(--jp-ui-margin, 10px)',
+                marginTop: 'var(--jp-ui-margin, 10px)',
+                fontSize: '0.885rem'
+              }}
+            >
               Generating AI response...
             </Typography>
           </Box>
@@ -431,7 +446,13 @@ export function Chat({
                 Shortcut: <strong>{historyPrevKeyCombination}</strong>
               </div>
             </div>
-            <Typography sx={{ marginRight: 'var(--jp-ui-margin, 10px)', marginTop: 'var(--jp-ui-margin, 10px)' }}>
+            <Typography
+              sx={{
+                marginRight: 'var(--jp-ui-margin, 10px)',
+                marginTop: 'var(--jp-ui-margin, 10px)',
+                fontSize: '0.885rem'
+              }}
+            >
               History
             </Typography>
             <div className="history-next-button-container">
