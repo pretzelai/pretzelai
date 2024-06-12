@@ -55,9 +55,9 @@
   margin-left: 70px;
   color: var(--jp-ui-font-color1);
 }
-
-/* .pretzelParentContainerAI {
-    } */
+.cm-editor .cm-cursor {
+  border-left-color: var(--jp-editor-cursor-color);
+}
 
 .input-container {
   margin-top: var(--jp-ui-margin, 10px);
@@ -73,11 +73,6 @@
 
 .pretzelInputField {
   border: 1px solid var(--jp-border-color1);
-}
-
-div.cm-scroller > div {
-  caret-color: var(--jp-editor-cursor-color) !important;
-  /* caret-color: aqua !important; */
 }
 
 .submit-button-container,

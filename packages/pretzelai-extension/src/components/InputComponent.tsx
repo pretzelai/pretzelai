@@ -185,7 +185,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       const state = EditorState.create({
         doc: initialPrompt,
         extensions: [
-          markdown(),
           history({ newGroupDelay: 50 }),
           keymap.of(historyKeymap),
           isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
