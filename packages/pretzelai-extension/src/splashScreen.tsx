@@ -20,34 +20,33 @@ async function handleConsent(consent: string) {
 function SplashScreen() {
   const isMac = /Mac/i.test(navigator.userAgent);
   const keyCombination = isMac ? 'Cmd + K' : 'Ctrl + K';
+  const keyCombinationSidepanel = isMac ? 'Ctrl + Cmd + B' : 'Ctrl + Alt + B';
 
   return (
     <div id="splash-screen">
       <div className="splash-content">
         <h1>Welcome to Pretzel</h1>
-        <p>How to use:</p>
+        <h3>Using Pretzel</h3>
         <ul>
           <li>
-            When in a cell, press <strong>{keyCombination}</strong> and type in your prompt
+            Use <strong>{keyCombination}</strong> in a Jupyter cell to start generating code
           </li>
           <li>
-            You can use <strong>@variable</strong> syntax in the prompt to refer to dataframes and variables in memory
+            Use <strong>{keyCombinationSidepanel}</strong> or Pretzel icon on right sidebar to open the AI assistant
+            chat
           </li>
           <li>
-            Press the <strong>&quot;Fix Error with AI&quot;</strong> button to automatically fix errors
-          </li>
-          <li>
-            Go to <strong>Settings &gt; Settings Editor</strong> and search for Pretzel AI to customize which AI model
-            is used
-          </li>
-          <li>
-            See more usage instructions{' '}
-            <a href="https://github.com/pretzelai/pretzelai#readme" target="_blank" rel="noreferrer">
+            See more feature details{' '}
+            <a href="https://github.com/pretzelai/pretzelai?tab=readme-ov-file#usage" target="_blank" rel="noreferrer">
               in our README
             </a>
           </li>
+          <li>
+            Go to <strong>Settings &gt; Settings Editor</strong> and search for Pretzel AI to use your own OpenAI or
+            Azure models.
+          </li>
         </ul>
-        <p>
+        <p style={{ marginTop: '30px' }}>
           To better understand how users are using the new AI codegen features, we collect anonymized telemetry strictly
           related to the AI features. We also collect the AI prompt but it can be disabled in Pretzel AI Settings.
         </p>

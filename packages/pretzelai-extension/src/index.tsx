@@ -70,7 +70,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     const placeholderEnabled =
       `Ask AI. Use ${rightSidebarShortcut} to toggle AI Chat sidebar.\n` +
-      'Use @variable syntax in prompt to reference variables/dataframes.\n' +
+      'Mention @variable in prompt to reference variables/dataframes.\n' +
       'Use ↑ / ↓ to cycle through prompt history for current browser session.\n' +
       'Shift + Enter for new line.';
     let openAiApiKey = '';
