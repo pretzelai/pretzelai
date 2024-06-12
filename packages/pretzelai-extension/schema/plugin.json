@@ -69,7 +69,7 @@
       "description": "The threshold for code similarity matching, between 0 and 100. High values result in only highly similar code being matched.",
       "minimum": 0,
       "maximum": 100,
-      "default": 35
+      "default": 20
     },
     "posthogPromptTelemetry": {
       "type": "boolean",
