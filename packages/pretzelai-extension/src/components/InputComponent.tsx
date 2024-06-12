@@ -10,7 +10,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { EditorState } from '@codemirror/state';
 import { drawSelection, EditorView, keymap, placeholder } from '@codemirror/view';
-import { markdown } from '@codemirror/lang-markdown';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
 import { Cell, ICellModel } from '@jupyterlab/cells';
