@@ -345,7 +345,6 @@ export function Chat({
                   backgroundColor: 'var(--jp-layout-color2)',
                   borderRadius: '10px',
                   display: 'inline-block',
-                  paddingX: '10px',
                   marginLeft: '10px'
                 }}
               >

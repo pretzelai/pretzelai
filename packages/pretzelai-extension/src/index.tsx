@@ -11,7 +11,7 @@
  * @packageDocumentation
  * @module pretzelai-extension
  */
-import { ILabShell, JupyterFrontEnd, JupyterFrontEndPlugin, LabShell } from '@jupyterlab/application';
+import { ILabShell, ILayoutRestorer, JupyterFrontEnd, JupyterFrontEndPlugin, LabShell } from '@jupyterlab/application';
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
@@ -51,12 +51,14 @@ const extension: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
   requires: [IRenderMimeRegistry, ICommandPalette, INotebookTracker, ISettingRegistry],
+  optional: [ILayoutRestorer], // Add this line
   activate: async (
     app: JupyterFrontEnd,
     rmRegistry: IRenderMimeRegistry,
     palette: ICommandPalette,
     notebookTracker: INotebookTracker,
-    settingRegistry: ISettingRegistry
+    settingRegistry: ISettingRegistry,
+    restorer: ILayoutRestorer | null
   ) => {
     const { commands } = app;
     const command = 'pretzelai:ai-code-gen';
@@ -130,6 +132,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         setAIEnabled();
         updateFunc?.();
         loadAIClient();
+        initSidePanel();
         showSplashScreen(posthogCookieConsent);
       } catch (reason) {
         console.error('Failed to load settings for Pretzel', reason);
@@ -373,37 +376,53 @@ const extension: JupyterFrontEndPlugin<void> = {
     });
 
     // Function to create and add the side panel
-    function createAndAddSidePanel(init = false) {
-      if (init) {
-        const newSidePanel = createChat({
-          aiService,
-          openAiApiKey,
-          openAiBaseUrl,
-          openAiModel,
-          azureBaseUrl,
-          azureApiKey,
-          deploymentId: azureDeploymentName,
-          notebookTracker,
-          app,
-          rmRegistry,
-          aiClient,
-          codeMatchThreshold,
-          posthogPromptTelemetry
-        });
-        newSidePanel.id = 'pretzelai-chat-panel';
-        newSidePanel.node.classList.add('chat-sidepanel');
+    function createAndAddSidePanel(expandPanel = false) {
+      const newSidePanel = createChat({
+        aiService,
+        openAiApiKey,
+        openAiBaseUrl,
+        openAiModel,
+        azureBaseUrl,
+        azureApiKey,
+        deploymentId: azureDeploymentName,
+        notebookTracker,
+        app,
+        rmRegistry,
+        aiClient,
+        codeMatchThreshold,
+        posthogPromptTelemetry
+      });
+      newSidePanel.id = 'pretzelai-chat-panel';
+      newSidePanel.node.classList.add('chat-sidepanel');
 
-        const labShell = app.shell as LabShell;
-        labShell.add(newSidePanel, 'right', { rank: 1000 });
-        if (!init) {
-          app.shell.activateById(newSidePanel.id);
-        }
+      const labShell = app.shell as LabShell;
+      labShell.add(newSidePanel, 'right', { rank: 1000 });
+      if (expandPanel) {
+        app.shell.activateById(newSidePanel.id);
+      }
+      return newSidePanel;
+    }
+
+    function initSidePanel() {
+      const labShell = app.shell as ILabShell;
+      const sidePanel = Array.from(labShell.widgets('right')).find(widget => widget.id === 'pretzelai-chat-panel');
+      const wasExpanded = sidePanel?.isVisible || false;
+
+      if (sidePanel) {
+        sidePanel.dispose();
+      }
+      const newSidePanel = createAndAddSidePanel(wasExpanded);
+
+      // Add this block to restore the sidebar state
+      if (restorer) {
+        restorer.add(newSidePanel, 'pretzelai-chat-panel');
       }
     }
 
-    function initAndToggleChatPanel(init = false) {
+    function toggleChatPanel() {
       const labShell = app.shell as ILabShell;
       const sidePanel = Array.from(labShell.widgets('right')).find(widget => widget.id === 'pretzelai-chat-panel');
+      const wasExpanded = sidePanel?.isVisible || false;
 
       if (sidePanel) {
         const inputArea = sidePanel.node.querySelector('textarea');
@@ -418,7 +437,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         }
       } else {
         // If the side panel does not exist, create and add it
-        createAndAddSidePanel(init);
+        createAndAddSidePanel(wasExpanded);
         // Ensure the side panel is focused after creation
         requestAnimationFrame(() => {
           const newlyCreatedPanel = Array.from(labShell.widgets('right')).find(
@@ -431,12 +450,11 @@ const extension: JupyterFrontEndPlugin<void> = {
         });
       }
     }
-    initAndToggleChatPanel(true);
 
     commands.addCommand('pretzelai:toggle-chat-panel', {
       label: 'Toggle Chat Panel',
       execute: () => {
-        initAndToggleChatPanel();
+        toggleChatPanel();
       }
     });
 

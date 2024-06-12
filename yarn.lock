@@ -4864,7 +4864,6 @@ __metadata:
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
-    "@codemirror/lang-markdown": ^6.2.4
     "@codemirror/language": ^6.10.1
     "@codemirror/state": ^6.4.1
     "@codemirror/view": ^6.26.0
@@ -4913,11 +4912,10 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=0ba2e9&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=7e28cc&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
-    "@codemirror/lang-markdown": ^6.2.4
     "@codemirror/language": ^6.10.1
     "@codemirror/state": ^6.4.1
     "@codemirror/view": ^6.26.0
@@ -4941,7 +4939,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 2c4f7c0bedfb23686a0e82dc763cc7b445f81a63617eb20bc4d7d7d7b7405472466b9ecb5947068698acabde591ecf0c0b1db54d41b21b97cbf94a651093e6e5
+  checksum: fcccf001bbba06a8f132db41be823ab854228cfbec9eddd9c509629490d4139f29d7a7b3d03cc90a9ff8d4048f2327b624afda862ab8ef7693d362493dfe3c01
   languageName: node
   linkType: hard
 
