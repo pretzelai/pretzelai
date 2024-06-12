@@ -12,7 +12,7 @@ import { ChatCompletionMessage } from 'openai/resources';
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
 
-const generateChatPrompt = (
+export const generateChatPrompt = (
   lastContent: string,
   setReferenceSource: (source: string) => void,
   topSimilarities?: string[],
