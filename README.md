@@ -34,6 +34,7 @@ Switching to Pretzel from Jupyter is extremely easy since it's simply an improve
 - Install Pretzel: `pip install pretzelai` then run `pretzel lab` to open the web interface. OR, use our **free hosted version**: https://pretzelai.app
 - In any Jupyter cell, click “**Ask AI**” or press Cmd+K (Mac) / Ctrl+K (Linux/Windows) to prompt AI
 - Use the **AI Sidebar** with Ctrl+Cmd+B (Mac) or Ctrl+Alt+B (Linux/Windows) to chat with AI, generate code, and ask questions
+- To switch to your own OpenAI API key, see the [Configuration](#configuration) section
 
 ![](assets/main.png)
 
@@ -66,6 +67,8 @@ pretzel lab
 
 Just as with Jupyter, you should see a URL to access the Pretzel interface.
 
+To use your own OpenAI API key, see the [Configuration](#configuration) section.
+
 **Bleeding Edge Version**
 
 Bugs possible. To use the latest version of Pretzel:
@@ -79,6 +82,41 @@ cd pretzelai
 pip install .
 ```
 
+## Usage
+
+#### Generating and editing code in notebook cells
+
+- In a cell, press **`Cmd+K` (Mac) / `Ctrl+K` (Windows/Linux)** or **click "Ask AI"** to open AI prompt textbox and write your code generation/editing instruction
+  - Mention `@variable` to refer to variables and dataframes in memory
+  - We automatically send relevant code in the current notebook as context to the AI
+- If there's existing code in a cell, the prompt will edit the existing code
+  - If you select/highlight some code in the cell, only the selected code will be edited
+- You can accept/reject the response or edit your prompt if you want to re-submit with modifications
+- Use ↑ / ↓ to cycle through prompt history
+
+#### Using the AI Sidebar
+
+- Use `Ctrl+Cmd+B` (Mac) or `Ctrl+Alt+B` (Linux/Windows) or the [Pretzel Icon on the right side](assets/pretzel-icon.png) to activate the AI Sidebar
+- You can ask questions, generate code, or search for existing code
+- The AI uses the code in the active cell as context
+- Mention `@notebook` in your prompt to use code from the current notebook for context
+
+_Example uses of AI Sidebar_:
+
+- "Modify the function `my_function` in @notebook to be more efficient"
+- "Where is the code in @notebook that removes outliers"?
+- _(While in current cell)_ "Can you explain what this code does?"
+
+#### Adding code in the middle of existing code
+
+- Put your cursor either on an empty line or an existing line of code. Bring up the AI prompting text box with Cmd+K
+- Start your prompt with the word `inject` or `ij` (case-insensitive) - this tells the AI to only add new code and not edit the existing code in the cell
+- **Code will be added one line below** where your cursor was placed
+
+#### Fix errors with AI
+
+- When there's an error, you'll see a button on top-right "**Fix Error with AI**". Click it try fixing the error
+
 ## Configuration
 
 Pretzel comes with support for a free AI server and works without any configuration. You can also configure it to use your own OpenAI/Azure API key. To do so:
@@ -87,33 +125,14 @@ Pretzel comes with support for a free AI server and works without any configurat
 
 - Open the `Settings` menu in the top menubar, then click `Settings Editor`
 - Search for `Pretzel` and select `Pretzel AI Settings` on the left bar
-- From the `AI Service` dropdown, select `OpenAI API Key` and fill out your API key under `OpenAI Settings > API Key`
+- From the `AI Service` dropdown, select `OpenAI API Key` and fill out your API key under `OpenAI Settings > API Key`.
 - If your company uses OpenAI Enterprise, then you can also enter the base URL for OpenAI call under `OpenAI Settings`
 - We use `GPT-4o` as the default model. You can change this with the `OpenAI Model` dropdown.
 
+![help image here](assets/settings-openai-key.png)
+
 **Azure Support**
 Just as with OpenAI settings, you can also use Azure hosted models if you select `Use Azure API` in the `AI Service` dropdown. _We haven't tested this yet so there may be bugs._
-
-## Usage
-
-**Generating and editing code in notebook cells**
-
-- When in a cell, press `Cmd+K` (Mac) / `Ctrl+K` (Windows/Linux) to open AI prompting textbox and write your prompt
-  - Mention `@variable` to refer to variables and dataframes in memory
-  - We automatically find relevant code in the current notebook as context to the AI
-- If there's existing code in a cell, the prompt will edit the existing code
-  - If you select/highlight some code in the cell, only the selected code will be edited
-- You can accept/reject the response or edit your prompt if you want to re-submit with modifications
-
-**Adding code in the middle of existing code**
-
-- Put your cursor either on an empty line or an existing line of code. Bring up the AI prompting text box with Cmd+K
-- Start your prompt with the word `inject` or `ij` (case-insensitive) - this tells the AI to only add new code and not edit the existing code in the cell
-- **Code will be added one line below** where your cursor was placed
-
-**Fix errors with AI**
-
-- When there's an error, you'll see a button on top-right "**Fix Error with AI**". Click it try fixing the error
 
 ## Feedback, bugs and docs
 
