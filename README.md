@@ -1,28 +1,56 @@
-# [Pretzel](https://withpretzel.com)
+<p align="center">
+  <h3 align="center">Pretzel 🥨</h3>
 
-Pretzel is a fork of Jupyter with the goal to improve Jupyter's capabilities. As one of our first releases, we've added AI code generation, editing and error fixing to Jupyter.
+  <p align="center">
+    Modern, open-source Jupyter alternative.
+    <br />
+    <a href="https://pretzelai.app"><strong>Try it here »</strong></a>
+    <br />
+    <br />
+    <a href="https://discord.gg/DuDDmCTF">Discord</a>
+    ·
+    <a href="https://withpretzel.com">Website</a>
+    ·
+    <a href="https://github.com/pretzelai/pretzelai/issues">Issues</a>
+    ·
+    <a href="mailto:founders@withpretzel.com">Contact</a>
+  </p>
+</p>
 
-**TL;DR**
+<p align="center">
+   <a href="https://github.com/pretzelai/pretzelai/stargazers"><img src="https://img.shields.io/github/stars/pretzelai/pretzelai" alt="Github Stars"></a>
+   <a href="https://pypi.org/project/pretzelai/"><img src="https://img.shields.io/pypi/v/pretzelai.svg?style=flat-square&label=PyPI+PretzelAI" alt="Issues"></a>
+   <a href="https://discord.gg/DuDDmCTF"><img src="https://img.shields.io/badge/Discord-PretzelAI-blue?logo=discord" alt="Join Pretzel on Discord"></a>
+   <a href="https://github.com/pretzelai/pretzelai/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
+   <a href="https://github.com/pretzelai/pretzelai/pulse"><img src="https://img.shields.io/github/commit-activity/m/pretzelai/pretzelai" alt="Commits-per-month"></a>
+</p>
 
-- Install Pretzel: `pip install pretzelai` then run `pretzel lab` to open the web interface
+Pretzel is a fork of Jupyter with the goal to improve Jupyter's capabilities. As one of our first features, we've added AI code generation, editing and error fixing to Jupyter.
+
+Switching to Pretzel from Jupyter is extremely easy since it's simply an improved version of Jupyter. All of your Jupyter config, settings, keybindings, and extensions will work out of the box.
+
+## Quick Start
+
+- Install Pretzel: `pip install pretzelai` then run `pretzel lab` to open the web interface. OR, use our **free hosted version**: https://pretzelai.app
 - In any Jupyter cell, click “**Ask AI**” or press Cmd+K (Mac) / Ctrl+K (Linux/Windows) to prompt AI
-- Try our free hosted version: https://pretzelai.app
+- Use the **AI Sidebar** with Ctrl+Cmd+B (Mac) or Ctrl+Alt+B (Linux/Windows) to chat with AI, generate code, and ask questions
 
-Switching to Pretzel from Jupyter is extremely easy. We use your existing Jupyter extensions, settings and keybindings.
+![](assets/main.png)
+
+---
 
 Our roadmap includes building features such as:
 
-- Native AI features similar to [Cursor](https://cursor.sh/)
+- Native AI code generation and understanding features similar to [Cursor](https://cursor.sh/)
 - Frictionless realtime collaboration: pair-programming, comments, version history, etc.
 - SQL support (both in code cells and as a standalone SQL IDE)
 - Visual analysis builder (see more here)
 - VSCode like code-writing experience using [Monaco](https://github.com/microsoft/monaco-editor)
-- 1-click dashboard creation from data analysis results
-- End-to-end analysis on datasets for non-data folks
+- 1-click dashboard creation and sharing from Jupyter notebooks
 
 ## Installation
 
-Just as with Jupyter, you can install Pretzel by using pip:
+You can install Pretzel by using pip:
 
 ```
 pip install pretzelai
@@ -53,42 +81,39 @@ pip install .
 
 ## Configuration
 
-Pretzel comes with out-of-the-box support for a free AI server. You should be able to start using it with no configuration needed.
+Pretzel comes with support for a free AI server and works without any configuration. You can also configure it to use your own OpenAI/Azure API key. To do so:
 
 **OpenAI Support**
-You can configure Pretzel to use your own OpenAI API key. To do so:
 
-- Open the `Settings` menu in the top menubar
-- Go down to `Settings Editor`, open it and search for `Pretzel` in the search box. Select `Pretzel AI Settings` on the left bar.
+- Open the `Settings` menu in the top menubar, then click `Settings Editor`
+- Search for `Pretzel` and select `Pretzel AI Settings` on the left bar
 - From the `AI Service` dropdown, select `OpenAI API Key` and fill out your API key under `OpenAI Settings > API Key`
 - If your company uses OpenAI Enterprise, then you can also enter the base URL for OpenAI call under `OpenAI Settings`
+- We use `GPT-4o` as the default model. You can change this with the `OpenAI Model` dropdown.
 
 **Azure Support**
-Just as with OpenAI settings, you can also use Azure hosted models if you select `Use Azure API` in the `AI Service` dropdown. _We haven't tested this so there may be bugs._
+Just as with OpenAI settings, you can also use Azure hosted models if you select `Use Azure API` in the `AI Service` dropdown. _We haven't tested this yet so there may be bugs._
 
 ## Usage
 
-**Adding code to an empty cell**
+**Generating and editing code in notebook cells**
 
 - When in a cell, press `Cmd+K` (Mac) / `Ctrl+K` (Windows/Linux) to open AI prompting textbox and write your prompt
-  - You can use `@variable` syntax to refer to variables and dataframes in memory. Press "Enter" to submit
+  - Mention `@variable` to refer to variables and dataframes in memory
+  - We automatically find relevant code in the current notebook as context to the AI
+- If there's existing code in a cell, the prompt will edit the existing code
+  - If you select/highlight some code in the cell, only the selected code will be edited
 - You can accept/reject the response or edit your prompt if you want to re-submit with modifications
 
 **Adding code in the middle of existing code**
 
 - Put your cursor either on an empty line or an existing line of code. Bring up the AI prompting text box with Cmd+K
 - Start your prompt with the word `inject` or `ij` (case-insensitive) - this tells the AI to only add new code and not edit the existing code in the cell
-- Code will be added one line below where your cursor was placed
-
-**Support for editing code**
-
-- If there's existing code in a cell, you can prompt the AI to edit the code
-- If you select/highlight some code in a cell, only the selected code will be edited
+- **Code will be added one line below** where your cursor was placed
 
 **Fix errors with AI**
 
-- When there's an error, you'll see a button on top-right "**Fix Error with AI**". Click it
-- The AI will try to resolve the error even if it is in a different cell by adding the appropriate code
+- When there's an error, you'll see a button on top-right "**Fix Error with AI**". Click it try fixing the error
 
 ## Feedback, bugs and docs
 
