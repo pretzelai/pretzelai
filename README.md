@@ -4,34 +4,34 @@
   <p align="center">
     Modern, open-source Jupyter alternative.
     <br />
-    <a href="https://pretzelai.app"><strong>Try it here »</strong></a>
+    <a href="https://pretzelai.app" target="_blank"><strong>Try it here »</strong></a>
     <br />
     <br />
-    <a href="https://discord.gg/DuDDmCTF">Discord</a>
+    <a href="https://discord.gg/DuDDmCTF" target="_blank">Discord</a>
     ·
-    <a href="https://withpretzel.com">Website</a>
+    <a href="https://withpretzel.com" target="_blank">Website</a>
     ·
     <a href="https://github.com/pretzelai/pretzelai/issues">Issues</a>
     ·
-    <a href="mailto:founders@withpretzel.com">Contact</a>
+    <a href="mailto:founders@withpretzel.com" target="_blank">Contact</a>
   </p>
 </p>
 
 <p align="center">
-   <a href="https://github.com/pretzelai/pretzelai/stargazers"><img src="https://img.shields.io/github/stars/pretzelai/pretzelai" alt="Github Stars"></a>
-   <a href="https://pypi.org/project/pretzelai/"><img src="https://img.shields.io/pypi/v/pretzelai.svg?style=flat-square&label=PyPI+PretzelAI" alt="Issues"></a>
-   <a href="https://discord.gg/DuDDmCTF"><img src="https://img.shields.io/badge/Discord-PretzelAI-blue?logo=discord" alt="Join Pretzel on Discord"></a>
+   <a href="https://github.com/pretzelai/pretzelai/stargazers" target="_blank"><img src="https://img.shields.io/github/stars/pretzelai/pretzelai" alt="Github Stars"></a>
+   <a href="https://pypi.org/project/pretzelai/" target="_blank"><img src="https://img.shields.io/pypi/v/pretzelai.svg?style=flat-square&label=PyPI+PretzelAI" alt="Issues"></a>
+   <a href="https://discord.gg/DuDDmCTF" target="_blank"><img src="https://img.shields.io/badge/Discord-PretzelAI-blue?logo=discord" alt="Join Pretzel on Discord"></a>
    <a href="https://github.com/pretzelai/pretzelai/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
    <a href="https://github.com/pretzelai/pretzelai/pulse"><img src="https://img.shields.io/github/commit-activity/m/pretzelai/pretzelai" alt="Commits-per-month"></a>
 </p>
 
-Pretzel is a fork of Jupyter with the goal to improve Jupyter's capabilities. As one of our first features, we've added AI code generation, editing and error fixing to Jupyter.
+Pretzel is a fork of Jupyter with the goal to improve Jupyter's capabilities. As our first feature, we've added AI code generation, editing and error fixing to Jupyter.
 
-Switching to Pretzel from Jupyter is extremely easy since it's simply an improved version of Jupyter. All of your Jupyter config, settings, keybindings, and extensions will work out of the box.
+Switching to Pretzel from Jupyter is extremely easy **since it's simply an improved version of Jupyter**. All of your Jupyter config, settings, keybindings, and extensions will work out of the box.
 
 ## Quick Start
 
-- Install Pretzel: `pip install pretzelai` then run `pretzel lab` to open the web interface. OR, use our **free hosted version**: https://pretzelai.app
+- Installation: `pip install pretzelai` then run `pretzel lab` to open the web interface. OR, use our **free hosted version**: [pretzelai.app](https://pretzelai.app)
 - In any Jupyter cell, click “**Ask AI**” or press Cmd+K (Mac) / Ctrl+K (Linux/Windows) to prompt AI
 - Use the **AI Sidebar** with Ctrl+Cmd+B (Mac) or Ctrl+Alt+B (Linux/Windows) to chat with AI, generate code, and ask questions
 - To switch to your own OpenAI API key, see the [Configuration](#configuration) section
@@ -45,7 +45,7 @@ Our roadmap includes building features such as:
 - Native AI code generation and understanding features similar to [Cursor](https://cursor.sh/)
 - Frictionless realtime collaboration: pair-programming, comments, version history, etc.
 - SQL support (both in code cells and as a standalone SQL IDE)
-- Visual analysis builder (see more here)
+- Visual analysis builder (see more [here](https://github.com/pretzelai/pretzelai/tree/main/pretzelai_visual#readme))
 - VSCode like code-writing experience using [Monaco](https://github.com/microsoft/monaco-editor)
 - 1-click dashboard creation and sharing from Jupyter notebooks
 
@@ -96,16 +96,16 @@ pip install .
 
 #### Using the AI Sidebar
 
-- Use `Ctrl+Cmd+B` (Mac) or `Ctrl+Alt+B` (Linux/Windows) or the [Pretzel Icon on the right side](assets/pretzel-icon.png) to activate the AI Sidebar
+- Use **`Ctrl+Cmd+B` (Mac) / `Ctrl+Alt+B` (Linux/Windows)** or the [Pretzel Icon on the right sidebar](assets/pretzel-icon.png) to activate the AI Sidebar
 - You can ask questions, generate code, or search for existing code
-- The AI uses the code in the active cell as context
-- Mention `@notebook` in your prompt to use code from the current notebook for context
+- The AI always **uses the code in the active cell as context**. If you highlight some code in the active cell, only the highlighted code will be used as context
+- Mention `@notebook` to send additional relevant code in the current notebook as context to the AI
 
 _Example uses of AI Sidebar_:
 
-- "Modify the function `my_function` in @notebook to be more efficient"
-- "Where is the code in @notebook that removes outliers"?
-- _(While in current cell)_ "Can you explain what this code does?"
+- "Modify the function `my_function` in @notebook to be more efficient" ← _this will search for the function `my_function` in the whole notebook and modify it_
+- "Where is the code in @notebook that removes outliers"? ← _this will search for code that removes outliers in the whole notebook_
+- "Can you explain what this code does?" ← _this will explain the code **in the current cell**_
 
 #### Adding code in the middle of existing code
 
@@ -119,7 +119,9 @@ _Example uses of AI Sidebar_:
 
 ## Configuration
 
-Pretzel comes with support for a free AI server and works without any configuration. You can also configure it to use your own OpenAI/Azure API key. To do so:
+**Pretzel works out-of-the-box, no configuration needed.**
+
+Pretzel uses our free AI server by default. You can **configure it to use your own OpenAI/Azure API key** instead.
 
 **OpenAI Support**
 
@@ -138,7 +140,6 @@ Just as with OpenAI settings, you can also use Azure hosted models if you select
 
 - Please report bugs here: https://github.com/pretzelai/pretzelai/issues
 - Have any feedback? Any complains? We'd love feedback: founders@withpretzel.com
-- Additional documentation will become available on our website by end of May!
 
 ## Jupyter specific information
 
