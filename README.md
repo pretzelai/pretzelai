@@ -96,7 +96,7 @@ pip install .
 
 #### Using the AI Sidebar
 
-- Use **`Ctrl+Cmd+B` (Mac) / `Ctrl+Alt+B` (Linux/Windows)** or the [Pretzel Icon on the right sidebar](assets/pretzel-icon.png) to activate the AI Sidebar
+- Use **`Ctrl+Cmd+B` (Mac) / `Ctrl+Alt+B` (Linux/Windows)** or the [Pretzel Icon on the right sidebar](assets/pretzel-icon-finder.png) to activate the AI Sidebar
 - You can ask questions, generate code, or search for existing code
 - The AI always **uses the code in the active cell as context**. If you highlight some code in the active cell, only the highlighted code will be used as context
 - Mention `@notebook` to send additional relevant code in the current notebook as context to the AI
