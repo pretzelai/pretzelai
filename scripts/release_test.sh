@@ -26,7 +26,7 @@ pushd $TEST_DIR
 
 ls -ltr
 
-JLAB_BROWSER_CHECK_OUTPUT=${OUTPUT_DIR} python -m jupyterlab.browser_check
+JLAB_BROWSER_CHECK_OUTPUT=${OUTPUT_DIR} python -m pretzelai.browser_check
 
 # Remove node_modules to get a clean directory and build the extensions
 rm -rf ./mock_packages/mimeextension/node_modules
@@ -37,7 +37,7 @@ jupyter labextension install ./mock_packages/mimeextension --no-build --debug
 jupyter labextension develop ./mock_packages/extension --debug
 jupyter labextension build ./mock_packages/extension --debug
 
-conda install --override-channels --strict-channel-priority -c conda-forge -c nodefaults -y ipywidgets altair matplotlib-base vega_datasets jupyterlab_widgets
+conda install --override-channels --strict-channel-priority -c conda-forge -c nodefaults -y ipywidgets altair matplotlib-base vega_datasets pretzelai_widgets
 
 popd
 
@@ -49,7 +49,7 @@ pushd $TEST_DIR
 
 jupyter lab build --debug
 
-JLAB_BROWSER_CHECK_OUTPUT=${OUTPUT_DIR} python -m jupyterlab.browser_check
+JLAB_BROWSER_CHECK_OUTPUT=${OUTPUT_DIR} python -m pretzelai.browser_check
 
 # if not running on github actions, start JupyterLab
 if [[ -z "${GITHUB_ACTIONS}" ]]; then

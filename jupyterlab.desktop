@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=JupyterLab
-Comment=Run JupyterLab
-Exec=jupyter-lab %f
+Name=PretzelAI
+Comment=Run PretzelAI
+Exec=pretzel-lab %f
 Terminal=true
 Type=Application
-Icon=jupyterlab
+Icon=pretzelai
 StartupNotify=true
 MimeType=application/x-ipynb+json;
 Categories=Development;Education;

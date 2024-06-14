@@ -19,7 +19,7 @@ if os.name == "nt":
             dnames.remove("node_modules")
 
 
-subprocess.check_call("python -m pip uninstall -y jupyterlab".split(), cwd=here)  # noqa S603
+subprocess.check_call("python -m pip uninstall -y pretzelai".split(), cwd=here)  # noqa S603
 
 
 def resolve_pattern(pat):

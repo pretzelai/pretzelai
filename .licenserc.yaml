@@ -34,7 +34,7 @@ header:
     - 'examples/federated/example.cert'
     - 'galata/test/jupyterlab/notebooks/'
     - 'galata/test/*/*/*.txt'
-    - 'jupyterlab.desktop'
+    - 'pretzelai.desktop'
     - 'pretzelai/staging'
     - 'packages/codemirror/test/foo.grammar'
     - 'packages/extensionmanager-extension/examples/listings/settings/@jupyterlab/extensionmanager-extension/plugin.jupyterlab-settings'

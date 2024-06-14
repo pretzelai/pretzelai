@@ -4,7 +4,7 @@
 $Env:YARN_ENABLE_GLOBAL_CACHE = "1"
 $ErrorActionPreference = "stop"
 
-python -c "from jupyterlab.commands import build_check; build_check()"
+python -c "from pretzelai.commands import build_check; build_check()"
 if ($LASTEXITCODE -ne 0) { throw "Command failed. See above errors for details" }
 
 if ($Env:GROUP -eq "python") {
@@ -34,7 +34,7 @@ if ($Env:GROUP -eq "integrity") {
     jlpm run build
     if ($LASTEXITCODE -ne 0) { throw "Command failed. See above errors for details" }
 
-    python -m jupyterlab.browser_check --dev-mode
+    python -m pretzelai.browser_check --dev-mode
     if ($LASTEXITCODE -ne 0) { throw "Command failed. See above errors for details" }
 }
 

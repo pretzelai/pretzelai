@@ -14,7 +14,7 @@ export YARN_ENABLE_INLINE_BUILDS=1
 
 
 if [[ $GROUP != nonode ]]; then
-    python -c "from jupyterlab.commands import build_check; build_check()"
+    python -c "from pretzelai.commands import build_check; build_check()"
 fi
 
 
@@ -69,7 +69,7 @@ if [[ $GROUP == integrity ]]; then
     fi
     # Run a browser check in dev mode
     jlpm run build
-    python -m jupyterlab.browser_check --dev-mode
+    python -m pretzelai.browser_check --dev-mode
 fi
 
 
@@ -192,7 +192,7 @@ if [[ $GROUP == usage ]]; then
     jupyter labextension list --debug
     jupyter labextension list 1>labextensions 2>&1
     cat labextensions | grep "@jupyterlab/mock-mime-extension.*enabled.*OK"
-    python -m jupyterlab.browser_check
+    python -m pretzelai.browser_check
     jupyter labextension disable @jupyterlab/mock-mime-extension --debug
     jupyter labextension enable @jupyterlab/mock-mime-extension --debug
     jupyter labextension uninstall @jupyterlab/mock-mime-extension --no-build --debug
@@ -237,7 +237,7 @@ if [[ $GROUP == usage ]]; then
     python -m pip install -e test-hyphens-underscore
     jupyter labextension develop test-hyphens-underscore --overwrite --debug
 
-    python -m jupyterlab.browser_check
+    python -m pretzelai.browser_check
     jupyter labextension list 1>labextensions 2>&1
     cat labextensions | grep "@jupyterlab/mock-extension.*enabled.*OK"
     jupyter labextension build extension --static-url /foo/
@@ -280,7 +280,7 @@ if [[ $GROUP == usage ]]; then
 
     # Use the extension upgrade script
     python -m pip install .[upgrade-extension]
-    python -m jupyterlab.upgrade_extension --no-input pretzelai/tests/mock_packages/extension
+    python -m pretzelai.upgrade_extension --no-input pretzelai/tests/mock_packages/extension
 fi
 
 
@@ -296,21 +296,21 @@ if [[ $GROUP == usage2 ]]; then
     popd
 
     # Make sure we can successfully load the dev app.
-    python -m jupyterlab.browser_check --dev-mode
+    python -m pretzelai.browser_check --dev-mode
 
     # Make sure core mode works
     jlpm run build:core
     # Make sure we have a final released version of JupyterLab server
-    python -m jupyterlab.browser_check --core-mode
+    python -m pretzelai.browser_check --core-mode
 
     # Make sure we can run the built app.
-    jupyter labextension install ./jupyterlab/tests/mock_packages/extension --debug
-    python -m jupyterlab.browser_check
+    jupyter labextension install ./pretzelai/tests/mock_packages/extension --debug
+    python -m pretzelai.browser_check
     jupyter labextension list --debug
 
     # Make sure we can run watch mode with no built application
     jupyter lab clean
-    python -m jupyterlab.browser_check --watch
+    python -m pretzelai.browser_check --watch
 
     # Make sure we can non-dev install.
     TEST_INSTALL_PATH="${HOME}/test_install"
@@ -319,10 +319,10 @@ if [[ $GROUP == usage2 ]]; then
 
     $TEST_INSTALL_PATH/bin/jupyter server extension list 1>serverextensions 2>&1
     cat serverextensions
-    cat serverextensions | grep -i "jupyterlab.*enabled"
-    cat serverextensions | grep -i "jupyterlab.*OK"
+    cat serverextensions | grep -i "pretzelai.*enabled"
+    cat serverextensions | grep -i "pretzelai.*OK"
 
-    $TEST_INSTALL_PATH/bin/python -m jupyterlab.browser_check
+    $TEST_INSTALL_PATH/bin/python -m pretzelai.browser_check
     # Make sure we can run the build
     $TEST_INSTALL_PATH/bin/jupyter lab build
 
@@ -363,11 +363,11 @@ if [[ $GROUP == splice_source ]]; then
     jupyter lab --version > version.txt
     cat version.txt
     cat version.txt | grep -q "spliced"
-    python -m jupyterlab.browser_check
+    python -m pretzelai.browser_check
 
     cd pretzelai/tests/mock_packages/mimeextension
     jupyter labextension install .
-    python -m jupyterlab.browser_check
+    python -m pretzelai.browser_check
 
     jupyter lab --version > version.txt
     cat version.txt
@@ -381,7 +381,7 @@ if [[ $GROUP == splice_source ]]; then
     jupyter labextension install --splice-source .
     jupyter lab --version > version.txt
     cat version.txt | grep -q "spliced"
-    python -m jupyterlab.browser_check
+    python -m pretzelai.browser_check
 fi
 
 
@@ -403,7 +403,7 @@ if [[ $GROUP == interop ]]; then
     cat labextensions | grep -q "@jupyterlab/mock-consumer.*OK"
     cat labextensions | grep -q "@jupyterlab/mock-provider.*OK"
 
-    python -m jupyterlab.browser_check
+    python -m pretzelai.browser_check
 
     # Clear install
     pip uninstall -y jlab_mock_provider
@@ -423,7 +423,7 @@ if [[ $GROUP == interop ]]; then
     jupyter labextension list 1>labextensions 2>&1
     cat labextensions | grep -q "@jupyterlab/mock-consumer.*OK"
     cat labextensions | grep -q "@jupyterlab/mock-provider.*OK"
-    python -m jupyterlab.browser_check
+    python -m pretzelai.browser_check
 
     # Clear install
     pip uninstall -y jlab_mock_consumer
@@ -447,15 +447,15 @@ if [[ $GROUP == interop ]]; then
     jupyter labextension list 1>labextensions 2>&1
     cat labextensions | grep -q "@jupyterlab/mock-consumer.*OK"
     cat labextensions | grep -q "@jupyterlab/mock-provider.*OK"
-    python -m jupyterlab.browser_check
+    python -m pretzelai.browser_check
 fi
 
 if [[ $GROUP == nonode ]]; then
     # Make sure we can install the wheel
     virtualenv -p $(which python3) test_install
-    ./test_install/bin/pip install -v --pre --no-cache-dir --no-deps jupyterlab --no-index --find-links=dist  # Install latest jupyterlab
-    ./test_install/bin/pip install jupyterlab  # Install jupyterlab dependencies
-    ./test_install/bin/python -m jupyterlab.browser_check --no-browser-test
+    ./test_install/bin/pip install -v --pre --no-cache-dir --no-deps pretzelai --no-index --find-links=dist  # Install latest pretzelai
+    ./test_install/bin/pip install pretzelai  # Install pretzelai dependencies
+    ./test_install/bin/python -m pretzelai.browser_check --no-browser-test
 
     # Make sure we can start and kill the lab server
     ./test_install/bin/jupyter lab --no-browser &
@@ -469,5 +469,5 @@ if [[ $GROUP == nonode ]]; then
     # Make sure we can install the tarball
     virtualenv -p $(which python3) test_sdist
     ./test_sdist/bin/pip install dist/*.tar.gz
-    ./test_sdist/bin/python -m jupyterlab.browser_check --no-browser-test
+    ./test_sdist/bin/python -m pretzelai.browser_check --no-browser-test
 fi
