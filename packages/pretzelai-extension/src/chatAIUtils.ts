@@ -22,7 +22,7 @@ export const generateChatPrompt = (
   let output = `${lastContent}\n`;
   if (selectedCode) {
     setReferenceSource('selected code');
-    output += `My question is related to this part of the code:
+    output += `My question is related to this part of the code, answer me in a short and concise manner:
 \`\`\`
 ${selectedCode}
 \`\`\``;
