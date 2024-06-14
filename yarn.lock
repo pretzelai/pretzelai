@@ -4607,36 +4607,36 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/mock-consumer@workspace:jupyterlab/tests/mock_packages/interop/consumer":
+"@jupyterlab/mock-consumer@workspace:pretzelai/tests/mock_packages/interop/consumer":
   version: 0.0.0-use.local
-  resolution: "@jupyterlab/mock-consumer@workspace:jupyterlab/tests/mock_packages/interop/consumer"
+  resolution: "@jupyterlab/mock-consumer@workspace:pretzelai/tests/mock_packages/interop/consumer"
   dependencies:
     "@jupyterlab/builder": ^4.2.0
     "@jupyterlab/mock-token": ^4.2.0
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/mock-extension@workspace:jupyterlab/tests/mock_packages/extension":
+"@jupyterlab/mock-extension@workspace:pretzelai/tests/mock_packages/extension":
   version: 0.0.0-use.local
-  resolution: "@jupyterlab/mock-extension@workspace:jupyterlab/tests/mock_packages/extension"
+  resolution: "@jupyterlab/mock-extension@workspace:pretzelai/tests/mock_packages/extension"
   dependencies:
     "@jupyterlab/builder": ^4.2.0
     "@jupyterlab/launcher": ^4.2.0
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/mock-provider@workspace:jupyterlab/tests/mock_packages/interop/provider":
+"@jupyterlab/mock-provider@workspace:pretzelai/tests/mock_packages/interop/provider":
   version: 0.0.0-use.local
-  resolution: "@jupyterlab/mock-provider@workspace:jupyterlab/tests/mock_packages/interop/provider"
+  resolution: "@jupyterlab/mock-provider@workspace:pretzelai/tests/mock_packages/interop/provider"
   dependencies:
     "@jupyterlab/builder": ^4.2.0
     "@jupyterlab/mock-token": ^4.2.0
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/mock-token@^4.2.0, @jupyterlab/mock-token@workspace:jupyterlab/tests/mock_packages/interop/token":
+"@jupyterlab/mock-token@^4.2.0, @jupyterlab/mock-token@workspace:pretzelai/tests/mock_packages/interop/token":
   version: 0.0.0-use.local
-  resolution: "@jupyterlab/mock-token@workspace:jupyterlab/tests/mock_packages/interop/token"
+  resolution: "@jupyterlab/mock-token@workspace:pretzelai/tests/mock_packages/interop/token"
   dependencies:
     "@lumino/coreutils": ^2.1.2
   languageName: unknown

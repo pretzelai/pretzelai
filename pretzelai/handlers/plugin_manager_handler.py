@@ -9,7 +9,7 @@ import json
 from jupyter_server.base.handlers import APIHandler
 from tornado import web
 
-from jupyterlab.extensions.manager import PluginManager
+from pretzelai.extensions.manager import PluginManager
 
 
 class PluginHandler(APIHandler):

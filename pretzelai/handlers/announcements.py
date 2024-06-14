@@ -16,7 +16,7 @@ from jupyterlab_server.translation_utils import translator
 from packaging.version import parse
 from tornado import httpclient, web
 
-from jupyterlab._version import __version__
+from pretzelai._version import __version__
 
 ISO8601_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 JUPYTERLAB_LAST_RELEASE_URL = "https://pypi.org/pypi/pretzelai/json"
@@ -63,7 +63,9 @@ class CheckForUpdateABC(abc.ABC):
         self.version = version
 
     @abc.abstractmethod
-    async def __call__(self) -> Awaitable[Union[None, str, Tuple[str, Tuple[str, str]]]]:
+    async def __call__(
+        self,
+    ) -> Awaitable[Union[None, str, Tuple[str, Tuple[str, str]]]]:
         """Get the notification message if a new version is available.
 
         Returns:
@@ -109,8 +111,13 @@ class CheckForUpdate(CheckForUpdateABC):
             if parse(self.version) < parse(last_version):
                 trans = translator.load("jupyterlab")
                 return (
-                    trans.__(f"A newer version ({last_version}) of JupyterLab is available."),
-                    (trans.__("Open changelog"), f"{JUPYTERLAB_RELEASE_URL}{last_version}"),
+                    trans.__(
+                        f"A newer version ({last_version}) of JupyterLab is available."
+                    ),
+                    (
+                        trans.__("Open changelog"),
+                        f"{JUPYTERLAB_RELEASE_URL}{last_version}",
+                    ),
                 )
             else:
                 return None
@@ -154,7 +161,9 @@ class CheckForUpdateHandler(APIHandler):
     ) -> None:
         super().initialize()
         self.update_checker = (
-            NeverCheckForUpdate(__version__) if update_checker is None else update_checker
+            NeverCheckForUpdate(__version__)
+            if update_checker is None
+            else update_checker
         )
         self.update_checker.logger = self.log
 
@@ -183,7 +192,9 @@ class CheckForUpdateHandler(APIHandler):
 
         self.set_status(200)
         self.finish(
-            json.dumps({"notification": None if notification is None else asdict(notification)})
+            json.dumps(
+                {"notification": None if notification is None else asdict(notification)}
+            )
         )
 
 
@@ -237,9 +248,7 @@ class NewsHandler(APIHandler):
                         elif default is not None:
                             return default
                         else:
-                            error_m = (
-                                f"atom feed entry does not contain a required attribute: {attr}"
-                            )
+                            error_m = f"atom feed entry does not contain a required attribute: {attr}"
                             raise KeyError(error_m)
 
                     entry_title = get_xml_text("title")
@@ -249,14 +258,20 @@ class NewsHandler(APIHandler):
                     entry_summary = get_xml_text("summary", default="")
                     links = node.findall("atom:link", xml_namespaces)
                     if len(links) > 1:
-                        alternate = list(filter(lambda elem: elem.get("rel") == "alternate", links))
+                        alternate = list(
+                            filter(lambda elem: elem.get("rel") == "alternate", links)
+                        )
                         link_node = alternate[0] if alternate else links[0]
                     else:
                         link_node = links[0] if len(links) == 1 else None
-                    entry_link = link_node.get("href") if link_node is not None else None
+                    entry_link = (
+                        link_node.get("href") if link_node is not None else None
+                    )
 
                     message = (
-                        "\n".join([entry_title, entry_summary]) if entry_summary else entry_title
+                        "\n".join([entry_title, entry_summary])
+                        if entry_summary
+                        else entry_title
                     )
                     modified_at = format_datetime(entry_updated)
                     created_at = format_datetime(entry_published)
@@ -265,11 +280,13 @@ class NewsHandler(APIHandler):
                         createdAt=created_at,
                         modifiedAt=modified_at,
                         type="info",
-                        link=None
-                        if entry_link is None
-                        else (
-                            trans.__("Open full post"),
-                            entry_link,
+                        link=(
+                            None
+                            if entry_link is None
+                            else (
+                                trans.__("Open full post"),
+                                entry_link,
+                            )
                         ),
                         options={
                             "data": {

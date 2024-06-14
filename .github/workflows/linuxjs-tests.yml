@@ -61,7 +61,7 @@ jobs:
             js-translation,
             js-ui-components,
             js-vega5-extension,
-            js-workspaces,
+            js-workspaces
           ]
       fail-fast: false
     runs-on: ubuntu-22.04
@@ -71,7 +71,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: pretzelai/maintainer-tools/.github/actions/base-setup@v1
 
       - name: Install dependencies
         env:

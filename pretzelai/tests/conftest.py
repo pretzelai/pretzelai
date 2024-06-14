@@ -3,8 +3,8 @@
 
 import pytest
 
-from jupyterlab import __version__
-from jupyterlab.handlers.announcements import (
+from pretzelai import __version__
+from pretzelai.handlers.announcements import (
     CheckForUpdate,
     CheckForUpdateHandler,
     NewsHandler,

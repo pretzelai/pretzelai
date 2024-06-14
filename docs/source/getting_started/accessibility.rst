@@ -123,7 +123,7 @@ Evaluation report
 """""""""""""""""
 
 * An evaluation for JupyterLab is available at: `jupyterlab/jupyterlab/issues/9399 <https://github.com/jupyterlab/jupyterlab/issues/9399>`_.
-* User reports on JupyterLab's accessibility are available at:`the jupyterlab/jupyterlab label `tag:accessibility <https://github.com/jupyterlab/jupyterlab/labels/tag%3AAccessibility>`_.
+* User reports on JupyterLab's accessibility are available at:`the pretzelai/jupyterlab label `tag:accessibility <https://github.com/jupyterlab/jupyterlab/labels/tag%3AAccessibility>`_.
 
 What the community is doing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -150,7 +150,7 @@ We welcome your feedback and formal complaints on the accessibility status of Ju
 Please let us know if you encounter accessibility barriers on JupyterLab:
 
 * `Write an issue on jupyter/accessibility <https://github.com/jupyter/accessibility/issues/new>`_
-* `Write an issue on jupyterlab/jupyterlab <https://github.com/jupyterlab/jupyterlab/issues/new>`_ and request it be labeled `tag:Accessibility <https://github.com/jupyterlab/jupyterlab/labels/tag%3AAccessibility>`_
+* `Write an issue on pretzelai/jupyterlab <https://github.com/jupyterlab/jupyterlab/issues/new>`_ and request it be labeled `tag:Accessibility <https://github.com/jupyterlab/jupyterlab/labels/tag%3AAccessibility>`_
 * If you are interested in being part of any potential research or organized feedback initiatives, please reach out via one of the many JupyterLab community channels. Gauging community interest in user research participation helps us gain the support to make it happen.
 
 .. warning::

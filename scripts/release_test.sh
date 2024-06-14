@@ -21,7 +21,7 @@ conda activate "$JLAB_TEST_ENV"
 python -m pip install $(ls dist/*.whl)
 
 cp examples/notebooks/*.ipynb $TEST_DIR/
-cp -r jupyterlab/tests/mock_packages $TEST_DIR
+cp -r pretzelai/tests/mock_packages $TEST_DIR
 pushd $TEST_DIR
 
 ls -ltr

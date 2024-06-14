@@ -9,7 +9,7 @@ from jupyterlab_server import LabConfig
 from tornado.escape import url_escape
 from traitlets import Unicode
 
-from jupyterlab.labapp import LabApp
+from pretzelai.labapp import LabApp
 
 
 def mkdir(tmp_path, *parts):
@@ -27,7 +27,12 @@ workspaces_dir = pytest.fixture(lambda tmp_path: mkdir(tmp_path, "workspaces"))
 
 @pytest.fixture
 def make_lab_app(
-    jp_root_dir, jp_template_dir, app_settings_dir, user_settings_dir, schemas_dir, workspaces_dir
+    jp_root_dir,
+    jp_template_dir,
+    app_settings_dir,
+    user_settings_dir,
+    schemas_dir,
+    workspaces_dir,
 ):
     def _make_lab_app(**kwargs):
         class TestLabApp(LabApp):
@@ -109,6 +114,8 @@ def fetch_long(http_server_client, jp_auth_header, jp_base_url):
         headers = headers or {}
         headers.update(jp_auth_header)
         # Make request.
-        return http_server_client.fetch(url, headers=headers, request_timeout=250, **kwargs)
+        return http_server_client.fetch(
+            url, headers=headers, request_timeout=250, **kwargs
+        )
 
     return client_fetch

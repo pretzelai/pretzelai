@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: pretzelai/maintainer-tools/.github/actions/base-setup@v1
 
       - name: Set up browser cache
         uses: actions/cache@v4
@@ -103,7 +103,7 @@ jobs:
       - name: Checkout demo project
         uses: actions/checkout@v4
         with:
-          repository: jupyterlab/jupyterlab-demo
+          repository: pretzelai/jupyterlab-demo
           ref: master
           path: demo
 
@@ -113,7 +113,7 @@ jobs:
         working-directory: demo
 
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: pretzelai/maintainer-tools/.github/actions/base-setup@v1
 
       - name: Set up browser cache
         uses: actions/cache@v4

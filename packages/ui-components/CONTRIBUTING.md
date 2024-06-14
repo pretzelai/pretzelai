@@ -50,7 +50,7 @@ Possible design patterns for JLIcon:
 1. each icon is a function with methods (ie a callable instance). The icon is used by calling the appropriate method
 1. each icon is an instance of a well-defined `class`. The icon is used by calling the appropriate instance method
 
-Patterns 1) and 2) were both initially investigated (see [jupyterlab/jupyterlab#7299](https://github.com/jupyterlab/jupyterlab/pull/7299)). Pattern 3) was found to be easiest to reason about, and had a desirable set of tradeoffs relating to features like dynamic lookup and replaceability (eg you can replace the svg of an icon by just setting the `svgstr` field of the icon instance).
+Patterns 1) and 2) were both initially investigated (see [pretzelai/jupyterlab#7299](https://github.com/jupyterlab/jupyterlab/pull/7299)). Pattern 3) was found to be easiest to reason about, and had a desirable set of tradeoffs relating to features like dynamic lookup and replaceability (eg you can replace the svg of an icon by just setting the `svgstr` field of the icon instance).
 
 ## How icon resolution works
 

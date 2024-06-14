@@ -37,7 +37,7 @@ RUN --mount=type=cache,target=/jupyterlab/conda-cache,uid=${NEW_MAMBA_USER_ID},g
 WORKDIR /home/$MAMBA_USER/jupyterlab_cache
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER pyproject.toml LICENSE README.md ./
-COPY --chown=$MAMBA_USER:$MAMBA_USER jupyterlab/_version.py ./jupyterlab/_version.py
+COPY --chown=$MAMBA_USER:$MAMBA_USER pretzelai/_version.py ./jupyterlab/_version.py
 
 # Install all python dependencies only with pip to maximize using its cache
 RUN --mount=type=cache,target=/jupyterlab/pip-cache,uid=${NEW_MAMBA_USER_ID},gid=${NEW_MAMBA_USER_GID} \

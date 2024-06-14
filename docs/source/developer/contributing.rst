@@ -1031,7 +1031,7 @@ See :ref:`interface` for descriptions of elements in the UI.
 The Jupyter Server Extension
 ----------------------------
 
-The Jupyter server extension source files are in the jupyterlab/
+The Jupyter server extension source files are in the pretzelai/
 subdirectory. To use this extension, make sure the Jupyter Notebook
 server version 4.3 or later is installed.
 

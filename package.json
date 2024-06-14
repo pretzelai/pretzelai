@@ -21,8 +21,8 @@
     "tests",
     "tests/test-*",
     "testutils",
-    "jupyterlab/tests/mock_packages/extension",
-    "jupyterlab/tests/mock_packages/interop/*"
+    "pretzelai/tests/mock_packages/extension",
+    "pretzelai/tests/mock_packages/interop/*"
   ],
   "scripts": {
     "after:publish:assets": "jlpm && npm run build:utils && node buildutils/lib/publish --skip-publish",
@@ -35,7 +35,7 @@
     "build:all": "lerna run build:all",
     "postbuild:all": "npm run build:testutils && npm run build:galata",
     "build:builder": "cd builder && npm run build",
-    "build:core": "cd jupyterlab/staging && jlpm && (jlpm dlx yarn-berry-deduplicate -s fewerHighest || jlpm) && jlpm && npm run build",
+    "build:core": "cd pretzelai/staging && jlpm && (jlpm dlx yarn-berry-deduplicate -s fewerHighest || jlpm) && jlpm && npm run build",
     "build:dev": "npm run integrity && npm run build:all && cd dev_mode && npm run build",
     "build:dev:prod": "npm run integrity && npm run build:all && cd dev_mode && npm run build:prod",
     "build:dev:prod:minimize": "npm run integrity && npm run build:all && cd dev_mode && npm run build:prod:minimize",
@@ -54,7 +54,7 @@
     "bump:js:major": "node buildutils/lib/bump-js-major.js",
     "bumpversion": "node buildutils/lib/bumpversion.js",
     "clean": "npm run clean:dev && npm run clean:packages",
-    "clean:core": "cd jupyterlab/staging && npm run clean",
+    "clean:core": "cd pretzelai/staging && npm run clean",
     "clean:dev": "cd dev_mode && npm run clean",
     "clean:examples": "node buildutils/lib/clean-packages.js examples",
     "clean:galata": "cd galata && npm run clean",

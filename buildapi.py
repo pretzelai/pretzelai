@@ -23,11 +23,11 @@ def builder(target_name, version, *args, **kwargs):
     if version == "editable":
         return
 
-    files = glob.glob("jupyterlab/static/*.js.map")
+    files = glob.glob("pretzelai/static/*.js.map")
     for path in files:
         os.remove(path)
 
-    target = glob.glob("jupyterlab/static/package.json")[0]
+    target = glob.glob("pretzelai/static/package.json")[0]
     with open(target) as fid:
         npm_version = json.load(fid)["jupyterlab"]["version"]
 

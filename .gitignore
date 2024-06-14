@@ -25,19 +25,19 @@ examples/federated/labextensions
 
 junit.xml
 
-jupyterlab/galata/@jupyterlab
-jupyterlab/geckodriver
-jupyterlab/static
-jupyterlab/schemas
-jupyterlab/themes
-jupyterlab/style.js
-jupyterlab/tests/**/static
-jupyterlab/tests/**/labextension
+pretzelai/galata/@jupyterlab
+pretzelai/geckodriver
+pretzelai/static
+pretzelai/schemas
+pretzelai/themes
+pretzelai/style.js
+pretzelai/tests/**/static
+pretzelai/tests/**/labextension
 
 ui-tests/test-output
 
 # Remove after next release
-jupyterlab/imports.css
+pretzelai/imports.css
 
 packages/codemirror/test/foo*.js
 packages/nbconvert-css/style/
@@ -116,12 +116,12 @@ yarn-error.log
 # yarn >=2.x local files
 .yarn/*
 .pnp.*
-jupyterlab/staging/.yarn/*
-jupyterlab/staging/.pnp.*
-jupyterlab/tests/mock_packages/test-hyphens-underscore/.yarn/*
-jupyterlab/tests/mock_packages/test-hyphens-underscore/.pnp/*
-jupyterlab/tests/mock_packages/test_no_hyphens/.yarn/*
-jupyterlab/tests/mock_packages/test_no_hyphens/.pnp/*
+pretzelai/staging/.yarn/*
+pretzelai/staging/.pnp.*
+pretzelai/tests/mock_packages/test-hyphens-underscore/.yarn/*
+pretzelai/tests/mock_packages/test-hyphens-underscore/.pnp/*
+pretzelai/tests/mock_packages/test_no_hyphens/.yarn/*
+pretzelai/tests/mock_packages/test_no_hyphens/.pnp/*
 
 # copied changelog file
 docs/source/getting_started/changelog.md

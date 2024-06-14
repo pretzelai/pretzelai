@@ -858,7 +858,7 @@ export async function ensureIntegrity(): Promise<boolean> {
       utils.run('jlpm install');
     } catch (error) {
       // Fallback in case this script is called during editable installation
-      utils.run(`node jupyterlab/staging/yarn.js install`);
+      utils.run(`node pretzelai/staging/yarn.js install`);
     }
 
     console.debug('\n\nMade integrity changes!');

@@ -53,7 +53,7 @@ jobs:
             });
 
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: pretzelai/maintainer-tools/.github/actions/base-setup@v1
 
       - uses: iterative/setup-cml@v3
 
@@ -217,7 +217,7 @@ jobs:
             core.exportVariable('PULL_REQUEST_ID', pull_request.number);
 
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: pretzelai/maintainer-tools/.github/actions/base-setup@v1
 
       - name: Install dependencies
         run: |
@@ -234,7 +234,7 @@ jobs:
 
       - name: Execute memory leak tests
         id: memory_leaks
-        uses: jupyterlab/benchmarks/.github/actions/memory-leak@v1
+        uses: pretzelai/benchmarks/.github/actions/memory-leak@v1
         with:
           server_url: localhost:8888
           artifacts_name: benchmark-assets

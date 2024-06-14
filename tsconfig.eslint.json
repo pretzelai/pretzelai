@@ -25,7 +25,7 @@
     "packages/**/*.config.js",
     "packages/metapackage/build-doc-index.js",
     "scripts/*",
-    "jupyterlab/*",
-    "jupyterlab/staging/*"
+    "pretzelai/*",
+    "pretzelai/staging/*"
   ]
 }

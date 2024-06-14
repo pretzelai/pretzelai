@@ -14,7 +14,7 @@ from jupyterlab_server.translation_utils import translator
 from traitlets import Enum
 from traitlets.config import Configurable, LoggingConfigurable
 
-from jupyterlab.commands import (
+from pretzelai.commands import (
     _AppHandler,
     _ensure_options,
     disable_extension,
@@ -174,7 +174,9 @@ class ExtensionsCache:
         last_page: Last available page result
     """
 
-    cache: Dict[int, Optional[Dict[str, ExtensionPackage]]] = field(default_factory=dict)
+    cache: Dict[int, Optional[Dict[str, ExtensionPackage]]] = field(
+        default_factory=dict
+    )
     last_page: int = 1
 
 
@@ -207,7 +209,9 @@ class PluginManager(LoggingConfigurable):
     ) -> None:
         super().__init__(parent=parent)
         self.log.debug(
-            "Plugins in %s will managed on the %s level", self.__class__.__name__, self.level
+            "Plugins in %s will managed on the %s level",
+            self.__class__.__name__,
+            self.level,
         )
         self.app_options = _ensure_options(app_options)
         plugin_options_field = {f.name for f in fields(PluginManagerOptions)}
@@ -265,7 +269,9 @@ class PluginManager(LoggingConfigurable):
             )
         try:
             for plugin in plugins:
-                disable_extension(plugin, app_options=self.app_options, level=self.level)
+                disable_extension(
+                    plugin, app_options=self.app_options, level=self.level
+                )
             return ActionResult(status="ok", needs_restart=["frontend"])
         except Exception as err:
             return ActionResult(status="error", message=repr(err))
@@ -331,7 +337,9 @@ class ExtensionManager(PluginManager):
         ext_options: Optional[dict] = None,
         parent: Optional[Configurable] = None,
     ) -> None:
-        super().__init__(app_options=app_options, ext_options=ext_options, parent=parent)
+        super().__init__(
+            app_options=app_options, ext_options=ext_options, parent=parent
+        )
         self.log = self.app_options.logger
         self.app_dir = Path(self.app_options.app_dir)
         self.core_config = self.app_options.core_config
@@ -341,9 +349,14 @@ class ExtensionManager(PluginManager):
         self._listings_block_mode = True
         self._listing_fetch: Optional[tornado.ioloop.PeriodicCallback] = None
 
-        if len(self.options.allowed_extensions_uris) or len(self.options.blocked_extensions_uris):
+        if len(self.options.allowed_extensions_uris) or len(
+            self.options.blocked_extensions_uris
+        ):
             self._listings_block_mode = len(self.options.allowed_extensions_uris) == 0
-            if not self._listings_block_mode and len(self.options.blocked_extensions_uris) > 0:
+            if (
+                not self._listings_block_mode
+                and len(self.options.blocked_extensions_uris) > 0
+            ):
                 self.log.warning(
                     "You have define simultaneously blocked and allowed extensions listings. The allowed listing will take precedence."
                 )
@@ -389,7 +402,9 @@ class ExtensionManager(PluginManager):
         """
         raise NotImplementedError()
 
-    async def install(self, extension: str, version: Optional[str] = None) -> ActionResult:
+    async def install(
+        self, extension: str, version: Optional[str] = None
+    ) -> ActionResult:
         """Install the required extension.
 
         Note:
@@ -470,7 +485,10 @@ class ExtensionManager(PluginManager):
             The extensions
             Last page of results
         """
-        if query not in self._extensions_cache or page not in self._extensions_cache[query].cache:
+        if (
+            query not in self._extensions_cache
+            or page not in self._extensions_cache[query].cache
+        ):
             await self.refresh(query, page, per_page)
 
         # filter using listings settings
@@ -496,7 +514,9 @@ class ExtensionManager(PluginManager):
                     if name in listing:
                         extensions.append(replace(ext, allowed=True))
                     elif ext.installed_version:
-                        self.log.warning(f"Not allowed extension '{name}' is installed.")
+                        self.log.warning(
+                            f"Not allowed extension '{name}' is installed."
+                        )
                         extensions.append(replace(ext, allowed=False))
 
         return extensions, self._extensions_cache[query].last_page
@@ -577,11 +597,15 @@ class ExtensionManager(PluginManager):
                 author=data.get("author", {}).get("name", data.get("author")),
                 license=data.get("license"),
                 bug_tracker_url=data.get("bugs", {}).get("url"),
-                repository_url=data.get("repository", {}).get("url", data.get("repository")),
+                repository_url=data.get("repository", {}).get(
+                    "url", data.get("repository")
+                ),
             )
 
             if get_latest_version:
-                pkg = replace(pkg, latest_version=await self.get_latest_version(pkg.name))
+                pkg = replace(
+                    pkg, latest_version=await self.get_latest_version(pkg.name)
+                )
 
             extensions[normalized_name] = pkg
 
@@ -613,10 +637,14 @@ class ExtensionManager(PluginManager):
                 author=data.get("author", {}).get("name", data.get("author")),
                 license=data.get("license"),
                 bug_tracker_url=data.get("bugs", {}).get("url"),
-                repository_url=data.get("repository", {}).get("url", data.get("repository")),
+                repository_url=data.get("repository", {}).get(
+                    "url", data.get("repository")
+                ),
             )
             if get_latest_version:
-                pkg = replace(pkg, latest_version=await self.get_latest_version(pkg.name))
+                pkg = replace(
+                    pkg, latest_version=await self.get_latest_version(pkg.name)
+                )
             extensions[normalized_name] = pkg
 
         for name in build_check_info["uninstall"]:
@@ -631,13 +659,17 @@ class ExtensionManager(PluginManager):
                     enabled=False,
                     core=False,
                     latest_version=ExtensionManager.get_semver_version(data["version"]),
-                    installed_version=ExtensionManager.get_semver_version(data["version"]),
+                    installed_version=ExtensionManager.get_semver_version(
+                        data["version"]
+                    ),
                     status="warning",
                     pkg_type="prebuilt",
                     author=data.get("author", {}).get("name", data.get("author")),
                     license=data.get("license"),
                     bug_tracker_url=data.get("bugs", {}).get("url"),
-                    repository_url=data.get("repository", {}).get("url", data.get("repository")),
+                    repository_url=data.get("repository", {}).get(
+                        "url", data.get("repository")
+                    ),
                 )
                 extensions[normalized_name] = pkg
 
@@ -687,4 +719,6 @@ class ExtensionManager(PluginManager):
             self._extensions_cache[query].cache[page] = extensions
             self._extensions_cache[query].last_page = last_page or 1
         else:
-            self._extensions_cache[query] = ExtensionsCache({page: extensions}, last_page or 1)
+            self._extensions_cache[query] = ExtensionsCache(
+                {page: extensions}, last_page or 1
+            )

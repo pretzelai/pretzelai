@@ -36,7 +36,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: pretzelai/maintainer-tools/.github/actions/base-setup@v1
 
       - name: Install dependencies
         run: |
@@ -44,7 +44,7 @@ jobs:
           # Build dev-mode
           jlpm run build
 
-      - uses: jupyterlab/maintainer-tools/.github/actions/update-snapshots@v1
+      - uses: pretzelai/maintainer-tools/.github/actions/update-snapshots@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           server_url: http-get://localhost:8888/lab
@@ -89,7 +89,7 @@ jobs:
       - name: Checkout demo project
         uses: actions/checkout@v4
         with:
-          repository: jupyterlab/jupyterlab-demo
+          repository: pretzelai/jupyterlab-demo
           ref: master
           path: demo
 
@@ -105,7 +105,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: pretzelai/maintainer-tools/.github/actions/base-setup@v1
 
       - name: Install dependencies
         working-directory: core
@@ -124,7 +124,7 @@ jobs:
           # Build dev-mode
           jlpm run build
 
-      - uses: jupyterlab/maintainer-tools/.github/actions/update-snapshots@v1
+      - uses: pretzelai/maintainer-tools/.github/actions/update-snapshots@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           server_url: http-get://localhost:8888/lab

@@ -7,7 +7,7 @@ from jupyter_core.command import main as jupyter_main
 def main():
     sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
     if len(sys.argv) > 1 and sys.argv[1] == "lab":
-        from jupyterlab.labapp import main as lab_main
+        from pretzelai.labapp import main as lab_main
 
         # Remove 'lab' from sys.argv
         sys.argv.pop(1)

@@ -20,16 +20,16 @@ dev_mode/stats.json
 
 junit.xml
 
-jupyterlab/geckodriver
-jupyterlab/static
-jupyterlab/schemas
-jupyterlab/themes
-jupyterlab/style.js
-jupyterlab/tests/**/static
-jupyterlab/tests/**/labextension
+pretzelai/geckodriver
+pretzelai/static
+pretzelai/schemas
+pretzelai/themes
+pretzelai/style.js
+pretzelai/tests/**/static
+pretzelai/tests/**/labextension
 
 # Remove after next release
-jupyterlab/imports.css
+pretzelai/imports.css
 
 packages/nbconvert-css/style/
 packages/services/examples/node/config.json

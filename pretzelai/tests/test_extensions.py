@@ -7,8 +7,12 @@ from unittest.mock import Mock, patch
 import pytest
 from traitlets.config import Config, Configurable
 
-from jupyterlab.extensions import PyPIExtensionManager, ReadOnlyExtensionManager
-from jupyterlab.extensions.manager import ExtensionManager, ExtensionPackage, PluginManager
+from pretzelai.extensions import PyPIExtensionManager, ReadOnlyExtensionManager
+from pretzelai.extensions.manager import (
+    ExtensionManager,
+    ExtensionPackage,
+    PluginManager,
+)
 
 from . import fake_client_factory
 
@@ -32,12 +36,16 @@ def test_ExtensionManager_get_semver_version(version, expected):
 
 
 async def test_ExtensionManager_list_extensions_installed(monkeypatch):
-    extension1 = ExtensionPackage("extension1", "Extension 1 description", "", "prebuilt")
+    extension1 = ExtensionPackage(
+        "extension1", "Extension 1 description", "", "prebuilt"
+    )
 
     async def mock_installed(*args, **kwargs):
         return {"extension1": extension1}
 
-    monkeypatch.setattr(ReadOnlyExtensionManager, "_get_installed_extensions", mock_installed)
+    monkeypatch.setattr(
+        ReadOnlyExtensionManager, "_get_installed_extensions", mock_installed
+    )
 
     manager = ReadOnlyExtensionManager()
 
@@ -47,8 +55,12 @@ async def test_ExtensionManager_list_extensions_installed(monkeypatch):
 
 
 async def test_ExtensionManager_list_extensions_query(monkeypatch):
-    extension1 = ExtensionPackage("extension1", "Extension 1 description", "", "prebuilt")
-    extension2 = ExtensionPackage("extension2", "Extension 2 description", "", "prebuilt")
+    extension1 = ExtensionPackage(
+        "extension1", "Extension 1 description", "", "prebuilt"
+    )
+    extension2 = ExtensionPackage(
+        "extension2", "Extension 2 description", "", "prebuilt"
+    )
 
     async def mock_list(*args, **kwargs):
         return {"extension1": extension1, "extension2": extension2}, None
@@ -64,10 +76,16 @@ async def test_ExtensionManager_list_extensions_query(monkeypatch):
 
 @patch("tornado.httpclient.AsyncHTTPClient", new_callable=fake_client_factory)
 async def test_ExtensionManager_list_extensions_query_allow(mock_client, monkeypatch):
-    extension1 = ExtensionPackage("extension1", "Extension 1 description", "", "prebuilt")
-    extension2 = ExtensionPackage("extension2", "Extension 2 description", "", "prebuilt")
+    extension1 = ExtensionPackage(
+        "extension1", "Extension 1 description", "", "prebuilt"
+    )
+    extension2 = ExtensionPackage(
+        "extension2", "Extension 2 description", "", "prebuilt"
+    )
 
-    mock_client.body = json.dumps({"allowed_extensions": [{"name": "extension1"}]}).encode()
+    mock_client.body = json.dumps(
+        {"allowed_extensions": [{"name": "extension1"}]}
+    ).encode()
 
     async def mock_list(*args, **kwargs):
         return {"extension1": extension1, "extension2": extension2}, None
@@ -85,10 +103,16 @@ async def test_ExtensionManager_list_extensions_query_allow(mock_client, monkeyp
 
 @patch("tornado.httpclient.AsyncHTTPClient", new_callable=fake_client_factory)
 async def test_ExtensionManager_list_extensions_query_block(mock_client, monkeypatch):
-    extension1 = ExtensionPackage("extension1", "Extension 1 description", "", "prebuilt")
-    extension2 = ExtensionPackage("extension2", "Extension 2 description", "", "prebuilt")
+    extension1 = ExtensionPackage(
+        "extension1", "Extension 1 description", "", "prebuilt"
+    )
+    extension2 = ExtensionPackage(
+        "extension2", "Extension 2 description", "", "prebuilt"
+    )
 
-    mock_client.body = json.dumps({"blocked_extensions": [{"name": "extension1"}]}).encode()
+    mock_client.body = json.dumps(
+        {"blocked_extensions": [{"name": "extension1"}]}
+    ).encode()
 
     async def mock_list(*args, **kwargs):
         return {"extension1": extension1, "extension2": extension2}, None
@@ -105,9 +129,15 @@ async def test_ExtensionManager_list_extensions_query_block(mock_client, monkeyp
 
 
 @patch("tornado.httpclient.AsyncHTTPClient", new_callable=fake_client_factory)
-async def test_ExtensionManager_list_extensions_query_allow_block(mock_client, monkeypatch):
-    extension1 = ExtensionPackage("extension1", "Extension 1 description", "", "prebuilt")
-    extension2 = ExtensionPackage("extension2", "Extension 2 description", "", "prebuilt")
+async def test_ExtensionManager_list_extensions_query_allow_block(
+    mock_client, monkeypatch
+):
+    extension1 = ExtensionPackage(
+        "extension1", "Extension 1 description", "", "prebuilt"
+    )
+    extension2 = ExtensionPackage(
+        "extension2", "Extension 2 description", "", "prebuilt"
+    )
 
     mock_client.body = json.dumps(
         {
@@ -335,7 +365,9 @@ async def test_PyPiExtensionManager_list_extensions_query(mocked_rpcclient):
 async def test_PyPiExtensionManager_custom_server_url():
     BASE_URL = "https://mylocal.pypi.server/pypi"  # noqa
 
-    parent = Configurable(config=Config({"PyPIExtensionManager": {"base_url": BASE_URL}}))
+    parent = Configurable(
+        config=Config({"PyPIExtensionManager": {"base_url": BASE_URL}})
+    )
 
     manager = PyPIExtensionManager(parent=parent)
 

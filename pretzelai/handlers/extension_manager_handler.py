@@ -10,7 +10,7 @@ from urllib.parse import urlencode, urlunparse
 from jupyter_server.base.handlers import APIHandler
 from tornado import web
 
-from jupyterlab.extensions.manager import ExtensionManager
+from pretzelai.extensions.manager import ExtensionManager
 
 
 class ExtensionHandler(APIHandler):
@@ -34,7 +34,9 @@ class ExtensionHandler(APIHandler):
         if self.get_argument("refresh", "0") == "1":
             await self.manager.refresh(query, page, per_page)
 
-        extensions, last_page = await self.manager.list_extensions(query, page, per_page)
+        extensions, last_page = await self.manager.list_extensions(
+            query, page, per_page
+        )
 
         self.set_status(200)
         if last_page is not None:

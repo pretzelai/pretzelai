@@ -153,8 +153,8 @@ and find a tab trap in the top menu bar, meaning the user can press the tab key
 to get into the menu bar but cannot easily get past it using only the keyboard.
 
 You dig in further and discover that the `tab trap bug is in the
-jupyterlab/lumino repo <https://github.com/jupyterlab/lumino/pull/373>`__, so
-you fork the jupyterlab/lumino repo, create a new branch called
+pretzelai/lumino repo <https://github.com/jupyterlab/lumino/pull/373>`__, so
+you fork the pretzelai/lumino repo, create a new branch called
 ``fix-tab-trap``, and open a pull request.
 
 You decide that you want to write a test. This is one of those cases where writing a unit test would be a straightforward task. However, a unit test would only check the
@@ -203,7 +203,7 @@ JupyterLab from source, linking your Lumino fork and branch, then run the test
 suite, including your test, and then finally show the test results, hopefully
 with your test passing.
 
-Note that in this example you did not fork the jupyterlab/jupyterlab repo or
+Note that in this example you did not fork the pretzelai/jupyterlab repo or
 change the branch name to something other than "main" in the workflow config
 form. This is because you did not need to modify the JupyterLab codebase to fix this issue. But if you were working on an issue that required you
 to modify the JupyterLab codebase, you would do the same thing that you did

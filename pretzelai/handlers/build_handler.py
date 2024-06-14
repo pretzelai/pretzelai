@@ -11,7 +11,7 @@ from jupyter_server.extension.handler import ExtensionHandlerMixin
 from tornado import gen, web
 from tornado.concurrent import run_on_executor
 
-from jupyterlab.commands import AppOptions, _ensure_options, build, build_check, clean
+from pretzelai.commands import AppOptions, _ensure_options, build, build_check, clean
 
 
 class Builder:
@@ -48,7 +48,9 @@ class Builder:
             else:
                 self.log.info("Build is up to date")
         except ValueError:
-            self.log.warning("Could not determine jupyterlab build status without nodejs")
+            self.log.warning(
+                "Could not determine jupyterlab build status without nodejs"
+            )
             status = "stable"
             messages = []
 
@@ -66,7 +68,11 @@ class Builder:
             self._kill_event = evt = Event()
             try:
                 yield self._run_build(
-                    self.app_dir, self.log, evt, self.core_config, self.labextensions_path
+                    self.app_dir,
+                    self.log,
+                    evt,
+                    self.core_config,
+                    self.labextensions_path,
                 )
                 future.set_result(True)
             except Exception as e:

@@ -8,7 +8,7 @@ import subprocess
 from os.path import join as pjoin
 from unittest.mock import patch
 
-from jupyterlab import commands
+from pretzelai import commands
 
 from .test_jupyterlab import AppHandlerTest
 

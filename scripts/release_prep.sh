@@ -17,7 +17,7 @@ else
     conda create --override-channels --strict-channel-priority -c conda-forge -c nodefaults -y -n $JLAB_REL_ENV jupyter-packaging nodejs twine
     conda activate $JLAB_REL_ENV
 
-    git clone git@github.com:jupyterlab/jupyterlab.git
+    git clone git@github.com:pretzelai/jupyterlab.git
     cd jupyterlab
 
     git checkout $JLAB_REL_BRANCH

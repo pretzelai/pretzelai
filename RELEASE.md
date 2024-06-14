@@ -248,7 +248,7 @@ These lines:
 - [ ] Modify and run `python scripts/milestone_check.py` to check the issues assigned to this milestone
 - [ ] Write [release highlights](CHANGELOG.md), starting with:
   ```bash
-  loghub jupyterlab/jupyterlab -m XXX -t $GITHUB_TOKEN --template scripts/release_template.txt
+  loghub pretzelai/jupyterlab -m XXX -t $GITHUB_TOKEN --template scripts/release_template.txt
   ```
 - [ ] Test the release candidate in a clean environment
 - [ ] Make sure the CI builds pass
@@ -292,7 +292,7 @@ the next release:
 - Clone the repo if you don't have it
 
 ```bash
-git clone git@github.com:jupyterlab/jupyterlab_apod.git
+git clone git@github.com:pretzelai/jupyterlab_apod.git
 ```
 
 #### Simple updates by rebasing

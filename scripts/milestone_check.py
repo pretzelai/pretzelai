@@ -57,14 +57,16 @@ out = subprocess.run(
     stdout=subprocess.PIPE,
     check=True,
 )
-commits = {i[0]: (i[1], i[2]) for i in (x.split(",", 2) for x in out.stdout.splitlines())}
+commits = {
+    i[0]: (i[1], i[2]) for i in (x.split(",", 2) for x in out.stdout.splitlines())
+}
 
 
 url = "https://api.github.com/graphql"
 json = {
     "query": """
 query test($cursor: String) {
-  search(first: 50, after: $cursor, type: ISSUE, query: "repo:jupyterlab/jupyterlab milestone:%s is:pr is:merged ") {
+  search(first: 50, after: $cursor, type: ISSUE, query: "repo:pretzelai/jupyterlab milestone:%s is:pr is:merged ") {
     issueCount
     pageInfo {
       endCursor
@@ -197,7 +199,10 @@ for c in commits:
 
 prs_not_represented = set(prs.keys()) - good
 
-print("Milestone: %s, %d merged PRs, %d commits in history" % (MILESTONE, total_prs, len(commits)))
+print(
+    "Milestone: %s, %d merged PRs, %d commits in history"
+    % (MILESTONE, total_prs, len(commits))
+)
 
 print()
 print("-" * 40)
@@ -212,7 +217,8 @@ These PRs probably belong in a different milestone.
     )
     print(
         "\n".join(
-            "https://github.com/jupyterlab/jupyterlab/pull/%d" % i for i in prs_not_represented
+            "https://github.com/jupyterlab/jupyterlab/pull/%d" % i
+            for i in prs_not_represented
         )
     )
 else:
@@ -235,7 +241,8 @@ or the commit was pushed to main directly.
     prs_to_check = [
         c
         for c in notfound
-        if "Merge pull request #" in commits[c][1] and commits[c][0] == "noreply@github.com"
+        if "Merge pull request #" in commits[c][1]
+        and commits[c][0] == "noreply@github.com"
     ]
     if len(prs_to_check) > 0:
         print()

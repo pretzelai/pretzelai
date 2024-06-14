@@ -153,7 +153,7 @@ if [[ $GROUP == release_test ]]; then
 
     jlpm run publish:js --yes
     jlpm run prepare:python-release
-    cat jupyterlab/staging/package.json
+    cat pretzelai/staging/package.json
 
     ./scripts/release_test.sh
     node buildutils/lib/local-repository.js stop
@@ -181,7 +181,7 @@ if [[ $GROUP == usage ]]; then
     jupyter lab clean --debug
     jupyter lab build --debug
     jupyter lab path --debug
-    pushd jupyterlab/tests/mock_packages
+    pushd pretzelai/tests/mock_packages
     jupyter labextension link mimeextension --no-build --debug
     jupyter labextension unlink mimeextension --no-build --debug
     jupyter labextension link mimeextension --no-build --debug
@@ -280,7 +280,7 @@ if [[ $GROUP == usage ]]; then
 
     # Use the extension upgrade script
     python -m pip install .[upgrade-extension]
-    python -m jupyterlab.upgrade_extension --no-input jupyterlab/tests/mock_packages/extension
+    python -m jupyterlab.upgrade_extension --no-input pretzelai/tests/mock_packages/extension
 fi
 
 
@@ -365,7 +365,7 @@ if [[ $GROUP == splice_source ]]; then
     cat version.txt | grep -q "spliced"
     python -m jupyterlab.browser_check
 
-    cd jupyterlab/tests/mock_packages/mimeextension
+    cd pretzelai/tests/mock_packages/mimeextension
     jupyter labextension install .
     python -m jupyterlab.browser_check
 
@@ -386,7 +386,7 @@ fi
 
 
 if [[ $GROUP == interop ]]; then
-    cd jupyterlab/tests/mock_packages/interop
+    cd pretzelai/tests/mock_packages/interop
 
     # Install a source extension that depends on a prebuilt extension
     pushd token

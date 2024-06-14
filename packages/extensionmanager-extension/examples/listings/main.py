@@ -13,7 +13,7 @@ from jupyter_server.base.handlers import FileFindHandler  # noqa
 from jupyter_server.utils import url_path_join as ujoin  # noqa
 from traitlets import Unicode  # noqa
 
-from jupyterlab.labapp import LabApp  # noqa
+from pretzelai.labapp import LabApp  # noqa
 
 with open(os.path.join(HERE, "package.json")) as fid:
     version = json.load(fid)["version"]
