@@ -48,9 +48,7 @@ class Builder:
             else:
                 self.log.info("Build is up to date")
         except ValueError:
-            self.log.warning(
-                "Could not determine jupyterlab build status without nodejs"
-            )
+            self.log.warning("Could not determine jupyterlab build status without nodejs")
             status = "stable"
             messages = []
 

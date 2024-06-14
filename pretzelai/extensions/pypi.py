@@ -104,9 +104,7 @@ async def _fetch_package_metadata(
 class PyPIExtensionManager(ExtensionManager):
     """Extension manager using pip as package manager and PyPi.org as packages source."""
 
-    base_url = Unicode(
-        "https://pypi.org/pypi", config=True, help="The base URL of PyPI index."
-    )
+    base_url = Unicode("https://pypi.org/pypi", config=True, help="The base URL of PyPI index.")
 
     cache_timeout = CFloat(
         5 * 60.0, config=True, help="PyPI extensions list cache timeout in seconds."
@@ -131,19 +129,15 @@ class PyPIExtensionManager(ExtensionManager):
         super().__init__(app_options, ext_options, parent)
         self._httpx_client = httpx.AsyncClient(proxies=proxies)
         # Set configurable cache size to fetch function
-        self._fetch_package_metadata = partial(
-            _fetch_package_metadata, self._httpx_client
-        )
-        self._observe_package_metadata_cache_size(
-            {"new": self.package_metadata_cache_size}
-        )
+        self._fetch_package_metadata = partial(_fetch_package_metadata, self._httpx_client)
+        self._observe_package_metadata_cache_size({"new": self.package_metadata_cache_size})
         # Combine XML RPC API and JSON API to reduce throttling by PyPI.org
         self._rpc_client = xmlrpc.client.ServerProxy(
             self.base_url, transport=xmlrpc_transport_override
         )
-        self.__last_all_packages_request_time = datetime.now(
-            tz=timezone.utc
-        ) - timedelta(seconds=self.cache_timeout * 1.01)
+        self.__last_all_packages_request_time = datetime.now(tz=timezone.utc) - timedelta(
+            seconds=self.cache_timeout * 1.01
+        )
         self.__all_packages_cache = None
 
         self.log.debug(f"Extensions list will be fetched from {self.base_url}.")
@@ -174,9 +168,7 @@ class PyPIExtensionManager(ExtensionManager):
             if response.status_code < 400:  # noqa PLR2004
                 data = json.loads(response.content).get("info", {})
             else:
-                self.log.debug(
-                    f"Failed to get package information on PyPI; {response!s}"
-                )
+                self.log.debug(f"Failed to get package information on PyPI; {response!s}")
                 return None
         except Exception:
             return None
@@ -202,9 +194,7 @@ class PyPIExtensionManager(ExtensionManager):
                 return self._normalize_name(install_metadata["packageName"])
         return self._normalize_name(extension.name)
 
-    async def __throttleRequest(
-        self, recursive: bool, fn: Callable, *args
-    ) -> Any:  # noqa
+    async def __throttleRequest(self, recursive: bool, fn: Callable, *args) -> Any:
         """Throttle XMLRPC API request
 
         Args:
@@ -272,17 +262,13 @@ class PyPIExtensionManager(ExtensionManager):
         counter = -1
         min_index = (page - 1) * per_page
         max_index = page * per_page
-        for name, group in groupby(
-            filter(lambda m: query in m[0], matches), lambda e: e[0]
-        ):
+        for name, group in groupby(filter(lambda m: query in m[0], matches), lambda e: e[0]):
             counter += 1
             if counter < min_index or counter >= max_index:
                 continue
 
             _, latest_version = list(group)[-1]
-            data = await self._fetch_package_metadata(
-                name, latest_version, self.base_url
-            )
+            data = await self._fetch_package_metadata(name, latest_version, self.base_url)
 
             normalized_name = self._normalize_name(name)
 
@@ -290,12 +276,8 @@ class PyPIExtensionManager(ExtensionManager):
 
             source_url = package_urls.get("Source Code")
             homepage_url = data.get("home_page") or package_urls.get("Homepage")
-            documentation_url = data.get("docs_url") or package_urls.get(
-                "Documentation"
-            )
-            bug_tracker_url = data.get("bugtrack_url") or package_urls.get(
-                "Bug Tracker"
-            )
+            documentation_url = data.get("docs_url") or package_urls.get("Documentation")
+            bug_tracker_url = data.get("bugtrack_url") or package_urls.get("Bug Tracker")
 
             best_guess_home_url = (
                 homepage_url
@@ -325,12 +307,8 @@ class PyPIExtensionManager(ExtensionManager):
     async def __get_all_extensions(self) -> List[Tuple[str, str]]:
         if self.__all_packages_cache is None or datetime.now(
             tz=timezone.utc
-        ) > self.__last_all_packages_request_time + timedelta(
-            seconds=self.cache_timeout
-        ):
-            self.log.debug(
-                "Requesting PyPI.org RPC API for prebuilt JupyterLab extensions."
-            )
+        ) > self.__last_all_packages_request_time + timedelta(seconds=self.cache_timeout):
+            self.log.debug("Requesting PyPI.org RPC API for prebuilt JupyterLab extensions.")
             self.__all_packages_cache = await self.__throttleRequest(
                 True,
                 self._rpc_client.browse,
@@ -340,9 +318,7 @@ class PyPIExtensionManager(ExtensionManager):
 
         return self.__all_packages_cache
 
-    async def install(
-        self, name: str, version: Optional[str] = None
-    ) -> ActionResult:  # noqa
+    async def install(self, name: str, version: Optional[str] = None) -> ActionResult:
         """Install the required extension.
 
         Note:
@@ -393,21 +369,16 @@ class PyPIExtensionManager(ExtensionManager):
                 action_info = json.loads(result.stdout.decode("utf-8"))
                 pkg_action = next(
                     filter(
-                        lambda p: p.get("metadata", {}).get("name")
-                        == name.replace("_", "-"),
+                        lambda p: p.get("metadata", {}).get("name") == name.replace("_", "-"),
                         action_info.get("install", []),
                     )
                 )
             except CalledProcessError as e:
-                self.log.debug(
-                    f"Fail to get installation report: {e.stderr}", exc_info=e
-                )
+                self.log.debug(f"Fail to get installation report: {e.stderr}", exc_info=e)
             except Exception as err:
                 self.log.debug("Fail to get installation report.", exc_info=err)
             else:
-                self.log.debug(
-                    f"Actions to be executed by pip {json.dumps(action_info)}."
-                )
+                self.log.debug(f"Actions to be executed by pip {json.dumps(action_info)}.")
 
             self.log.debug(f"Executing '{' '.join(cmdline)}'")
 
@@ -443,16 +414,12 @@ class PyPIExtensionManager(ExtensionManager):
                                         lambda f: Path(f).name == "package.json",
                                         sdist.getnames(),
                                     ):
-                                        data = json.load(
-                                            sdist.extractfile(sdist.getmember(name))
-                                        )
+                                        data = json.load(sdist.extractfile(sdist.getmember(name)))
                                         jlab_metadata = data.get("jupyterlab")
                                         if jlab_metadata is not None:
                                             break
                         else:
-                            self.log.debug(
-                                f"Failed to get '{download_url}'; {response!s}"
-                            )
+                            self.log.debug(f"Failed to get '{download_url}'; {response!s}")
                 except Exception as e:
                     self.log.debug("Fail to get package.json.", exc_info=e)
 
@@ -468,9 +435,7 @@ class PyPIExtensionManager(ExtensionManager):
 
                 return ActionResult(status="ok", needs_restart=follow_ups)
             else:
-                self.log.error(
-                    f"Failed to installed {name}: code {result.returncode}\n{error}"
-                )
+                self.log.error(f"Failed to installed {name}: code {result.returncode}\n{error}")
                 return ActionResult(status="error", message=error)
 
     async def uninstall(self, extension: str) -> ActionResult:
@@ -510,7 +475,7 @@ class PyPIExtensionManager(ExtensionManager):
                 map(
                     lambda line: line.strip(),
                     result.stdout.decode("utf-8").splitlines(),
-                ),  # noqa
+                ),
             )
             for filepath in filter(
                 lambda f: f.name == "package.json",
@@ -546,9 +511,7 @@ class PyPIExtensionManager(ExtensionManager):
 
             return ActionResult(status="ok", needs_restart=follow_ups)
         else:
-            self.log.error(
-                f"Failed to installed {extension}: code {result.returncode}\n{error}"
-            )
+            self.log.error(f"Failed to installed {extension}: code {result.returncode}\n{error}")
             return ActionResult(status="error", message=error)
 
     def _normalize_name(self, name: str) -> str:

@@ -244,9 +244,7 @@ def ensure_dev(logger=None):
 
     # Determine whether to build.
     if ensure_node_modules(REPO_ROOT, logger) or not osp.exists(target):
-        yarn_proc = ProgressProcess(
-            ["node", YARN_PATH, "build"], cwd=REPO_ROOT, logger=logger
-        )
+        yarn_proc = ProgressProcess(["node", YARN_PATH, "build"], cwd=REPO_ROOT, logger=logger)
         yarn_proc.wait()
 
 
@@ -259,9 +257,7 @@ def ensure_core(logger=None):
     target = pjoin(HERE, "static", "index.html")
     if not osp.exists(target):
         ensure_node_modules(staging, logger)
-        yarn_proc = ProgressProcess(
-            ["node", YARN_PATH, "build"], cwd=staging, logger=logger
-        )
+        yarn_proc = ProgressProcess(["node", YARN_PATH, "build"], cwd=staging, logger=logger)
         yarn_proc.wait()
 
 
@@ -355,9 +351,7 @@ class AppOptions(HasTraits):
 
     use_sys_dir = Bool(
         True,
-        help=(
-            "Whether to shadow the default app_dir if that is set to a non-default value"
-        ),
+        help=("Whether to shadow the default app_dir if that is set to a non-default value"),
     )
 
     logger = Instance(logging.Logger, help="The logger to use")
@@ -430,9 +424,7 @@ def watch(app_options=None):
     _node_check(app_options.logger)
     handler = _AppHandler(app_options)
 
-    package_procs = (
-        watch_packages(app_options.logger) if app_options.splice_source else []
-    )
+    package_procs = watch_packages(app_options.logger) if app_options.splice_source else []
 
     return package_procs + handler.watch()
 
@@ -508,9 +500,7 @@ def clean(app_options=None):
 
     logger.info("Success!")
     if getattr(app_options, "all", False) or getattr(app_options, "extensions", False):
-        logger.info(
-            "All of your extensions have been removed, and will need to be reinstalled"
-        )
+        logger.info("All of your extensions have been removed, and will need to be reinstalled")
 
 
 def build(
@@ -632,9 +622,7 @@ def read_package(target):
     tar = tarfile.open(target, "r")
     f = tar.extractfile("package/package.json")
     data = json.loads(f.read().decode("utf8"))
-    data["jupyterlab_extracted_files"] = [
-        f.path[len("package/") :] for f in tar.getmembers()
-    ]
+    data["jupyterlab_extracted_files"] = [f.path[len("package/") :] for f in tar.getmembers()]
     tar.close()
     return data
 
@@ -733,9 +721,7 @@ class _AppHandler:
     ):
         """Build the application."""
         if production is None:
-            production = not (
-                self.info["linked_packages"] or self.info["local_extensions"]
-            )
+            production = not (self.info["linked_packages"] or self.info["local_extensions"])
 
         if not production:
             minimize = False
@@ -768,9 +754,7 @@ class _AppHandler:
 
         # Build the app.
         dedupe_yarn(staging, self.logger)
-        command = (
-            f'build:{"prod" if production else "dev"}{":minimize" if minimize else ""}'
-        )
+        command = f'build:{"prod" if production else "dev"}{":minimize" if minimize else ""}'
         ret = self._run(["node", YARN_PATH, "run", command], cwd=staging)
         if ret != 0:
             msg = "JupyterLab failed to build"
@@ -967,9 +951,7 @@ class _AppHandler:
             ):
                 logger.error(
                     "JupyterLab cannot uninstall this extension. %s"
-                    % info["federated_extensions"][name]["install"][
-                        "uninstallInstructions"
-                    ]
+                    % info["federated_extensions"][name]["install"]["uninstallInstructions"]
                 )
             else:
                 logger.error(
@@ -1132,9 +1114,7 @@ class _AppHandler:
         self._write_build_config(config)
         return True
 
-    def _is_extension_locked(
-        self, extension, level="sys_prefix", include_higher_levels=True
-    ):
+    def _is_extension_locked(self, extension, level="sys_prefix", include_higher_levels=True):
         app_settings_dir = osp.join(self.app_dir, "settings")
         page_config = get_static_page_config(
             app_settings_dir=app_settings_dir,
@@ -1163,9 +1143,7 @@ class _AppHandler:
                 level=allowed[allowed.index(level) + 1],
                 include_higher_levels=True,
             ):
-                self.logger.info(
-                    "Extension locked at a higher level, cannot toggle status"
-                )
+                self.logger.info("Extension locked at a higher level, cannot toggle status")
                 return False
 
         complete_page_config = get_static_page_config(
@@ -1361,9 +1339,7 @@ class _AppHandler:
 
         info["disabled_core"] = disabled_core
 
-    def _populate_staging(
-        self, name=None, version=None, static_url=None, clean=False
-    ):  # noqa
+    def _populate_staging(self, name=None, version=None, static_url=None, clean=False):
         """Set up the assets in the staging directory."""
         app_dir = self.app_dir
         staging = pjoin(app_dir, "staging")
@@ -1420,9 +1396,7 @@ class _AppHandler:
             # the copy is successful (see https://bugs.python.org/issue24564
             # and https://github.com/jupyterlab/jupyterlab/issues/5233)
 
-            real_error = "[Errno 22]" not in str(error) and "[Errno 5]" not in str(
-                error
-            )
+            real_error = "[Errno 22]" not in str(error) and "[Errno 5]" not in str(error)
             if real_error or not osp.exists(templates):
                 raise
 
@@ -1518,9 +1492,7 @@ class _AppHandler:
         jlab = data["jupyterlab"]
 
         def format_path(path):
-            path = osp.relpath(
-                path, osp.abspath(osp.realpath(pjoin(self.app_dir, "staging")))
-            )
+            path = osp.relpath(path, osp.abspath(osp.realpath(pjoin(self.app_dir, "staging"))))
             path = "file:" + path.replace(os.sep, "/")
             if os.name == "nt":
                 path = path.lower()
@@ -1797,9 +1769,7 @@ class _AppHandler:
 
                 install = data.get("install")
                 if install:
-                    extra += " ({}, {})".format(
-                        install["packageManager"], install["packageName"]
-                    )
+                    extra += " ({}, {})".format(install["packageManager"], install["packageName"])
                 logger.info(f"        {name} v{version}{extra}")
                 if errors:
                     error_accumulator[name] = (version, errors)
@@ -2046,9 +2016,7 @@ class _AppHandler:
 
             for key in keys:
                 fname = (
-                    key[0].replace("@", "")
-                    + key[1:].replace("@", "-").replace("/", "-")
-                    + ".tgz"
+                    key[0].replace("@", "") + key[1:].replace("@", "-").replace("/", "-") + ".tgz"
                 )
                 data = read_package(osp.join(tempdir, fname))
                 # Verify that the version is a valid extension.
@@ -2131,9 +2099,7 @@ def _node_check(logger):
     """Check for the existence of nodejs with the correct version."""
     node = which("node")
     try:
-        output = subprocess.check_output(
-            [node, "node-version-check.js"], cwd=HERE
-        )  # noqa S603
+        output = subprocess.check_output([node, "node-version-check.js"], cwd=HERE)  # S603
         logger.debug(output.decode("utf-8"))
     except Exception:
         data = CoreConfig()._data
@@ -2348,9 +2314,7 @@ def _test_overlap(spec1, spec2, drop_prerelease1=False, drop_prerelease2=False):
     return cmp == 0
 
 
-def _compare_ranges(
-    spec1, spec2, drop_prerelease1=False, drop_prerelease2=False
-):  # noqa
+def _compare_ranges(spec1, spec2, drop_prerelease1=False, drop_prerelease2=False):
     """Test whether two version specs overlap.
 
     Returns `None` if we cannot determine compatibility,
@@ -2642,9 +2606,7 @@ def _fetch_package_metadata(registry, name, logger):
     req = Request(  # noqa S310
         urljoin(registry, quote(name, safe="@")),
         headers={
-            "Accept": (
-                "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*"
-            )
+            "Accept": ("application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*")
         },
     )
     try:

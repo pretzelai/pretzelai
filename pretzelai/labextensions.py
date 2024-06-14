@@ -126,9 +126,7 @@ class BaseExtensionApp(JupyterApp, DebugLogFileMixin):
 
     app_dir = Unicode("", config=True, help="The app directory to target")
 
-    should_build = Bool(
-        True, config=True, help="Whether to build the app after the action"
-    )
+    should_build = Bool(True, config=True, help="Whether to build the app after the action")
 
     dev_build = Bool(
         None,
@@ -149,9 +147,7 @@ class BaseExtensionApp(JupyterApp, DebugLogFileMixin):
         help="Whether temporary files should be cleaned up after building jupyterlab",
     )
 
-    splice_source = Bool(
-        False, config=True, help="Splice source packages into app directory."
-    )
+    splice_source = Bool(False, config=True, help="Splice source packages into app directory.")
 
     labextensions_path = List(
         Unicode(),
@@ -277,9 +273,7 @@ class DevelopLabExtensionApp(BaseExtensionApp):
 class BuildLabExtensionApp(BaseExtensionApp):
     description = "(developer) Build labextension"
 
-    static_url = Unicode(
-        "", config=True, help="Sets the url for static assets when building"
-    )
+    static_url = Unicode("", config=True, help="Sets the url for static assets when building")
 
     development = Bool(False, config=True, help="Build in development mode")
 
@@ -365,10 +359,7 @@ class UpdateLabExtensionApp(BaseExtensionApp):
         )
         if self.all:
             return update_extension(all_=True, app_options=app_options)
-        return any(
-            update_extension(name=arg, app_options=app_options)
-            for arg in self.extra_args
-        )
+        return any(update_extension(name=arg, app_options=app_options) for arg in self.extra_args)
 
 
 class LinkLabExtensionApp(BaseExtensionApp):
@@ -379,9 +370,7 @@ class LinkLabExtensionApp(BaseExtensionApp):
     package is manually re-installed from its source location when
     `jupyter lab build` is run.
     """
-    should_build = Bool(
-        True, config=True, help="Whether to build the app after the action"
-    )
+    should_build = Bool(True, config=True, help="Whether to build the app after the action")
 
     def run_task(self):
         self.extra_args = self.extra_args or [os.getcwd()]
@@ -427,8 +416,7 @@ class UninstallLabExtensionApp(BaseExtensionApp):
             core_config=self.core_config,
         )
         return any(
-            uninstall_extension(arg, all_=self.all, app_options=options)
-            for arg in self.extra_args
+            uninstall_extension(arg, all_=self.all, app_options=options) for arg in self.extra_args
         )
 
 
@@ -453,9 +441,9 @@ class EnableLabExtensionsApp(BaseExtensionApp):
     description = "Enable labextension(s) by name"
     aliases = enable_aliases
 
-    level = Unicode(
-        "sys_prefix", help="Level at which to enable: sys_prefix, user, system"
-    ).tag(config=True)
+    level = Unicode("sys_prefix", help="Level at which to enable: sys_prefix, user, system").tag(
+        config=True
+    )
 
     def run_task(self):
         app_options = AppOptions(
@@ -474,9 +462,9 @@ class DisableLabExtensionsApp(BaseExtensionApp):
     description = "Disable labextension(s) by name"
     aliases = disable_aliases
 
-    level = Unicode(
-        "sys_prefix", help="Level at which to disable: sys_prefix, user, system"
-    ).tag(config=True)
+    level = Unicode("sys_prefix", help="Level at which to disable: sys_prefix, user, system").tag(
+        config=True
+    )
 
     def run_task(self):
         app_options = AppOptions(
@@ -501,9 +489,9 @@ class LockLabExtensionsApp(BaseExtensionApp):
     description = "Lock labextension(s) by name"
     aliases = lock_aliases
 
-    level = Unicode(
-        "sys_prefix", help="Level at which to lock: sys_prefix, user, system"
-    ).tag(config=True)
+    level = Unicode("sys_prefix", help="Level at which to lock: sys_prefix, user, system").tag(
+        config=True
+    )
 
     def run_task(self):
         app_options = AppOptions(
@@ -512,19 +500,16 @@ class LockLabExtensionsApp(BaseExtensionApp):
             core_config=self.core_config,
             labextensions_path=self.labextensions_path,
         )
-        [
-            lock_extension(arg, app_options=app_options, level=self.level)
-            for arg in self.extra_args
-        ]
+        [lock_extension(arg, app_options=app_options, level=self.level) for arg in self.extra_args]
 
 
 class UnlockLabExtensionsApp(BaseExtensionApp):
     description = "Unlock labextension(s) by name"
     aliases = unlock_aliases
 
-    level = Unicode(
-        "sys_prefix", help="Level at which to unlock: sys_prefix, user, system"
-    ).tag(config=True)
+    level = Unicode("sys_prefix", help="Level at which to unlock: sys_prefix, user, system").tag(
+        config=True
+    )
 
     def run_task(self):
         app_options = AppOptions(

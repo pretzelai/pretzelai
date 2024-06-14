@@ -367,10 +367,7 @@ class TestExtension(AppHandlerTest):
         assert ext_name in extensions
         assert check_extension(ext_name, app_options=options)
 
-        assert (
-            uninstall_extension(self.pkg_names["extension"], app_options=options)
-            is True
-        )
+        assert uninstall_extension(self.pkg_names["extension"], app_options=options) is True
         path = pjoin(app_dir, "extensions", "*.tgz")
         assert not glob.glob(path)
         extensions = get_app_info(app_options=options)["extensions"]
@@ -439,20 +436,14 @@ class TestExtension(AppHandlerTest):
         assert ext_name in extensions
         assert check_extension(ext_name, app_options=app_options)
 
-        assert (
-            uninstall_extension(self.pkg_names["extension"], app_options=app_options)
-            is True
-        )
+        assert uninstall_extension(self.pkg_names["extension"], app_options=app_options) is True
         assert not glob.glob(app_path)
         assert glob.glob(sys_path)
         extensions = get_app_info(app_options=app_options)["extensions"]
         assert ext_name in extensions
         assert check_extension(ext_name, app_options=app_options)
 
-        assert (
-            uninstall_extension(self.pkg_names["extension"], app_options=app_options)
-            is True
-        )
+        assert uninstall_extension(self.pkg_names["extension"], app_options=app_options) is True
         assert not glob.glob(app_path)
         assert not glob.glob(sys_path)
         extensions = get_app_info(app_options=app_options)["extensions"]
@@ -569,23 +560,16 @@ class TestExtension(AppHandlerTest):
     def test_disable_extension(self):
         options = AppOptions(app_dir=self.tempdir())
         assert install_extension(self.mock_extension, app_options=options) is True
-        assert (
-            disable_extension(self.pkg_names["extension"], app_options=options) is True
-        )
+        assert disable_extension(self.pkg_names["extension"], app_options=options) is True
         info = get_app_info(app_options=options)
         name = self.pkg_names["extension"]
         assert info["disabled"].get(name) is True
         assert not check_extension(name, app_options=options)
         assert check_extension(name, installed=True, app_options=options)
-        assert (
-            disable_extension("@jupyterlab/notebook-extension", app_options=options)
-            is True
-        )
+        assert disable_extension("@jupyterlab/notebook-extension", app_options=options) is True
         info = get_app_info(app_options=options)
         assert info["disabled"].get("@jupyterlab/notebook-extension") is True
-        assert not check_extension(
-            "@jupyterlab/notebook-extension", app_options=options
-        )
+        assert not check_extension("@jupyterlab/notebook-extension", app_options=options)
         assert check_extension(
             "@jupyterlab/notebook-extension", installed=True, app_options=options
         )
@@ -596,25 +580,16 @@ class TestExtension(AppHandlerTest):
     def test_enable_extension(self):
         options = AppOptions(app_dir=self.tempdir())
         assert install_extension(self.mock_extension, app_options=options) is True
-        assert (
-            disable_extension(self.pkg_names["extension"], app_options=options) is True
-        )
-        assert (
-            enable_extension(self.pkg_names["extension"], app_options=options) is True
-        )
+        assert disable_extension(self.pkg_names["extension"], app_options=options) is True
+        assert enable_extension(self.pkg_names["extension"], app_options=options) is True
         info = get_app_info(app_options=options)
         assert "@jupyterlab/notebook-extension" not in info["disabled"]
         name = self.pkg_names["extension"]
         assert info["disabled"].get(name, False) is False
         assert check_extension(name, app_options=options)
-        assert (
-            disable_extension("@jupyterlab/notebook-extension", app_options=options)
-            is True
-        )
+        assert disable_extension("@jupyterlab/notebook-extension", app_options=options) is True
         assert check_extension(name, app_options=options)
-        assert not check_extension(
-            "@jupyterlab/notebook-extension", app_options=options
-        )
+        assert not check_extension("@jupyterlab/notebook-extension", app_options=options)
 
     @pytest.mark.slow
     def test_build_check(self):
@@ -757,9 +732,7 @@ class TestExtension(AppHandlerTest):
             return "10000.0.0"
 
         p1 = patch.object(commands._AppHandler, "_install_extension", _mock_install)
-        p2 = patch.object(
-            commands._AppHandler, "_latest_compatible_package_version", _mock_latest
-        )
+        p2 = patch.object(commands._AppHandler, "_latest_compatible_package_version", _mock_latest)
 
         assert install_extension(self.mock_extension) is True
         assert install_extension(self.mock_mimeextension) is True
@@ -782,9 +755,7 @@ class TestExtension(AppHandlerTest):
             return "10000.0.0"
 
         p1 = patch.object(commands._AppHandler, "_install_extension", _mock_install)
-        p2 = patch.object(
-            commands._AppHandler, "_latest_compatible_package_version", _mock_latest
-        )
+        p2 = patch.object(commands._AppHandler, "_latest_compatible_package_version", _mock_latest)
 
         install_extension(self.mock_extension)
         install_extension(self.mock_mimeextension)

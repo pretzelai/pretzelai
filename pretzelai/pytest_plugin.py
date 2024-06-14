@@ -114,8 +114,6 @@ def fetch_long(http_server_client, jp_auth_header, jp_base_url):
         headers = headers or {}
         headers.update(jp_auth_header)
         # Make request.
-        return http_server_client.fetch(
-            url, headers=headers, request_timeout=250, **kwargs
-        )
+        return http_server_client.fetch(url, headers=headers, request_timeout=250, **kwargs)
 
     return client_fetch

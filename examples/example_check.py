@@ -70,12 +70,8 @@ async def run_browser(url):
         if not target.exists():
             target.mkdir(parents=True, exist_ok=True)
         await run_async_process(["npm", "init", "-y"], cwd=str(target))
-        await run_async_process(
-            ["npm", "install", "-D", "@playwright/test@^1"], cwd=str(target)
-        )
-        await run_async_process(
-            ["npx", "playwright", "install", "chromium"], cwd=str(target)
-        )
+        await run_async_process(["npm", "install", "-D", "@playwright/test@^1"], cwd=str(target))
+        await run_async_process(["npx", "playwright", "install", "chromium"], cwd=str(target))
     test_target = target / TEST_FILE.name
 
     # Copy test file
@@ -103,9 +99,7 @@ async def run_browser(url):
     current_env["BASE_URL"] = url
     current_env["TEST_SNAPSHOT"] = "1" if has_snapshot else "0"
     try:
-        await run_async_process(
-            ["npx", "playwright", "test"], env=current_env, cwd=str(target)
-        )
+        await run_async_process(["npx", "playwright", "test"], env=current_env, cwd=str(target))
     finally:
         # Copy back test-results folder to analyze snapshot error
         if results_target.exists():
