@@ -16,6 +16,7 @@ import { AiService, Embedding, generatePrompt, openaiEmbeddings } from './prompt
 import OpenAI from 'openai';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
+import { showErrorDialog } from './components/ErrorDialog';
 
 export async function calculateHash(input: string) {
   const encoder = new TextEncoder();
@@ -338,7 +339,14 @@ export const getTopSimilarities = async (
   cellId: string,
   codeMatchThreshold: number
 ): Promise<string[]> => {
-  const response = await openaiEmbeddings(userInput, aiService, aiClient);
+  let response;
+  try {
+    response = await openaiEmbeddings(userInput, aiService, aiClient);
+  } catch (error: any) {
+    // Catching OpenAI errors here since this function is called for all prompts
+    showErrorDialog(`${aiService}: Error connecting`, error?.error?.message || JSON.stringify(error));
+    throw error;
+  }
   const userInputEmbedding = response.data[0].embedding; // same API for openai and azure
   const similarities = embeddings
     .filter(embedding => embedding.id !== cellId) // Exclude current cell's embedding
