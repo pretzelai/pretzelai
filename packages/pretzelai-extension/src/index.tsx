@@ -317,6 +317,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           posthogPromptTelemetry={posthogPromptTelemetry}
         />
       );
+      parentContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     commands.addCommand(command, {
       label: 'Pretzel AI: Generate Code',
