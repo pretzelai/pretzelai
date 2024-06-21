@@ -48,14 +48,6 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
           .join('\n');
       }
     }
-    if (
-      (completion.startsWith('  ') || completion.startsWith('\t')) &&
-      !prefix.endsWith('\n') &&
-      (suffix.startsWith('\n') || suffix.trim().length === 0)
-    ) {
-      return '';
-    }
-
     return completion;
   }
 
