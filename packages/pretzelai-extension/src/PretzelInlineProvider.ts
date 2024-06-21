@@ -66,41 +66,47 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
   }
 
   private _isMultiLine(prefix: string): boolean {
-    if ([':'].includes(prefix.split('\n').slice(-2)[0]?.trim().slice(-1)[0])) {
+    const currentLine = prefix.split('\n').slice(-1)[0];
+    const prevLine = prefix.split('\n').slice(-2)[0];
+
+    // If prev line is a function definition, multiline
+    if ([':'].includes(prevLine?.trim().slice(-1)[0])) {
       return true;
     }
-    // Not multiline in comments
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('#')) {
+    // If prev line is a comment, multiline
+    if (prevLine?.trimStart().startsWith('#')) {
+      return true;
+    }
+    // If current line is comment, no multiline
+    if (currentLine?.trimStart().startsWith('#')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('class')) {
+    // No multiline when defining functions, classes, conditions, etc
+    if (currentLine?.trimStart().startsWith('class')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('def')) {
+    if (currentLine?.trimStart().startsWith('def')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('if')) {
+    if (currentLine?.trimStart().startsWith('if')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('for')) {
+    if (currentLine?.trimStart().startsWith('for')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('while')) {
+    if (currentLine?.trimStart().startsWith('while')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('with')) {
+    if (currentLine?.trimStart().startsWith('with')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('try')) {
+    if (currentLine?.trimStart().startsWith('try')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('except')) {
+    if (currentLine?.trimStart().startsWith('except')) {
       return false;
     }
-    if (prefix.split('\n').slice(-1)[0]?.trimStart().startsWith('raise')) {
-      return false;
-    }
-    if (!prefix.split('\n').slice(-1)[0]?.trimStart()) {
+    if (currentLine?.trimStart().startsWith('raise')) {
       return false;
     }
     return true;
