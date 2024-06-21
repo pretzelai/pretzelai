@@ -6,6 +6,11 @@ import {
   IInlineCompletionProvider
 } from '@jupyterlab/completer';
 import { INotebookTracker } from '@jupyterlab/notebook';
+import { OpenAI } from 'openai';
+const openai = new OpenAI({
+  apiKey: '',
+  dangerouslyAllowBrowser: true
+});
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(protected notebookTracker: INotebookTracker) {
@@ -42,6 +47,24 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     prefix: string;
     suffix: string;
   }): string {
+    // remove backticks
+    if (completion.startsWith('```python')) {
+      if (completion.endsWith('```')) {
+        completion = completion.slice(9, -3);
+      } else if (completion.endsWith('```\n')) {
+        completion = completion.slice(9, -4);
+      }
+    }
+    // OpenAI sometimes includes the prefix in the completion
+    const prefixLastLine = prefix.split('\n').slice(-1)[0];
+    if (completion.startsWith(prefixLastLine)) {
+      completion = completion.slice(prefixLastLine.length);
+    }
+    const completionLines = completion.split('\n');
+    const completionLastLine = completionLines.slice(-1)[0];
+    if (completionLines.length === 2 && completionLines[1] === '\n' && completionLastLine.startsWith(prefixLastLine)) {
+      completion = completionLastLine.slice(prefixLastLine.length);
+    }
     // Don't return empty
     if (completion.trim().length <= 0) {
       return '';
@@ -49,8 +72,11 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     // Remove trailing whitespace
     completion = completion.trimEnd();
     // Codestral sometimes starts with an extra space
-    if (completion[0] === ' ' && completion[1] !== ' ') {
+    // Check that there is only 1 extra space and no comment line
+    if (completion[0] === ' ' && ![' ', '#'].includes(completion[1])) {
+      // check if there are spaces before completion
       if (prefix.endsWith(' ')) {
+        // remove 1 extra space from all completion lines (codestral bug)
         completion = completion
           .split('\n')
           .map(line => {
@@ -62,6 +88,13 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
           .join('\n');
       }
     }
+    // Sometime extra space is added before comment line but the rest of indentation is OK
+    if (completion[0] === ' ' && completion[1] === '#') {
+      if (prefix.endsWith(' ')) {
+        completion = completion.slice(1);
+      }
+    }
+    console.log('completion', completion);
     return completion;
   }
 
@@ -128,7 +161,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
           stops.push('\n');
         }
         try {
-          const response = await fetch('https://api.pretzelai.app/inline', {
+          const fetchPromise = fetch('https://api.pretzelai.app/inline', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -141,14 +174,43 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
               max_tokens: 500,
               stop: stops
             })
-          });
+          }).then(response => response.json());
 
-          const data = await response.json();
+          const openaiPromise = openai.chat.completions
+            .create({
+              model: 'gpt-4o',
+              // stop: stops,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a staff software engineer'
+                },
+                {
+                  role: 'user',
+                  content: `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks.`
+                }
+              ]
+            })
+            .then(completion => completion.choices[0].message.content);
+
+          const [codestralCompletion, openaiCompletion] = await Promise.all([fetchPromise, openaiPromise]);
+
           resolve({
             items: [
               {
                 insertText: this._fixCompletion({
-                  completion: data.completion,
+                  completion: (await codestralCompletion).completion,
+                  prefix: prompt,
+                  suffix
+                })
+              },
+              {
+                insertText: this._fixCompletion({
+                  completion: openaiCompletion as string,
                   prefix: prompt,
                   suffix
                 })
