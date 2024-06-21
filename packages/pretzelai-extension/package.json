@@ -100,6 +100,7 @@
     "@jupyterlab/apputils": "^4.3.0",
     "@jupyterlab/cells": "^4.2.0",
     "@jupyterlab/codemirror": "^4.2.0",
+    "@jupyterlab/completer": "^4.2.0",
     "@jupyterlab/coreutils": "^6.2.0",
     "@jupyterlab/notebook": "^4.2.0",
     "@jupyterlab/outputarea": "^4.2.0",

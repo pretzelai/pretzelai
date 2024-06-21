@@ -20,7 +20,9 @@
     "target": "ES2018",
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*"
+  ],
   "references": [
     {
       "path": "../application"
@@ -54,6 +56,9 @@
     },
     {
       "path": "../ui-components"
+    },
+    {
+      "path": "../completer"
     }
   ],
   "extends": "../../tsconfigbase"
