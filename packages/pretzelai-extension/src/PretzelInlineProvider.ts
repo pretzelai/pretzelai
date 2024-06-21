@@ -6,11 +6,6 @@ import {
   IInlineCompletionProvider
 } from '@jupyterlab/completer';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { OpenAI } from 'openai';
-const openai = new OpenAI({
-  apiKey: '',
-  dangerouslyAllowBrowser: true
-});
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(protected notebookTracker: INotebookTracker) {
@@ -31,6 +26,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     if (prevCode && previousCells) {
       prefix = prevCode + '\n' + prefix;
     }
+    console.log('prefix in request\n', prefix);
     return prefix;
   }
 
@@ -47,6 +43,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     prefix: string;
     suffix: string;
   }): string {
+    console.log('completion\n', completion);
     // remove backticks
     if (completion.startsWith('```python')) {
       if (completion.endsWith('```')) {
@@ -73,28 +70,24 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     completion = completion.trimEnd();
     // Codestral sometimes starts with an extra space
     // Check that there is only 1 extra space and no comment line
-    if (completion[0] === ' ' && ![' ', '#'].includes(completion[1])) {
+    if (completion[0] === ' ' && completion[1] !== ' ') {
       // check if there are spaces before completion
-      if (prefix.endsWith(' ')) {
-        // remove 1 extra space from all completion lines (codestral bug)
-        completion = completion
-          .split('\n')
-          .map(line => {
-            if (line[0] === ' ') {
-              return line.slice(1);
-            }
-            return line;
-          })
-          .join('\n');
+      if (prefix.endsWith('  ')) {
+        const lastLineOfPrefix = prefix.split('\n').slice(-1)[0];
+        if (lastLineOfPrefix.trimStart().length === 0) {
+          const indentation = lastLineOfPrefix.length;
+          completion = completion
+            .split('\n')
+            .map(line => {
+              const spaces = line.length - line.trimStart().length;
+              const extraSpaces = spaces % indentation;
+              return line.slice(extraSpaces);
+            })
+            .join('\n');
+        }
       }
     }
-    // Sometime extra space is added before comment line but the rest of indentation is OK
-    if (completion[0] === ' ' && completion[1] === '#') {
-      if (prefix.endsWith(' ')) {
-        completion = completion.slice(1);
-      }
-    }
-    console.log('completion', completion);
+    console.log('completionfixed\n', completion);
     return completion;
   }
 
@@ -176,28 +169,28 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
             })
           }).then(response => response.json());
 
-          const openaiPromise = openai.chat.completions
-            .create({
-              model: 'gpt-4o',
-              // stop: stops,
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are a staff software engineer'
-                },
-                {
-                  role: 'user',
-                  content: `\`\`\`python
-${prompt}[BLANK]${suffix}
-\`\`\`
+          //           const openaiPromise = openai.chat.completions
+          //             .create({
+          //               model: 'gpt-4o',
+          //               // stop: stops,
+          //               messages: [
+          //                 {
+          //                   role: 'system',
+          //                   content: 'You are a staff software engineer'
+          //                 },
+          //                 {
+          //                   role: 'user',
+          //                   content: `\`\`\`python
+          // ${prompt}[BLANK]${suffix}
+          // \`\`\`
 
-Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks.`
-                }
-              ]
-            })
-            .then(completion => completion.choices[0].message.content);
+          // Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks.`
+          //                 }
+          //               ]
+          //             })
+          //             .then(completion => completion.choices[0].message.content);
 
-          const [codestralCompletion, openaiCompletion] = await Promise.all([fetchPromise, openaiPromise]);
+          const [codestralCompletion] = await Promise.all([fetchPromise]);
 
           resolve({
             items: [
@@ -207,14 +200,14 @@ Fill in the blank to complete the code block. Your response should include only 
                   prefix: prompt,
                   suffix
                 })
-              },
-              {
-                insertText: this._fixCompletion({
-                  completion: openaiCompletion as string,
-                  prefix: prompt,
-                  suffix
-                })
               }
+              // {
+              //   insertText: this._fixCompletion({
+              //     completion: openaiCompletion as string,
+              //     prefix: prompt,
+              //     suffix
+              //   })
+              // }
             ]
           });
         } catch (error) {
