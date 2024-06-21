@@ -63,7 +63,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     providerManager: ICompletionProviderManager,
     restorer: ILayoutRestorer | null
   ) => {
-    const provider = new PretzelInlineProvider();
+    const provider = new PretzelInlineProvider(notebookTracker);
     providerManager.registerInlineProvider(provider);
     // Change the shortcut to accept inline completion to the Tab key
     app.commands.addKeyBinding({

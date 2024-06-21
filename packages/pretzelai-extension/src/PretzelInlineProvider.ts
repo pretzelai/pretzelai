@@ -5,14 +5,28 @@ import {
   IInlineCompletionList,
   IInlineCompletionProvider
 } from '@jupyterlab/completer';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
+  constructor(protected notebookTracker: INotebookTracker) {
+    this.notebookTracker = notebookTracker;
+  }
   readonly identifier = '@pretzelai/inline-completer';
   readonly name = 'Pretzel AI inline completion';
   private debounceTimer: any;
 
   private _prefixFromRequest(request: CompletionHandler.IRequest): string {
-    return request.text.slice(0, request.offset);
+    const currentCellIndex = this.notebookTracker?.currentWidget?.model!.sharedModel.cells.findIndex(
+      cell => cell.id === this.notebookTracker?.activeCell?.model.sharedModel.id
+    );
+
+    const previousCells = this.notebookTracker?.currentWidget?.model!.sharedModel.cells.slice(0, currentCellIndex);
+    const prevCode = previousCells?.map((cell, i) => cell.source).join('\n');
+    let prefix = request.text.slice(0, request.offset);
+    if (prevCode && previousCells) {
+      prefix = prevCode + '\n' + prefix;
+    }
+    return prefix;
   }
 
   private _suffixFromRequest(request: CompletionHandler.IRequest): string {
