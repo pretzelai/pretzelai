@@ -7,11 +7,7 @@
       "type": "string",
       "title": "AI Service",
       "description": "Select the AI service to use for AI operations.",
-      "enum": [
-        "OpenAI API key",
-        "Use Pretzel AI Server",
-        "Use Azure API"
-      ],
+      "enum": ["OpenAI API key", "Use Pretzel AI Server", "Use Azure API"],
       "default": "Use Pretzel AI Server"
     },
     "openAiSettings": {
@@ -33,12 +29,32 @@
           "type": "string",
           "title": "OpenAI Model",
           "description": "Select the OpenAI model to be used for AI completions. Only works with your OpenAI API key.",
-          "enum": [
-            "gpt-4o",
-            "gpt-4-turbo",
-            "gpt-3.5-turbo"
-          ],
+          "enum": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"],
           "default": "gpt-4o"
+        }
+      }
+    },
+    "inlineCopilotSettings": {
+      "type": "object",
+      "title": "Inline AI Copilot auto-complete",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enable Inline AI Copilot auto-complete",
+          "default": true
+        },
+        "provider": {
+          "type": "string",
+          "title": "Which AI model provider to use",
+          "description": "Recommended: Pretzel AI (no API key required) or Mistral (API key required)",
+          "enum": ["Pretzel AI", "Mistral", "OpenAI"],
+          "default": "Pretzel AI"
+        },
+        "mistralApiKey": {
+          "type": "string",
+          "title": "Mistral API Key",
+          "description": "Go to https://console.mistral.ai/api-keys/ to create an API Key",
+          "default": ""
         }
       }
     },

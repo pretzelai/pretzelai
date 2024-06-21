@@ -18,6 +18,8 @@ import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
 import { showErrorDialog } from './components/ErrorDialog';
 
+export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
+
 export async function calculateHash(input: string) {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);

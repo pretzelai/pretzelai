@@ -6,10 +6,14 @@ import {
   IInlineCompletionProvider
 } from '@jupyterlab/completer';
 import { INotebookTracker } from '@jupyterlab/notebook';
+import { ISettingRegistry } from '@jupyterlab/settingregistry';
+import { PLUGIN_ID } from './utils';
+import OpenAI from 'openai';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
-  constructor(protected notebookTracker: INotebookTracker) {
+  constructor(protected notebookTracker: INotebookTracker, protected settingRegistry: ISettingRegistry) {
     this.notebookTracker = notebookTracker;
+    this.settingRegistry = settingRegistry;
   }
   readonly identifier = '@pretzelai/inline-completer';
   readonly name = 'Pretzel AI inline completion';
@@ -26,7 +30,6 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     if (prevCode && previousCells) {
       prefix = prevCode + '\n' + prefix;
     }
-    console.log('prefix in request\n', prefix);
     return prefix;
   }
 
@@ -43,13 +46,13 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     prefix: string;
     suffix: string;
   }): string {
-    console.log('completion\n', completion);
+    // console.log('completion\n', completion);
     // remove backticks
-    if (completion.startsWith('```python')) {
-      if (completion.endsWith('```')) {
-        completion = completion.slice(9, -3);
-      } else if (completion.endsWith('```\n')) {
-        completion = completion.slice(9, -4);
+    if (completion.startsWith('```python\n')) {
+      if (completion.endsWith('\n```')) {
+        completion = completion.slice(10, -4);
+      } else if (completion.endsWith('\n```\n')) {
+        completion = completion.slice(10, -5);
       }
     }
     // OpenAI sometimes includes the prefix in the completion
@@ -87,7 +90,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
         }
       }
     }
-    console.log('completionfixed\n', completion);
+    // console.log('completionfixed\n', completion);
     return completion;
   }
 
@@ -143,6 +146,19 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     context: IInlineCompletionContext
   ): Promise<IInlineCompletionList<IInlineCompletionItem>> {
     clearTimeout(this.debounceTimer);
+    const settings = await this.settingRegistry.load(PLUGIN_ID);
+    const inlineCopilotSettings = settings.get('inlineCopilotSettings').composite as any;
+    const isEnabled = inlineCopilotSettings?.enabled;
+    if (!isEnabled) {
+      return {
+        items: []
+      };
+    }
+    const copilotProvider = inlineCopilotSettings?.provider || 'pretzelai';
+    const mistralApiKey = inlineCopilotSettings?.mistralApiKey || '';
+    const openAiSettings = settings.get('openAiSettings').composite as any;
+    const openAiApiKey = openAiSettings?.openAiApiKey || '';
+
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
         const prompt = this._prefixFromRequest(request);
@@ -154,64 +170,82 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
           stops.push('\n');
         }
         try {
-          const fetchPromise = fetch('https://api.pretzelai.app/inline', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json'
-            },
-            body: JSON.stringify({
-              prompt,
-              suffix,
+          let completion;
+          if (copilotProvider === 'Pretzel AI') {
+            const fetchResponse = await fetch('https://api.pretzelai.app/inline', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json'
+              },
+              body: JSON.stringify({
+                prompt,
+                suffix,
+                // eslint-disable-next-line
+                max_tokens: 500,
+                stop: stops
+              })
+            });
+            completion = (await fetchResponse.json()).completion;
+          } else if (copilotProvider === 'OpenAI' && openAiApiKey) {
+            const openai = new OpenAI({ apiKey: openAiApiKey, dangerouslyAllowBrowser: true });
+            const openaiResponse = await openai.chat.completions.create({
+              model: 'gpt-4o',
+              stop: stops,
               // eslint-disable-next-line
-              max_tokens: 500,
-              stop: stops
-            })
-          }).then(response => response.json());
+              max_tokens: this._isMultiLine(prompt) ? 500 : 100,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a staff software engineer'
+                },
+                {
+                  role: 'user',
+                  content: `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
 
-          //           const openaiPromise = openai.chat.completions
-          //             .create({
-          //               model: 'gpt-4o',
-          //               // stop: stops,
-          //               messages: [
-          //                 {
-          //                   role: 'system',
-          //                   content: 'You are a staff software engineer'
-          //                 },
-          //                 {
-          //                   role: 'user',
-          //                   content: `\`\`\`python
-          // ${prompt}[BLANK]${suffix}
-          // \`\`\`
-
-          // Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks.`
-          //                 }
-          //               ]
-          //             })
-          //             .then(completion => completion.choices[0].message.content);
-
-          const [codestralCompletion] = await Promise.all([fetchPromise]);
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beggining of your response.`
+                }
+              ]
+            });
+            completion = openaiResponse.choices[0].message.content;
+          } else if (copilotProvider === 'Mistral' && mistralApiKey) {
+            const data = await fetch('https://api.mistral.ai/v1/fim/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                Authorization: `Bearer ${mistralApiKey}`
+              },
+              body: JSON.stringify({
+                model: 'codestral-latest',
+                prompt,
+                suffix,
+                // eslint-disable-next-line
+                max_tokens: 500,
+                temperature: 0
+              })
+            });
+            // Note: Response parsing might not work as expected due to 'no-cors' mode, which can lead to an opaque response.
+            completion = (await data.json()).choices[0].message.content;
+          } else {
+            completion = '';
+          }
 
           resolve({
             items: [
               {
                 insertText: this._fixCompletion({
-                  completion: (await codestralCompletion).completion,
+                  completion,
                   prefix: prompt,
                   suffix
                 })
               }
-              // {
-              //   insertText: this._fixCompletion({
-              //     completion: openaiCompletion as string,
-              //     prefix: prompt,
-              //     suffix
-              //   })
-              // }
             ]
           });
-        } catch (error) {
-          console.error('Error:', error);
+        } catch (error: any) {
+          console.error('Error:', JSON.stringify(error));
           resolve({
             items: []
           });

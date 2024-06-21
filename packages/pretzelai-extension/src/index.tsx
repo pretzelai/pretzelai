@@ -17,7 +17,7 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { FixedSizeStack, getEmbeddings } from './utils';
+import { FixedSizeStack, getEmbeddings, PLUGIN_ID } from './utils';
 
 import { AiService } from './prompt';
 import posthog from 'posthog-js';
@@ -45,8 +45,6 @@ function initializePosthog(cookiesEnabled: boolean) {
   });
 }
 
-const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
-
 const NUMBER_OF_SIMILAR_CELLS = 3;
 
 const extension: JupyterFrontEndPlugin<void> = {
@@ -63,7 +61,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     providerManager: ICompletionProviderManager,
     restorer: ILayoutRestorer | null
   ) => {
-    const provider = new PretzelInlineProvider(notebookTracker);
+    const provider = new PretzelInlineProvider(notebookTracker, settingRegistry);
     providerManager.registerInlineProvider(provider);
     // Change the shortcut to accept inline completion to the Tab key
     app.commands.addKeyBinding({
