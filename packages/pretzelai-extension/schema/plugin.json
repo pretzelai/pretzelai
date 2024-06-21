@@ -40,7 +40,7 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "title": "Enable Inline AI Copilot auto-complete",
+          "title": "Enable inline AI Copilot auto-complete",
           "default": true
         },
         "provider": {
