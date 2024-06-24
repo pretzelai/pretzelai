@@ -72,7 +72,16 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     // Remove trailing whitespace
     completion = completion.trimEnd();
     // Codestral sometimes starts with an extra space
-    // Check that there is only 1 extra space and no comment line
+    // Fix extra space when space is already present
+    if (
+      completion[0] === ' ' &&
+      completion[1] !== ' ' &&
+      prefix[prefix.length - 1] === ' ' &&
+      prefix[prefix.length - 2] !== ' '
+    ) {
+      completion = completion.slice(1);
+    }
+    // Sometimes the extra space messes up the indentation
     if (completion[0] === ' ' && completion[1] !== ' ') {
       // check if there are spaces before completion
       if (prefix.endsWith('  ')) {
