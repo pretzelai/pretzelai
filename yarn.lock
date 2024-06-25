@@ -2986,7 +2986,7 @@ __metadata:
 
 "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.0
-  resolution: "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension#../packages/codemirror-extension::hash=67e523&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension#../packages/codemirror-extension::hash=a71a7a&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@codemirror/commands": ^6.3.3
     "@codemirror/lang-markdown": ^6.2.4
@@ -3007,7 +3007,7 @@ __metadata:
     "@rjsf/utils": ^5.13.4
     "@rjsf/validator-ajv8": ^5.13.4
     react: ^18.2.0
-  checksum: 5668a7aa75608480ede31358dcd917755af7d8dfc492620652a3a2b8a35b2ba67f69270398d9905e10c60e57068c076b7fccff4ec5328845d0dcbd9e00c2efdd
+  checksum: e10c7dca044dc1bbe693bfb1e465e4062a0373fca4090ce6b450a3146c0064b14efd21c204d416285206fa4476fe4c890e03664209e793ff8b3a33cc5b4012ac
   languageName: node
   linkType: hard
 
@@ -3076,7 +3076,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupyterlab/completer@^4.2.0, @jupyterlab/completer@workspace:packages/completer":
+"@jupyterlab/completer@^4.2.0, @jupyterlab/completer@workspace:^, @jupyterlab/completer@workspace:packages/completer":
   version: 0.0.0-use.local
   resolution: "@jupyterlab/completer@workspace:packages/completer"
   dependencies:
@@ -4872,6 +4872,7 @@ __metadata:
     "@jupyterlab/builder": ^4.2.0
     "@jupyterlab/cells": ^4.2.0
     "@jupyterlab/codemirror": ^4.2.0
+    "@jupyterlab/completer": ^4.2.0
     "@jupyterlab/coreutils": ^6.2.0
     "@jupyterlab/notebook": ^4.2.0
     "@jupyterlab/outputarea": ^4.2.0
@@ -4912,7 +4913,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=7e28cc&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=8d1e9c&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
@@ -4923,6 +4924,7 @@ __metadata:
     "@jupyterlab/apputils": ^4.3.0
     "@jupyterlab/cells": ^4.2.0
     "@jupyterlab/codemirror": ^4.2.0
+    "@jupyterlab/completer": ^4.2.0
     "@jupyterlab/coreutils": ^6.2.0
     "@jupyterlab/notebook": ^4.2.0
     "@jupyterlab/outputarea": ^4.2.0
@@ -4939,7 +4941,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: fcccf001bbba06a8f132db41be823ab854228cfbec9eddd9c509629490d4139f29d7a7b3d03cc90a9ff8d4048f2327b624afda862ab8ef7693d362493dfe3c01
+  checksum: f52be64ce860c67ae244a20ad98bea414f35f62aabea79f6c57b39d5fcc6618b0da8f5ffde70d9fe6ab88093334f022d6e428103cd4f5d192d3264b6085bd64d
   languageName: node
   linkType: hard
 
@@ -5018,6 +5020,7 @@ __metadata:
   dependencies:
     "@emotion/react": ^11.11.4
     "@emotion/styled": ^11.11.5
+    "@jupyterlab/completer": "workspace:^"
     "@mui/icons-material": ^5.15.18
     "@mui/material": ^5.15.18
     "@types/react": latest

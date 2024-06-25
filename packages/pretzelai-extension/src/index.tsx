@@ -17,7 +17,7 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { FixedSizeStack, getEmbeddings } from './utils';
+import { FixedSizeStack, getEmbeddings, PLUGIN_ID } from './utils';
 
 import { AiService } from './prompt';
 import posthog from 'posthog-js';
@@ -30,6 +30,8 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
 import { AIAssistantComponent } from './components/AIAssistantComponent';
+import { ICompletionProviderManager } from '@jupyterlab/completer';
+import { PretzelInlineProvider } from './PretzelInlineProvider';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -43,23 +45,30 @@ function initializePosthog(cookiesEnabled: boolean) {
   });
 }
 
-const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
-
 const NUMBER_OF_SIMILAR_CELLS = 3;
 
 const extension: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
-  requires: [IRenderMimeRegistry, ICommandPalette, INotebookTracker, ISettingRegistry],
-  optional: [ILayoutRestorer], // Add this line
+  requires: [IRenderMimeRegistry, ICommandPalette, INotebookTracker, ISettingRegistry, ICompletionProviderManager],
+  optional: [ILayoutRestorer],
   activate: async (
     app: JupyterFrontEnd,
     rmRegistry: IRenderMimeRegistry,
     palette: ICommandPalette,
     notebookTracker: INotebookTracker,
     settingRegistry: ISettingRegistry,
+    providerManager: ICompletionProviderManager,
     restorer: ILayoutRestorer | null
   ) => {
+    const provider = new PretzelInlineProvider(notebookTracker, settingRegistry);
+    providerManager.registerInlineProvider(provider);
+    // Change the shortcut to accept inline completion to the Tab key
+    app.commands.addKeyBinding({
+      command: 'inline-completer:accept',
+      keys: ['Tab'], // New key combination
+      selector: '.jp-mod-inline-completer-active'
+    });
     const { commands } = app;
     const command = 'pretzelai:ai-code-gen';
     const isMac = /Mac/i.test(navigator.userAgent);
