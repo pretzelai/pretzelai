@@ -314,8 +314,6 @@ export async function getEmbeddings(
         console.error('Error creating embeddings:', error);
       }
     }
-    // Temporary solution to keep refreshing hashes in non blocking thread
-    setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiService), 1000);
   } else {
     setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiService), 1000);
   }

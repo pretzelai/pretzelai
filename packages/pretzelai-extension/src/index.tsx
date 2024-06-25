@@ -163,7 +163,24 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
     loadAIClient(); // first time load, later settings will trigger this
 
-    getEmbeddings(notebookTracker, app, aiClient, aiService);
+    notebookTracker.currentChanged.connect(() => {
+      getEmbeddings(notebookTracker, app, aiClient, aiService);
+    });
+
+    let debounceTimeout: NodeJS.Timeout | null = null;
+
+    notebookTracker.activeCellChanged.connect((sender, cell) => {
+      if (cell) {
+        cell.model.contentChanged.connect(() => {
+          if (debounceTimeout) {
+            clearTimeout(debounceTimeout);
+          }
+          debounceTimeout = setTimeout(() => {
+            getEmbeddings(notebookTracker, app, aiClient, aiService);
+          }, 1000);
+        });
+      }
+    });
 
     // Listen for future changes in settings
     settingRegistry.pluginChanged.connect(async (sender, plugin) => {
