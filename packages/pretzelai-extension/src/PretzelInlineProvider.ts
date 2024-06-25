@@ -11,7 +11,10 @@ import { PLUGIN_ID } from './utils';
 import OpenAI from 'openai';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
-  constructor(protected notebookTracker: INotebookTracker, protected settingRegistry: ISettingRegistry) {
+  constructor(
+    protected notebookTracker: INotebookTracker,
+    protected settingRegistry: ISettingRegistry
+  ) {
     this.notebookTracker = notebookTracker;
     this.settingRegistry = settingRegistry;
   }
@@ -231,6 +234,7 @@ Fill in the blank to complete the code block. Your response should include only 
                 model: 'codestral-latest',
                 prompt,
                 suffix,
+                stop: stops,
                 // eslint-disable-next-line
                 max_tokens: 500,
                 temperature: 0
