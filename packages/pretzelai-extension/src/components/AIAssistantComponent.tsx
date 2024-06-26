@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
-import NoCode from './NoCode';
 import { DiffComponent } from './DiffComponent';
 import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
@@ -150,7 +149,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   return (
     <>
       {showStatusElement && <p className="status-element">{statusElementText}</p>}
-      {props.notebookTracker.activeCell && <NoCode activeCell={props.notebookTracker.activeCell} app={props.app} />}
       {showInputComponent && (
         <InputComponent
           isAIEnabled={props.isAIEnabled}

@@ -30,6 +30,7 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { createRoot } from 'react-dom/client';
 import React from 'react';
 import { AIAssistantComponent } from './components/AIAssistantComponent';
+import NoCode from './components/NoCode';
 import { ICompletionProviderManager } from '@jupyterlab/completer';
 import { PretzelInlineProvider } from './PretzelInlineProvider';
 
@@ -258,16 +259,21 @@ const extension: JupyterFrontEndPlugin<void> = {
       const buttonContainer = document.createElement('div');
       buttonContainer.className = 'ask-ai-button-container';
 
-      const button = document.createElement('button');
+      const askAIButton = document.createElement('button');
       // get shortcut keybinding by checking if Mac
       const isMac = /Mac/i.test(navigator.userAgent);
       const shortcut = isMac ? '⌘K' : '^K';
       const shortcutText = isMac ? 'Cmd+K' : 'Ctrl+K';
 
-      button.innerHTML = `Ask AI <span style="font-size: 0.8em;">${shortcut}</span>`;
-      button.className = 'ask-ai-button';
-      button.title = 'Ask AI ' + shortcut;
-      buttonContainer.appendChild(button);
+      askAIButton.innerHTML = `Ask AI <span style="font-size: 0.8em;">${shortcut}</span>`;
+      askAIButton.className = 'ask-ai-button';
+      askAIButton.title = 'Ask AI ' + shortcut;
+      buttonContainer.appendChild(askAIButton);
+
+      const noCodeButton = document.createElement('button');
+      noCodeButton.textContent = 'No code';
+      noCodeButton.className = 'ask-ai-button';
+      buttonContainer.appendChild(noCodeButton);
 
       // Tooltip
       const tooltip = document.createElement('div');
@@ -276,7 +282,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       buttonContainer.appendChild(tooltip); // Append tooltip to buttonContainer
       cellNode.appendChild(buttonContainer); // Append buttonContainer to cellNode
 
-      button.onclick = () => {
+      askAIButton.onclick = () => {
         posthog.capture('Ask AI', {
           event_type: 'click',
           method: 'ask_ai'
@@ -284,10 +290,24 @@ const extension: JupyterFrontEndPlugin<void> = {
         commands.execute('pretzelai:ai-code-gen');
       };
 
-      button.onmouseenter = () => {
+      noCodeButton.onclick = () => {
+        posthog.capture('No Code', {
+          event_type: 'click',
+          method: 'no_code'
+        });
+        const parentContainer = document.createElement('div');
+        parentContainer.classList.add('pretzelParentContainerAI');
+        const inputWrapper = notebookTracker.activeCell!.node.querySelector('.lm-Widget.lm-Panel.jp-Cell-inputWrapper');
+        notebookTracker.activeCell!.node.insertBefore(parentContainer, inputWrapper);
+
+        const noCodeComponentRoot = createRoot(parentContainer);
+        noCodeComponentRoot.render(<NoCode activeCell={notebookTracker.activeCell!} app={app} />);
+      };
+
+      askAIButton.onmouseenter = () => {
         tooltip.style.visibility = 'visible';
       };
-      button.onmouseleave = () => {
+      askAIButton.onmouseleave = () => {
         tooltip.style.visibility = 'hidden';
       };
     }
@@ -365,10 +385,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           const parentContainer = document.createElement('div');
           parentContainer.classList.add('pretzelParentContainerAI');
-          const inputWrapper = notebookTracker.activeCell!.node.querySelector(
-            '.lm-Widget.lm-Panel.jp-Cell-inputWrapper'
-          );
-          notebookTracker.activeCell!.node.insertBefore(parentContainer, inputWrapper);
+          notebookTracker.activeCell!.node.appendChild(parentContainer);
 
           const aiAssistantComponentRoot = createRoot(parentContainer);
 

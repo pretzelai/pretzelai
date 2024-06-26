@@ -34,6 +34,7 @@
   padding: 2px 5px;
   cursor: pointer;
   font-size: var(--jp-ui-font-size1, 12px);
+  margin-left: 10px;
 }
 
 .ask-ai-button-container .tooltip {
