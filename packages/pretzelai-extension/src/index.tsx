@@ -365,7 +365,10 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           const parentContainer = document.createElement('div');
           parentContainer.classList.add('pretzelParentContainerAI');
-          notebookTracker.activeCell.node.appendChild(parentContainer);
+          const inputWrapper = notebookTracker.activeCell!.node.querySelector(
+            '.lm-Widget.lm-Panel.jp-Cell-inputWrapper'
+          );
+          notebookTracker.activeCell!.node.insertBefore(parentContainer, inputWrapper);
 
           const aiAssistantComponentRoot = createRoot(parentContainer);
 
