@@ -11,6 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 import posthog from 'posthog-js';
 import { JupyterFrontEnd } from '@jupyterlab/application';
+import { CommandRegistry } from '@lumino/commands';
 
 interface INoCodeButtonProps {
   label: string;
@@ -38,9 +39,11 @@ const NoCodeButton: React.FC<INoCodeButtonProps> = ({ label, onClick }) => {
 interface INoCodeProps {
   activeCell: Cell<ICellModel>;
   app: JupyterFrontEnd;
+  commands: CommandRegistry;
+  handleRemove: () => void;
 }
 
-const NoCode: React.FC<INoCodeProps> = ({ activeCell, app }) => {
+const NoCode: React.FC<INoCodeProps> = ({ activeCell, app, commands, handleRemove }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [csvFiles, setCsvFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState('');
@@ -76,7 +79,9 @@ const NoCode: React.FC<INoCodeProps> = ({ activeCell, app }) => {
   const insertCodeIntoCell = (code: string) => {
     if (activeCell && activeCell.model) {
       activeCell.model.sharedModel.source = code;
+      commands.execute('notebook:run-cell');
     }
+    handleRemove();
   };
 
   const handleButtonClick = (operation: string) => {
@@ -85,32 +90,27 @@ const NoCode: React.FC<INoCodeProps> = ({ activeCell, app }) => {
       operation: operation
     });
 
-    // Simulating an async operation
-    setTimeout(() => {
-      let code = '';
-      switch (operation) {
-        case 'read_csv':
-          code = `import pandas as pd\n\ndf = pd.read_csv("${selectedFile}")`;
-          break;
-        case 'plot':
-          code = 'import matplotlib.pyplot as plt\n\nplt.plot(x, y)\nplt.show()';
-          break;
-        case 'train_test_split':
-          code =
-            'from sklearn.model_selection import train_test_split\n\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)';
-          break;
-        default:
-          code = '# No operation selected';
-      }
+    let code = '';
+    switch (operation) {
+      case 'read_csv':
+        code = `import pandas as pd\n\ndf = pd.read_csv("${selectedFile}")`;
+        break;
+      case 'plot':
+        code = 'import matplotlib.pyplot as plt\n\nplt.plot(x, y)\nplt.show()';
+        break;
+      case 'train_test_split':
+        code =
+          'from sklearn.model_selection import train_test_split\n\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)';
+        break;
+      default:
+        code = '# No operation selected';
+    }
 
-      insertCodeIntoCell(code);
-      setIsLoading(false);
-    }, 1000);
+    insertCodeIntoCell(code);
   };
 
   return (
     <div className="input-container">
-      <h3>No Code Operations</h3>
       <div className="input-field-buttons-container">
         <select
           value={selectedFile}

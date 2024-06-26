@@ -213,7 +213,7 @@ const extension: JupyterFrontEndPlugin<void> = {
             );
           }
         });
-        addAskAIButton(cell.node);
+        addHelperButtons(cell.node);
       }
     });
 
@@ -250,7 +250,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       };
     }
 
-    function addAskAIButton(cellNode: HTMLElement) {
+    function addHelperButtons(cellNode: HTMLElement) {
       // Remove existing buttons from all cells before adding a new one
       document.querySelectorAll('.ask-ai-button-container').forEach(container => {
         container.remove();
@@ -301,7 +301,17 @@ const extension: JupyterFrontEndPlugin<void> = {
         notebookTracker.activeCell!.node.insertBefore(parentContainer, inputWrapper);
 
         const noCodeComponentRoot = createRoot(parentContainer);
-        noCodeComponentRoot.render(<NoCode activeCell={notebookTracker.activeCell!} app={app} />);
+        const handleRemove = () => {
+          noCodeComponentRoot.unmount();
+          parentContainer.remove();
+          addHelperButtons(notebookTracker.activeCell!.node);
+        };
+        document.querySelectorAll('.ask-ai-button-container').forEach(container => {
+          container.remove();
+        });
+        noCodeComponentRoot.render(
+          <NoCode activeCell={notebookTracker.activeCell!} app={app} commands={commands} handleRemove={handleRemove} />
+        );
       };
 
       askAIButton.onmouseenter = () => {
