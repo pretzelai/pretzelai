@@ -94,6 +94,12 @@ Output ONLY python code, not backquotes or anything else`;
     })
   };
 
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      onPlot(generatePrompt());
+    }
+  };
+
   return (
     <div
       style={{
@@ -130,6 +136,7 @@ Output ONLY python code, not backquotes or anything else`;
             type="text"
             placeholder="Other remarks"
             onChange={e => setRemarks(e.target.value)}
+            onKeyDown={handleKeyPress}
             style={{
               flex: 1,
               padding: '8px',
