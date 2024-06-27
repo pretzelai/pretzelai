@@ -87,6 +87,10 @@ Output ONLY python code, not backquotes or anything else`;
     singleValue: (provided: any) => ({
       ...provided,
       color: 'var(--jp-content-font-color1)'
+    }),
+    input: (provided: any) => ({
+      ...provided,
+      color: 'var(--jp-content-font-color1)'
     })
   };
 
@@ -121,35 +125,37 @@ Output ONLY python code, not backquotes or anything else`;
           placeholder="Select Chart Type"
           styles={customStyles}
         />
-        <input
-          type="text"
-          placeholder="Other remarks"
-          onChange={e => setRemarks(e.target.value)}
+        <div style={{ flex: 1, minWidth: '150px', display: 'flex' }}>
+          <input
+            type="text"
+            placeholder="Other remarks"
+            onChange={e => setRemarks(e.target.value)}
+            style={{
+              flex: 1,
+              padding: '8px',
+              borderRadius: '4px',
+              border: '1px solid var(--jp-border-color1)',
+              backgroundColor: 'var(--jp-layout-color2)',
+              color: 'var(--jp-content-font-color1)'
+            }}
+          />
+        </div>
+        <button
+          onClick={() => onPlot(generatePrompt())}
           style={{
-            padding: '8px',
+            padding: '10px 15px',
             borderRadius: '4px',
-            border: '1px solid var(--jp-border-color1)',
-            backgroundColor: 'var(--jp-layout-color2)',
-            color: 'var(--jp-content-font-color1)',
-            flexGrow: 1
+            border: 'none',
+            backgroundColor: 'var(--jp-brand-color1)',
+            color: 'var(--jp-ui-inverse-font-color1)',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s ease',
+            whiteSpace: 'nowrap'
           }}
-        />
+        >
+          Plot
+        </button>
       </div>
-      <button
-        onClick={() => onPlot(generatePrompt())}
-        style={{
-          padding: '10px 15px',
-          borderRadius: '4px',
-          border: 'none',
-          backgroundColor: 'var(--jp-brand-color1)',
-          color: 'var(--jp-ui-inverse-font-color1)',
-          cursor: 'pointer',
-          transition: 'background-color 0.3s ease',
-          alignSelf: 'flex-start'
-        }}
-      >
-        Plot
-      </button>
     </div>
   );
 };
