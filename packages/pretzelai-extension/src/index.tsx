@@ -309,15 +309,24 @@ const extension: JupyterFrontEndPlugin<void> = {
           container.remove();
         });
         noCodeComponentRoot.render(
-          <NoCode activeCell={notebookTracker.activeCell!} app={app} commands={commands} handleRemove={handleRemove} />
+          <NoCode
+            notebookTracker={notebookTracker}
+            app={app}
+            commands={commands}
+            handleRemove={handleRemove}
+            aiService={aiService}
+            openAiApiKey={openAiApiKey}
+            openAiModel={openAiModel}
+            openAiBaseUrl={openAiBaseUrl}
+          />
         );
-      };
 
-      askAIButton.onmouseenter = () => {
-        tooltip.style.visibility = 'visible';
-      };
-      askAIButton.onmouseleave = () => {
-        tooltip.style.visibility = 'hidden';
+        askAIButton.onmouseenter = () => {
+          tooltip.style.visibility = 'visible';
+        };
+        askAIButton.onmouseleave = () => {
+          tooltip.style.visibility = 'hidden';
+        };
       };
     }
 

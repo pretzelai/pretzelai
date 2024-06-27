@@ -553,3 +553,48 @@ export class FixedSizeStack<T> {
     return this.stack.length >= this.maxSize;
   }
 }
+export const getCompletion = async (
+  prompt: string,
+  aiService: AiService,
+  openAiApiKey: string,
+  openAiModel: string,
+  openAiBaseUrl: string
+) => {
+  if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
+    const openai = new OpenAI({
+      apiKey: openAiApiKey,
+      dangerouslyAllowBrowser: true,
+      baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
+    });
+    return (
+      await openai.chat.completions.create({
+        model: openAiModel,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
+    ).choices[0].message.content;
+  } else if (aiService === 'Use Pretzel AI Server') {
+    const response = await fetch('https://api.pretzelai.app/completion/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
+    });
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+  throw new Error('Error when calling AI service for completion');
+};
