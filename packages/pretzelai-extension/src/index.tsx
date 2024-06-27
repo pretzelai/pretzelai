@@ -296,7 +296,6 @@ const extension: JupyterFrontEndPlugin<void> = {
           method: 'no_code'
         });
         const parentContainer = document.createElement('div');
-        parentContainer.classList.add('pretzelParentContainerAI');
         const inputWrapper = notebookTracker.activeCell!.node.querySelector('.lm-Widget.lm-Panel.jp-Cell-inputWrapper');
         notebookTracker.activeCell!.node.insertBefore(parentContainer, inputWrapper);
 

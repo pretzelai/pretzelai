@@ -65,9 +65,11 @@ const NoCode: React.FC<INoCodeProps> = ({ activeCell, app, commands, handleRemov
     fetchCsvFiles();
   }, []);
 
+  const TEMP_PATH_TESTING = 'pretzelai_visual/public/';
+
   const listCsvFiles = async (): Promise<string[]> => {
     try {
-      const contents = await app.serviceManager.contents.get('');
+      const contents = await app.serviceManager.contents.get(TEMP_PATH_TESTING);
       const files = contents.content.filter((file: any) => file.name.endsWith('.csv')).map((file: any) => file.name);
       return files;
     } catch (error) {
@@ -93,7 +95,7 @@ const NoCode: React.FC<INoCodeProps> = ({ activeCell, app, commands, handleRemov
     let code = '';
     switch (operation) {
       case 'read_csv':
-        code = `import pandas as pd\n\ndf = pd.read_csv("${selectedFile}")`;
+        code = `import pandas as pd\n\ndf = pd.read_csv("${TEMP_PATH_TESTING + selectedFile}")\ndf`;
         break;
       case 'plot':
         code = 'import matplotlib.pyplot as plt\n\nplt.plot(x, y)\nplt.show()';
@@ -110,8 +112,8 @@ const NoCode: React.FC<INoCodeProps> = ({ activeCell, app, commands, handleRemov
   };
 
   return (
-    <div className="input-container">
-      <div className="input-field-buttons-container">
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
         <select
           value={selectedFile}
           onChange={e => setSelectedFile(e.target.value)}
@@ -125,7 +127,9 @@ const NoCode: React.FC<INoCodeProps> = ({ activeCell, app, commands, handleRemov
             fontSize: 'var(--jp-ui-font-size1)',
             marginRight: 'var(--jp-ui-margin)',
             height: '25px',
-            width: '100px'
+            width: '150px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}
         >
           {csvFiles.map(file => (
