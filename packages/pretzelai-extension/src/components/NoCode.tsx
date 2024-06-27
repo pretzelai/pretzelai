@@ -14,6 +14,7 @@ import { JupyterFrontEnd } from '@jupyterlab/application';
 import { CommandRegistry } from '@lumino/commands';
 import { getCompletion, getVariableValue } from '../utils';
 import { AiService } from '../prompt';
+import Select from 'react-select';
 
 interface INoCodeButtonProps {
   label: string;
@@ -46,9 +47,9 @@ const PlotOptions: React.FC<{
   columns: string[];
   onPlot: (prompt: string) => void;
 }> = ({ columns, onPlot }) => {
-  const [selectedXAxis, setSelectedXAxis] = useState('');
-  const [selectedYAxis, setSelectedYAxis] = useState('');
-  const [selectedChartType, setSelectedChartType] = useState('');
+  const [selectedXAxis, setSelectedXAxis] = useState<string | null>(null);
+  const [selectedYAxis, setSelectedYAxis] = useState<string | null>(null);
+  const [selectedChartType, setSelectedChartType] = useState<string | null>(null);
   const [remarks, setRemarks] = useState('');
   const chartTypes = ['Line', 'Bar', 'Scatter', 'Pie'];
 
@@ -63,34 +64,92 @@ ${remarks}
 Output ONLY python code, not backquotes or anything else`;
   };
 
+  const columnOptions = columns.map(col => ({ value: col, label: col }));
+  const chartTypeOptions = chartTypes.map(type => ({ value: type, label: type }));
+
+  const customStyles = {
+    control: (provided: any) => ({
+      ...provided,
+      backgroundColor: 'var(--jp-layout-color2)',
+      borderColor: 'var(--jp-border-color1)',
+      color: 'var(--jp-content-font-color1)',
+      minWidth: '150px'
+    }),
+    menu: (provided: any) => ({
+      ...provided,
+      backgroundColor: 'var(--jp-layout-color2)'
+    }),
+    option: (provided: any, state: { isSelected: any }) => ({
+      ...provided,
+      backgroundColor: state.isSelected ? 'var(--jp-brand-color1)' : 'var(--jp-layout-color2)',
+      color: state.isSelected ? 'var(--jp-ui-inverse-font-color1)' : 'var(--jp-content-font-color1)'
+    }),
+    singleValue: (provided: any) => ({
+      ...provided,
+      color: 'var(--jp-content-font-color1)'
+    })
+  };
+
   return (
-    <div>
-      <select onChange={e => setSelectedXAxis(e.target.value)}>
-        <option value="">Select X Axis</option>
-        {columns.map(option => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <select onChange={e => setSelectedYAxis(e.target.value)}>
-        <option value="">Select Y Axis</option>
-        {columns.map(option => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <select onChange={e => setSelectedChartType(e.target.value)}>
-        <option value="">Select Chart Type</option>
-        {chartTypes.map(type => (
-          <option key={type} value={type}>
-            {type}
-          </option>
-        ))}
-      </select>
-      <input type="text" placeholder="Other remarks" onChange={e => setRemarks(e.target.value)} />
-      <button onClick={() => onPlot(generatePrompt())}>Plot</button>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        padding: '15px',
+        backgroundColor: 'var(--jp-layout-color1)',
+        borderRadius: '8px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      }}
+    >
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <Select
+          options={columnOptions}
+          onChange={option => setSelectedXAxis(option ? option.value : null)}
+          placeholder="Select X Axis"
+          styles={customStyles}
+        />
+        <Select
+          options={columnOptions}
+          onChange={option => setSelectedYAxis(option ? option.value : null)}
+          placeholder="Select Y Axis"
+          styles={customStyles}
+        />
+        <Select
+          options={chartTypeOptions}
+          onChange={option => setSelectedChartType(option ? option.value : null)}
+          placeholder="Select Chart Type"
+          styles={customStyles}
+        />
+        <input
+          type="text"
+          placeholder="Other remarks"
+          onChange={e => setRemarks(e.target.value)}
+          style={{
+            padding: '8px',
+            borderRadius: '4px',
+            border: '1px solid var(--jp-border-color1)',
+            backgroundColor: 'var(--jp-layout-color2)',
+            color: 'var(--jp-content-font-color1)',
+            flexGrow: 1
+          }}
+        />
+      </div>
+      <button
+        onClick={() => onPlot(generatePrompt())}
+        style={{
+          padding: '10px 15px',
+          borderRadius: '4px',
+          border: 'none',
+          backgroundColor: 'var(--jp-brand-color1)',
+          color: 'var(--jp-ui-inverse-font-color1)',
+          cursor: 'pointer',
+          transition: 'background-color 0.3s ease',
+          alignSelf: 'flex-start'
+        }}
+      >
+        Plot
+      </button>
     </div>
   );
 };
