@@ -40,22 +40,24 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "title": "Enable inline AI Copilot auto-complete",
-          "default": true
+          "title": "Enable inline AI Copilot auto-complete"
         },
         "provider": {
           "type": "string",
           "title": "Which AI model provider to use",
           "description": "Recommended: Pretzel AI (no API key required) or Mistral (API key required)",
-          "enum": ["Pretzel AI", "Mistral", "OpenAI"],
-          "default": "Pretzel AI"
+          "enum": ["Pretzel AI", "Mistral", "OpenAI"]
         },
         "mistralApiKey": {
           "type": "string",
           "title": "Mistral API Key",
-          "description": "Go to https://console.mistral.ai/api-keys/ to create an API Key",
-          "default": ""
+          "description": "Go to https://console.mistral.ai/api-keys/ to create an API Key"
         }
+      },
+      "default": {
+        "enabled": true,
+        "provider": "Pretzel AI",
+        "mistralApiKey": ""
       }
     },
     "azureSettings": {
