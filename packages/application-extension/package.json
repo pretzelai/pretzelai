@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab/application-extension",
-  "version": "4.2.5",
+  "version": "4.2.6",
   "description": "JupyterLab - Application Extension",
   "homepage": "https://github.com/pretzelai/pretzelai",
   "bugs": {
@@ -37,7 +37,7 @@
     "watch": "tsc -b --watch"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.5",
+    "@jupyterlab/application": "^4.2.6",
     "@jupyterlab/apputils": "^4.3.0",
     "@jupyterlab/coreutils": "^6.2.0",
     "@jupyterlab/property-inspector": "^4.2.0",

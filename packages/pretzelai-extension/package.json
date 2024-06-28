@@ -96,7 +96,7 @@
     "@codemirror/language": "^6.10.1",
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.26.0",
-    "@jupyterlab/application": "^4.2.5",
+    "@jupyterlab/application": "^4.2.6",
     "@jupyterlab/apputils": "^4.3.0",
     "@jupyterlab/cells": "^4.2.0",
     "@jupyterlab/codemirror": "^4.2.0",

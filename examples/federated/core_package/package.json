@@ -96,8 +96,8 @@
     "yjs": "^13.5.40"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.5",
-    "@jupyterlab/application-extension": "^4.2.5",
+    "@jupyterlab/application": "^4.2.6",
+    "@jupyterlab/application-extension": "^4.2.6",
     "@jupyterlab/apputils-extension": "^4.2.0",
     "@jupyterlab/celltags-extension": "^4.2.0",
     "@jupyterlab/codemirror-extension": "^4.2.0",
