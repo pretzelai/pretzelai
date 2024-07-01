@@ -28,6 +28,7 @@ function SplashScreen() {
         <h1>Welcome to Pretzel</h1>
         <h3>Using Pretzel</h3>
         <ul>
+          <li>Start typing in a notebook cell to get tab completions</li>
           <li>
             Use <strong>{keyCombination}</strong> in a Jupyter cell to start generating code
           </li>

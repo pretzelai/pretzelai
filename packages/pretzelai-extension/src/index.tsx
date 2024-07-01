@@ -167,6 +167,16 @@ const extension: JupyterFrontEndPlugin<void> = {
       getEmbeddings(notebookTracker, app, aiClient, aiService);
     });
 
+    // getEmbeddings when a file is renamed
+    app.serviceManager.contents.fileChanged.connect((sender, change) => {
+      if (change.type === 'rename') {
+        // wait for the file to be renamed before creating embeddings file
+        setTimeout(() => {
+          getEmbeddings(notebookTracker, app, aiClient, aiService);
+        }, 2000);
+      }
+    });
+
     let debounceTimeout: NodeJS.Timeout | null = null;
 
     notebookTracker.activeCellChanged.connect((sender, cell) => {
