@@ -11,10 +11,7 @@ import { PLUGIN_ID } from './utils';
 import OpenAI from 'openai';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
-  constructor(
-    protected notebookTracker: INotebookTracker,
-    protected settingRegistry: ISettingRegistry
-  ) {
+  constructor(protected notebookTracker: INotebookTracker, protected settingRegistry: ISettingRegistry) {
     this.notebookTracker = notebookTracker;
     this.settingRegistry = settingRegistry;
   }
@@ -150,7 +147,11 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     if (currentLine?.trimStart().startsWith('raise')) {
       return false;
     }
-    return true;
+    // If current line is empty, multiline true
+    if (currentLine?.trim().length === 0) {
+      return true;
+    }
+    return false;
   }
 
   async fetch(
@@ -173,8 +174,21 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
-        const prompt = this._prefixFromRequest(request);
+        let prompt = this._prefixFromRequest(request);
         const suffix = this._suffixFromRequest(request);
+        if (prompt.indexOf('\n') === -1 && !suffix) {
+          if ('import pandas as pd'.startsWith(prompt)) {
+            resolve({
+              items: [
+                {
+                  insertText: 'import pandas as pd'.slice(prompt.length)
+                }
+              ]
+            });
+            return;
+          }
+          prompt = `# python code for jupyter notebook\n\n${prompt}`;
+        }
         const stops = ['\ndef', '\nclass'];
         if (this._isMultiLine(prompt)) {
           stops.push('\n\n');
