@@ -20,28 +20,26 @@ export const generateChatPrompt = (
   selectedCode?: string
 ) => {
   let output = `${lastContent}\n`;
-  if (selectedCode) {
-    setReferenceSource('selected code');
+
+  if (selectedCode || activeCellCode) {
+    setReferenceSource(selectedCode ? 'Selected code' : 'Current cell code');
     output += `My question is related to this part of the code, answer me in a short and concise manner:
-\`\`\`
-${selectedCode}
-\`\`\``;
-  } else if (lastContent.toLowerCase().includes('@notebook') && topSimilarities) {
-    setReferenceSource('all cells in notebook');
+\`\`\`python
+${selectedCode || activeCellCode}
+\`\`\`\n`;
+  }
+
+  if (topSimilarities && topSimilarities.length > 0) {
+    setReferenceSource(selectedCode || activeCellCode ? 'Current code and related cells' : 'Related cells in notebook');
     output += `Cells containing related content are:
-\`\`\`
-${topSimilarities.join('\n```\n')}
-\`\`\`
-`;
-  } else {
-    setReferenceSource('current cell code');
-    output += `My main question is the above. Your goal is to answer my question briefly and don't mention the code unless necessary.
-    ${
-      activeCellCode
-        ? `If you need context this is the code in the cell I am focused on.\n\`\`\`\n${activeCellCode}\n\`\`\``
-        : ''
-    }
-`;
+\`\`\`python
+${topSimilarities.join('\n```\n```python\n')}
+\`\`\`\n`;
+  }
+
+  if (!selectedCode && !activeCellCode && (!topSimilarities || topSimilarities.length === 0)) {
+    setReferenceSource('No specific code context');
+    output += `My main question is the above. Your goal is to answer my question briefly and don't mention the code unless necessary.\n`;
   }
 
   return output;

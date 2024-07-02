@@ -260,6 +260,7 @@ export function Chat({
   };
 
   const cancelGeneration = () => {
+    posthog.capture('prompt_chat cancel generation');
     setIsAiGenerating(false);
     stopGeneration();
     setReferenceSource('');
@@ -326,12 +327,18 @@ export function Chat({
     } else if (chatIndex + direction >= 0 && chatIndex + direction < chatHistory.length) {
       setChatIndex(chatIndex + direction);
       setMessages(chatHistory[chatIndex + direction]);
+      posthog.capture('Chat History Restored', {
+        direction: direction
+      });
     }
   };
 
   const clearChat = () => {
     setMessages(initialMessage);
     setChatIndex(chatHistory.length);
+    posthog.capture('Chat Cleared', {
+      chatLength: messages.length
+    });
   };
 
   return (
@@ -343,12 +350,23 @@ export function Chat({
               <Box
                 sx={{
                   backgroundColor: 'var(--jp-layout-color2)',
-                  borderRadius: '10px',
+                  borderRadius: '4px',
                   display: 'inline-block',
-                  marginLeft: '10px'
+                  marginLeft: '0px',
+                  marginBottom: '8px',
+                  padding: '2px 6px'
                 }}
               >
-                <Typography color={'var(--jp-ui-font-color1)'}>{`Using ${referenceSource}...`}</Typography>
+                <Typography
+                  color={'var(--jp-ui-font-color1)'}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '1em'
+                  }}
+                >
+                  {`Using ${referenceSource}...`}
+                </Typography>
               </Box>
             )}
             <RendermimeMarkdown
@@ -379,10 +397,9 @@ export function Chat({
               }
             }}
             placeholder={
-              `Ask AI (toggle with: ${keyCombination}). Use Esc to jump back to cell.\n` +
-              `Current cell's code is avaiable as context to AI.\n` +
-              `Shift + Enter for newline.\n` +
-              `Mention @notebook to automatically add relevant context from other cells.`
+              `Ask AI (toggle with: ${keyCombination}).\n` +
+              `Use Esc to jump back to cell. Shift + Enter for newline.\n` +
+              `Current cell and other relevant cells are available as context to the AI.`
             }
             autoComplete="off"
             sx={{

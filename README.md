@@ -156,7 +156,7 @@ the Jupyterlab README is available [here](https://github.com/jupyterlab/jupyterl
 
 ## Privacy Policy, Data Collection and Retention
 
-We collect no personal information. We use basic telemetry for the AI features we've built - for example, when you click on "Ask AI", we receive an event that _someone_ clicked on "Ask AI". We only associate an anonymous ID to your user. If you allow cookies, that helps us tell that it's the same user across multiple browser sessions (which is very helpful!). If you don't allow cookies, every time you open a browser, you're a new anonymous user to us.
+We collect no personal information. We use basic telemetry for only the AI features we've built - for example, when you click on "Ask AI", we receive an event that _someone_ clicked on "Ask AI". We only associate an anonymous ID to your user. If you allow cookies, that helps us tell that it's the same user across multiple browser sessions (which is very helpful!). If you don't allow cookies, every time you open a browser, you're a new anonymous user to us.
 
 We also collect prompts (**but not the responses**) for the AI features we've built. This can be turned off in the settings (Settings > Pretzel AI > Uncheck Prompt Telemetry) but we'd really appreciate if you didn't - this is very helpful in improving our prompts.
 
