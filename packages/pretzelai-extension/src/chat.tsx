@@ -327,22 +327,18 @@ export function Chat({
     } else if (chatIndex + direction >= 0 && chatIndex + direction < chatHistory.length) {
       setChatIndex(chatIndex + direction);
       setMessages(chatHistory[chatIndex + direction]);
-      if (posthogPromptTelemetry) {
-        posthog.capture('Chat History Restored', {
-          direction: direction
-        });
-      }
+      posthog.capture('Chat History Restored', {
+        direction: direction
+      });
     }
   };
 
   const clearChat = () => {
     setMessages(initialMessage);
     setChatIndex(chatHistory.length);
-    if (posthogPromptTelemetry) {
-      posthog.capture('Chat Cleared', {
-        chatLength: messages.length
-      });
-    }
+    posthog.capture('Chat Cleared', {
+      chatLength: messages.length
+    });
   };
 
   return (
