@@ -24,17 +24,17 @@ export const generateChatPrompt = (
   if (selectedCode || activeCellCode) {
     setReferenceSource(selectedCode ? 'Selected code' : 'Current cell code');
     output += `My question is related to this part of the code, answer me in a short and concise manner:
-  \`\`\`python
-  ${selectedCode || activeCellCode}
-  \`\`\`\n`;
+\`\`\`python
+${selectedCode || activeCellCode}
+\`\`\`\n`;
   }
 
   if (topSimilarities && topSimilarities.length > 0) {
     setReferenceSource(selectedCode || activeCellCode ? 'Current code and related cells' : 'Related cells in notebook');
     output += `Cells containing related content are:
-  \`\`\`python
-  ${topSimilarities.join('\n```\n```python\n')}
-  \`\`\`\n`;
+\`\`\`python
+${topSimilarities.join('\n```\n```python\n')}
+\`\`\`\n`;
   }
 
   if (!selectedCode && !activeCellCode && (!topSimilarities || topSimilarities.length === 0)) {
