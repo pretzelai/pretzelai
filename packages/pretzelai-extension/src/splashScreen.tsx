@@ -49,7 +49,8 @@ function SplashScreen() {
         </ul>
         <p style={{ marginTop: '30px' }}>
           To better understand how users are using the new AI codegen features, we collect anonymized telemetry strictly
-          related to the AI features. We also collect the AI prompt but it can be disabled in Pretzel AI Settings.
+          related to the AI features. We also collect the AI prompt (but not your code) which can be disabled in Pretzel
+          AI Settings.
         </p>
         <p>
           We use cookies to make sure we remember you between browser sessions. Do you consent to the use of cookies for
@@ -80,14 +81,6 @@ function createCustomDialog() {
 
   dialog.launch();
 }
-
-// function createSplashScreen() {
-//   return showDialog({
-//     body: <SplashScreen />,
-//     buttons: [],
-//     hasClose: false,
-//   });
-// }
 
 function removeSplashScreen() {
   Dialog.flush();

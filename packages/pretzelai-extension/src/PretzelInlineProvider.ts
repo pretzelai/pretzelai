@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import {
   CompletionHandler,
   IInlineCompletionContext,
@@ -9,11 +10,24 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { PLUGIN_ID } from './utils';
 import OpenAI from 'openai';
+import { JupyterFrontEnd } from '@jupyterlab/application';
+import posthog from 'posthog-js';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
-  constructor(protected notebookTracker: INotebookTracker, protected settingRegistry: ISettingRegistry) {
+  constructor(
+    protected notebookTracker: INotebookTracker,
+    protected settingRegistry: ISettingRegistry,
+    protected app: JupyterFrontEnd
+  ) {
     this.notebookTracker = notebookTracker;
     this.settingRegistry = settingRegistry;
+    this.app = app;
+
+    this.app.commands.commandExecuted.connect((sender, args) => {
+      if (args.id === 'inline-completer:accept') {
+        posthog.capture('Tab Completion Accepted');
+      }
+    });
   }
   readonly identifier = '@pretzelai/inline-completer';
   readonly name = 'Pretzel AI inline completion';
