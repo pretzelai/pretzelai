@@ -7,8 +7,15 @@
       "type": "string",
       "title": "AI Service",
       "description": "Select the AI service to use for AI operations.",
-      "enum": ["OpenAI API key", "Use Pretzel AI Server", "Use Azure API"],
+      "enum": ["OpenAI API key", "Use Pretzel AI Server", "Ollama", "Use Azure API"],
       "default": "Use Pretzel AI Server"
+    },
+    "ollamaModel": {
+      "type": "string",
+      "title": "Ollama Model",
+      "description": "Select the Ollama model to use for AI operations.",
+      "enum": ["gemma:2b", "llama2", "gemma", "mistral", "mistral:latest"],
+      "default": "gemma:2b"
     },
     "openAiSettings": {
       "type": "object",

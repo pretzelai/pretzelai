@@ -48,6 +48,7 @@ interface IChatProps {
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   openAiModel?: string;
+  ollamaModel?: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
@@ -64,6 +65,7 @@ export function Chat({
   openAiApiKey,
   openAiBaseUrl,
   openAiModel,
+  ollamaModel,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
@@ -245,6 +247,7 @@ export function Chat({
       openAiApiKey,
       openAiBaseUrl,
       openAiModel,
+      ollamaModel,
       azureBaseUrl,
       azureApiKey,
       deploymentId,

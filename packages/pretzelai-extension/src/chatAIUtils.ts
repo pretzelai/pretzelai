@@ -50,6 +50,7 @@ export const chatAIStream = async ({
   openAiApiKey,
   openAiBaseUrl,
   openAiModel,
+  ollamaModel,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
@@ -66,6 +67,7 @@ export const chatAIStream = async ({
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   openAiModel?: string;
+  ollamaModel?: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
@@ -109,7 +111,7 @@ export const chatAIStream = async ({
     setReferenceSource('');
 
     setIsAiGenerating(false);
-  } else if (aiService === 'testing') {
+  } else if (aiService === 'Use Pretzel AI Server') {
     const response = await fetch('https://api.pretzelai.app/chat/', {
       method: 'POST',
       headers: {
@@ -134,14 +136,14 @@ export const chatAIStream = async ({
         renderChat(chunk);
       }
     }
-  } else if (aiService === 'Use Pretzel AI Server') {
+  } else if (aiService === 'Ollama') {
     const response = await fetch('http://localhost:11434/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama2',
+        model: ollamaModel,
         messages: messagesWithInjection,
         stream: true
       }),

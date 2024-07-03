@@ -13,7 +13,7 @@ import { OpenAIClient } from '@azure/openai';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
-export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Use Azure API';
+export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Ollama' | 'Use Azure API';
 
 export type Embedding = {
   id: string;
@@ -241,6 +241,28 @@ export const openaiEmbeddings = async (
       model: EMBEDDING_MODEL,
       input: source
     });
+  } else if (aiService === 'Ollama') {
+    const response = await fetch('http://localhost:11434/api/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'mxbai-embed-large',
+        prompt: source
+      })
+    });
+    const data = await response.json();
+    return {
+      object: 'list',
+      data: [
+        {
+          object: 'embedding',
+          index: 0,
+          embedding: data.embedding
+        }
+      ]
+    } as OpenAI.Embeddings.CreateEmbeddingResponse;
   } else if (aiService === 'Use Azure API') {
     return await (aiClient as OpenAIClient).getEmbeddings('text-embedding-ada-002', [source]);
   } else {

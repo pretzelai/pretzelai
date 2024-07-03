@@ -87,6 +87,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let openAiModel = '';
+    let ollamaModel = '';
     let aiService: AiService = 'Use Pretzel AI Server';
     let azureBaseUrl = '';
     let azureDeploymentName = '';
@@ -111,6 +112,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         isAIEnabled = true;
       } else if (aiService === 'Use Pretzel AI Server') {
         isAIEnabled = true;
+      } else if (aiService === 'Ollama') {
+        isAIEnabled = true;
       } else {
         isAIEnabled = false;
       }
@@ -123,6 +126,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         openAiApiKey = openAiSettings?.openAiApiKey || '';
         openAiBaseUrl = openAiSettings?.openAiBaseUrl || '';
         openAiModel = openAiSettings?.openAiModel;
+        const ollamaModelSetting = settings.get('ollamaModel').composite;
+        ollamaModel = (ollamaModelSetting as string) || 'gemma:2b';
 
         const azureSettings = settings.get('azureSettings').composite as any;
         azureBaseUrl = azureSettings?.azureBaseUrl || '';
@@ -335,6 +340,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           openAiApiKey={openAiApiKey}
           openAiBaseUrl={openAiBaseUrl}
           openAiModel={openAiModel}
+          ollamaModel={ollamaModel}
           azureBaseUrl={azureBaseUrl}
           azureApiKey={azureApiKey}
           deploymentId={azureDeploymentName}
@@ -390,6 +396,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               openAiApiKey={openAiApiKey}
               openAiBaseUrl={openAiBaseUrl}
               openAiModel={openAiModel}
+              ollamaModel={ollamaModel}
               azureBaseUrl={azureBaseUrl}
               azureApiKey={azureApiKey}
               deploymentId={azureDeploymentName}
@@ -419,6 +426,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         openAiApiKey,
         openAiBaseUrl,
         openAiModel,
+        ollamaModel,
         azureBaseUrl,
         azureApiKey,
         deploymentId: azureDeploymentName,

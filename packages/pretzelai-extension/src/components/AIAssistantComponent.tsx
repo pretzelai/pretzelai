@@ -24,6 +24,7 @@ interface IAIAssistantComponentProps {
   openAiApiKey: string;
   openAiBaseUrl: string;
   openAiModel: string;
+  ollamaModel: string;
   azureBaseUrl: string;
   azureApiKey: string;
   deploymentId: string;
@@ -83,6 +84,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         openAiApiKey: props.openAiApiKey,
         openAiBaseUrl: props.openAiBaseUrl,
         openAiModel: props.openAiModel,
+        ollamaModel: props.ollamaModel,
         azureBaseUrl: props.azureBaseUrl,
         azureApiKey: props.azureApiKey,
         deploymentId: props.deploymentId,
@@ -139,6 +141,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           openAiApiKey: props.openAiApiKey,
           openAiBaseUrl: props.openAiBaseUrl,
           openAiModel: props.openAiModel,
+          ollamaModel: props.ollamaModel,
           azureBaseUrl: props.azureBaseUrl,
           azureApiKey: props.azureApiKey,
           deploymentId: props.deploymentId,
@@ -148,9 +151,9 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         setStream(stream);
         setStatusElementText('Generating code...');
         setShowDiffContainer(true);
-      } catch (error) {
+      } catch (error: any) {
         props.handleRemove();
-        throw new Error('Error generating prompt');
+        throw new Error(`Error generating prompt: ${error?.message}`);
       }
     }
   };

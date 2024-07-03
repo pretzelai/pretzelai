@@ -366,6 +366,7 @@ const setupStream = async ({
   openAiApiKey,
   openAiBaseUrl,
   openAiModel,
+  ollamaModel,
   prompt,
   azureBaseUrl,
   azureApiKey,
@@ -375,13 +376,13 @@ const setupStream = async ({
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   openAiModel?: string;
+  ollamaModel?: string;
   prompt: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
-
   if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
@@ -431,6 +432,47 @@ const setupStream = async ({
         }
       }
     };
+  } else if (aiService === 'Ollama' && prompt && ollamaModel) {
+    const response = await fetch('http://localhost:11434/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: ollamaModel,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        stream: true
+      })
+    });
+
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        let isReading = true;
+        while (isReading) {
+          const { done, value } = await reader.read();
+          if (done) {
+            isReading = false;
+          } else {
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.trim() !== '') {
+                const jsonResponse = JSON.parse(line);
+                yield { choices: [{ delta: { content: jsonResponse.message?.content || '' } }] };
+              }
+            }
+          }
+        }
+      }
+    };
   } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
     const result = await client.getCompletions(deploymentId, [prompt]);
@@ -463,6 +505,7 @@ export const generateAIStream = async ({
   openAiApiKey,
   openAiBaseUrl,
   openAiModel,
+  ollamaModel,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
@@ -481,6 +524,7 @@ export const generateAIStream = async ({
   openAiApiKey: string;
   openAiBaseUrl: string;
   openAiModel: string;
+  ollamaModel: string;
   azureBaseUrl: string;
   azureApiKey: string;
   deploymentId: string;
@@ -510,6 +554,7 @@ export const generateAIStream = async ({
     openAiApiKey,
     openAiBaseUrl,
     openAiModel,
+    ollamaModel,
     prompt,
     azureBaseUrl,
     azureApiKey,
