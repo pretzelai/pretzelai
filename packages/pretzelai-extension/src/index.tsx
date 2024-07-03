@@ -32,6 +32,9 @@ import React from 'react';
 import { AIAssistantComponent } from './components/AIAssistantComponent';
 import { ICompletionProviderManager } from '@jupyterlab/completer';
 import { PretzelInlineProvider } from './PretzelInlineProvider';
+import { IMainMenu } from '@jupyterlab/mainmenu';
+import { PretzelSettings } from './components/PretzelSettings';
+import { ReactWidget } from '@jupyterlab/apputils';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -50,7 +53,14 @@ const NUMBER_OF_SIMILAR_CELLS = 3;
 const extension: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
-  requires: [IRenderMimeRegistry, ICommandPalette, INotebookTracker, ISettingRegistry, ICompletionProviderManager],
+  requires: [
+    IRenderMimeRegistry,
+    ICommandPalette,
+    INotebookTracker,
+    ISettingRegistry,
+    ICompletionProviderManager,
+    IMainMenu
+  ],
   optional: [ILayoutRestorer],
   activate: async (
     app: JupyterFrontEnd,
@@ -59,6 +69,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     notebookTracker: INotebookTracker,
     settingRegistry: ISettingRegistry,
     providerManager: ICompletionProviderManager,
+    mainMenu: IMainMenu,
     restorer: ILayoutRestorer | null
   ) => {
     const provider = new PretzelInlineProvider(notebookTracker, settingRegistry, app);
@@ -509,6 +520,27 @@ const extension: JupyterFrontEndPlugin<void> = {
       command,
       keys: ['Accel K'],
       selector: '.jp-Notebook'
+    });
+
+    const pretzelSettingsCommand = 'pretzelai:open-settings';
+    commands.addCommand(pretzelSettingsCommand, {
+      label: 'Pretzel AI Settings',
+      execute: () => {
+        const widget = ReactWidget.create(<PretzelSettings settingRegistry={settingRegistry} />);
+        widget.id = 'pretzelai-settings';
+        widget.title.label = 'Pretzel AI Settings';
+        widget.title.closable = true;
+
+        if (!widget.isAttached) {
+          app.shell.add(widget, 'main');
+        }
+        app.shell.activateById(widget.id);
+      }
+    });
+
+    mainMenu.settingsMenu.addItem({
+      command: pretzelSettingsCommand,
+      rank: 500
     });
   }
 };
