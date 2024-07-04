@@ -11,7 +11,8 @@ import { OpenAI } from 'openai';
 import { Embeddings } from '@azure/openai/types/openai';
 import { OpenAIClient } from '@azure/openai';
 
-export const EMBEDDING_MODEL = 'text-embedding-3-large';
+const EMBEDDING_MODEL = 'text-embedding-3-large';
+const EMBEDDING_MODEL_OLLAMA = 'mxbai-embed-large';
 
 export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Ollama' | 'Use Azure API';
 
@@ -248,7 +249,7 @@ export const openaiEmbeddings = async (
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'mxbai-embed-large',
+        model: EMBEDDING_MODEL_OLLAMA,
         prompt: source
       })
     });
