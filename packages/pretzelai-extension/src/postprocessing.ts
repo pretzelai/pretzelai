@@ -16,7 +16,7 @@ export const fixCode = (code: string) => {
   return finalCode;
 };
 
-export const fixCompletion = ({
+export const fixInlineCompletion = ({
   completion,
   prefix,
   suffix

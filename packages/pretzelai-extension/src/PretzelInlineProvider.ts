@@ -20,7 +20,7 @@ import { PLUGIN_ID } from './utils';
 import OpenAI from 'openai';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import posthog from 'posthog-js';
-import { fixCompletion } from './postprocessing';
+import { fixInlineCompletion } from './postprocessing';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(
@@ -220,7 +220,7 @@ Fill in the blank to complete the code block. Your response should include only 
           resolve({
             items: [
               {
-                insertText: fixCompletion({
+                insertText: fixInlineCompletion({
                   completion,
                   prefix: prompt,
                   suffix
