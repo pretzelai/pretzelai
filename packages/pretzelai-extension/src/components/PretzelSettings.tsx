@@ -162,21 +162,45 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   }, []);
 
   const handleRestoreDefaults = async () => {
-    const plugin = await settingRegistry.load(PLUGIN_ID);
-    await plugin.remove('');
-    const defaultSettings = plugin.composite;
-    setSettings(defaultSettings);
-    setTempSettings(defaultSettings);
-    await plugin.set('', defaultSettings as PartialJSONValue);
+    try {
+      const plugin = await settingRegistry.load(PLUGIN_ID);
+
+      // Remove all user settings
+      await plugin.remove('');
+
+      // Get the default settings
+      const defaultSettings = plugin.schema.properties || {};
+
+      // Update the local state with default values
+      const newSettings = {};
+      Object.keys(defaultSettings).forEach(key => {
+        if ('default' in defaultSettings[key]) {
+          newSettings[key] = defaultSettings[key].default;
+        }
+      });
+
+      setSettings(newSettings);
+      setTempSettings(newSettings);
+
+      // Clear any validation errors
+      setValidationErrors({});
+      setDynamicValidationErrors({});
+
+      // Optionally, you can trigger a reload of the settings
+      // to ensure everything is in sync
+      await loadSettings();
+    } catch (error) {
+      console.error('Error restoring defaults:', error);
+      // Handle the error (e.g., show an error message to the user)
+    }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        Loading settings...
-      </Box>
-    );
-  }
+  // Add this function to reload settings
+  const loadSettings = async () => {
+    const loadedSettings = await settingRegistry.load(PLUGIN_ID);
+    setSettings(loadedSettings.composite);
+    setTempSettings(loadedSettings.composite);
+  };
 
   const commonTextFieldSx = {
     '& .MuiOutlinedInput-root': {
@@ -273,7 +297,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                   <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Mistral API Key</InputLabel>
                 </Grid>
                 <Grid item xs={8}>
-                  {renderTextField('Mistral API Key', 'inlineCopilotSettings.mistralApiKey', 'password')}
+                  {renderTextField('Mistral API Key', 'inlineCopilotSettings.mistralApiKey')}
                 </Grid>
               </>
             )}
@@ -283,7 +307,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                   <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI API Key</InputLabel>
                 </Grid>
                 <Grid item xs={8}>
-                  {renderTextField('OpenAI API Key', 'inlineCopilotSettings.openAiApiKey', 'password')}
+                  {renderTextField('OpenAI API Key', 'inlineCopilotSettings.openAiApiKey')}
                 </Grid>
                 <Grid item xs={4}>
                   <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI Base URL</InputLabel>
@@ -318,8 +342,18 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const renderModelProviderSettings = () => {
     const visibleProviders = new Set([tempSettings.aiService, tempSettings.inlineCopilotSettings?.provider]);
 
+    // Remove 'Use Pretzel AI Server' from visibleProviders as it doesn't have specific settings
+    visibleProviders.delete('Use Pretzel AI Server');
+    visibleProviders.delete('Pretzel AI');
+
+    // If no providers with settings are selected, don't render anything
+    if (visibleProviders.size === 0) {
+      return null;
+    }
+
     return (
       <>
+        <Divider sx={{ my: 4 }} />
         <Typography variant="h5" gutterBottom sx={{ color: 'var(--jp-ui-font-color0)', mb: 2, mt: 4 }}>
           Model Provider Settings
         </Typography>
@@ -333,7 +367,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                 <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI API Key</InputLabel>
               </Grid>
               <Grid item xs={8}>
-                {renderTextField('OpenAI API Key', 'openAiSettings.openAiApiKey', 'password')}
+                {renderTextField('OpenAI API Key', 'openAiSettings.openAiApiKey')}
               </Grid>
               <Grid item xs={4}>
                 <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI Base URL</InputLabel>
@@ -382,7 +416,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                 <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Azure API Key</InputLabel>
               </Grid>
               <Grid item xs={8}>
-                {renderTextField('Azure API Key', 'azureSettings.azureApiKey', 'password')}
+                {renderTextField('Azure API Key', 'azureSettings.azureApiKey')}
               </Grid>
             </Grid>
           </Box>
@@ -397,12 +431,11 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                 <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Mistral API Key</InputLabel>
               </Grid>
               <Grid item xs={8}>
-                {renderTextField('Mistral API Key', 'inlineCopilotSettings.mistralApiKey', 'password')}
+                {renderTextField('Mistral API Key', 'inlineCopilotSettings.mistralApiKey')}
               </Grid>
             </Grid>
           </Box>
         )}
-        {/* Add more providers here as needed */}
       </>
     );
   };
@@ -440,6 +473,8 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             {renderInlineCopilotSettings()}
           </Grid>
         </Box>
+
+        {renderModelProviderSettings()}
 
         <Divider sx={{ my: 4 }} />
 
@@ -494,8 +529,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             />
           </Grid>
         </Grid>
-
-        {renderModelProviderSettings()}
 
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
           <Button variant="contained" onClick={handleSave} sx={{ backgroundColor: 'var(--jp-brand-color1)' }}>
