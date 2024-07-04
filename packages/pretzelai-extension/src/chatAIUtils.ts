@@ -46,7 +46,7 @@ ${topSimilarities.join('\n```\n```python\n')}
 };
 
 export const chatAIStream = async ({
-  aiService,
+  aiChatModelProvider,
   openAiApiKey,
   openAiBaseUrl,
   openAiModel,
@@ -62,7 +62,7 @@ export const chatAIStream = async ({
   setIsAiGenerating,
   signal
 }: {
-  aiService: string;
+  aiChatModelProvider: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   openAiModel?: string;
@@ -87,7 +87,7 @@ export const chatAIStream = async ({
     selectedCode
   );
   const messagesWithInjection = [...messages.slice(0, -1), { role: 'user', content: lastContentWithInjection }];
-  if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && messages) {
+  if (aiChatModelProvider === 'OpenAI' && openAiApiKey && openAiModel && messages) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
@@ -109,7 +109,7 @@ export const chatAIStream = async ({
     setReferenceSource('');
 
     setIsAiGenerating(false);
-  } else if (aiService === 'Use Pretzel AI Server') {
+  } else if (aiChatModelProvider === 'Pretzel AI') {
     const response = await fetch('https://api.pretzelai.app/chat/', {
       method: 'POST',
       headers: {

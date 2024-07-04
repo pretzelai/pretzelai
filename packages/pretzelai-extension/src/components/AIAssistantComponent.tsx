@@ -13,14 +13,13 @@ import { DiffComponent } from './DiffComponent';
 import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
-import { AiService } from '../prompt';
 import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 
 interface IAIAssistantComponentProps {
-  aiService: AiService;
+  aiChatModelProvider: string;
   openAiApiKey: string;
   openAiBaseUrl: string;
   openAiModel: string;
@@ -70,7 +69,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
     try {
       const stream = await generateAIStream({
-        aiService: props.aiService,
+        aiChatModelProvider: props.aiChatModelProvider,
         aiClient: props.aiClient,
         embeddings: embeddings,
         userInput: '',
@@ -126,7 +125,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       userInput = await processTaggedVariables(userInput, props.notebookTracker);
       try {
         const stream = await generateAIStream({
-          aiService: props.aiService,
+          aiChatModelProvider: props.aiChatModelProvider,
           aiClient: props.aiClient,
           embeddings: embeddings,
           userInput,

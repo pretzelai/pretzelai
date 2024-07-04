@@ -190,7 +190,7 @@ export async function createAndSaveEmbeddings(
   path: string,
   app: JupyterFrontEnd,
   aiClient: OpenAI | OpenAIClient | null,
-  aiService: AiService
+  aiChatModelProvider: string
 ): Promise<Embedding[]> {
   let embeddings = existingEmbeddingsJSON;
   const newEmbeddingsArray: Embedding[] = [];
@@ -203,7 +203,7 @@ export async function createAndSaveEmbeddings(
           const hash = await calculateHash(cell.source);
           if (hash !== embeddings[index].hash) {
             try {
-              const response = await openaiEmbeddings(cell.source, aiService, aiClient);
+              const response = await openaiEmbeddings(cell.source, aiChatModelProvider, aiClient);
               newEmbeddingsArray.push({
                 id: cell.id,
                 source: cell.source,
@@ -218,7 +218,7 @@ export async function createAndSaveEmbeddings(
           }
         } else {
           try {
-            const response = await openaiEmbeddings(cell.source, aiService, aiClient);
+            const response = await openaiEmbeddings(cell.source, aiChatModelProvider, aiClient);
             const hash = await calculateHash(cell.source);
             newEmbeddingsArray.push({
               id: cell.id,
@@ -253,7 +253,7 @@ export async function getEmbeddings(
   notebookTracker: INotebookTracker,
   app: JupyterFrontEnd,
   aiClient: OpenAI | OpenAIClient | null,
-  aiService: AiService
+  aiChatModelProvider: string
 ): Promise<Embedding[]> {
   const notebook = notebookTracker.currentWidget;
   let embeddings: Embedding[] = [];
@@ -281,7 +281,7 @@ export async function getEmbeddings(
           embeddingsPath,
           app,
           aiClient,
-          aiService
+          aiChatModelProvider
         );
       } catch (error) {
         console.error('Error parsing embeddings JSON:', error);
@@ -315,7 +315,7 @@ export async function getEmbeddings(
       }
     }
   } else {
-    setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiService), 1000);
+    setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider), 1000);
   }
   return embeddings;
 }
@@ -335,16 +335,16 @@ export const getTopSimilarities = async (
   embeddings: Embedding[],
   numberOfSimilarities: number,
   aiClient: OpenAI | OpenAIClient | null,
-  aiService: AiService,
+  aiChatModelProvider: string,
   cellId: string,
   codeMatchThreshold: number
 ): Promise<string[]> => {
   let response;
   try {
-    response = await openaiEmbeddings(userInput, aiService, aiClient);
+    response = await openaiEmbeddings(userInput, aiChatModelProvider, aiClient);
   } catch (error: any) {
     // Catching OpenAI errors here since this function is called for all prompts
-    showErrorDialog(`${aiService}: Error connecting`, error?.error?.message || JSON.stringify(error));
+    showErrorDialog(`${aiChatModelProvider}: Error connecting`, error?.error?.message || JSON.stringify(error));
     throw error;
   }
   const userInputEmbedding = response.data[0].embedding; // same API for openai and azure
@@ -362,7 +362,7 @@ export const getTopSimilarities = async (
 };
 
 const setupStream = async ({
-  aiService,
+  aiChatModelProvider,
   openAiApiKey,
   openAiBaseUrl,
   openAiModel,
@@ -371,7 +371,7 @@ const setupStream = async ({
   azureApiKey,
   deploymentId
 }: {
-  aiService: string;
+  aiChatModelProvider: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   openAiModel?: string;
@@ -382,7 +382,7 @@ const setupStream = async ({
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
 
-  if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
+  if (aiChatModelProvider === 'OpenAI' && openAiApiKey && openAiModel && prompt) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
@@ -398,7 +398,7 @@ const setupStream = async ({
       ],
       stream: true
     });
-  } else if (aiService === 'Use Pretzel AI Server') {
+  } else if (aiChatModelProvider === 'Pretzel AI') {
     const response = await fetch('https://api.pretzelai.app/prompt/', {
       method: 'POST',
       headers: {
@@ -431,7 +431,7 @@ const setupStream = async ({
         }
       }
     };
-  } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
+  } else if (aiChatModelProvider === 'Azure' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
     const result = await client.getCompletions(deploymentId, [prompt]);
 
@@ -450,7 +450,7 @@ const setupStream = async ({
 };
 
 export const generateAIStream = async ({
-  aiService,
+  aiChatModelProvider,
   aiClient,
   embeddings,
   userInput,
@@ -468,7 +468,7 @@ export const generateAIStream = async ({
   deploymentId,
   isInject
 }: {
-  aiService: AiService;
+  aiChatModelProvider: string;
   aiClient: OpenAI | OpenAIClient | null;
   embeddings: Embedding[];
   userInput: string;
@@ -492,7 +492,7 @@ export const generateAIStream = async ({
     embeddings,
     numberOfSimilarCells,
     aiClient,
-    aiService,
+    aiChatModelProvider,
     notebookTracker.activeCell!.model.id,
     codeMatchThreshold
   );
@@ -506,7 +506,7 @@ export const generateAIStream = async ({
   }
 
   return setupStream({
-    aiService,
+    aiChatModelProvider,
     openAiApiKey,
     openAiBaseUrl,
     openAiModel,

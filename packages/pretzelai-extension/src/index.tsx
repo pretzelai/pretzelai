@@ -19,7 +19,6 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import { FixedSizeStack, getEmbeddings, PLUGIN_ID } from './utils';
 
-import { AiService } from './prompt';
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
 import { OutputAreaModel } from '@jupyterlab/outputarea';
@@ -35,7 +34,7 @@ import { PretzelInlineProvider } from './PretzelInlineProvider';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 import { PretzelSettings } from './components/PretzelSettings';
 import { ReactWidget } from '@jupyterlab/apputils';
-import { migrate_1_0_to_1_1 } from './migrations/migrate_1_0_to_1_1';
+import { migrateSettings } from './migrations/migrations';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -96,16 +95,22 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Mention @variable in prompt to reference variables/dataframes.\n' +
       'Use ↑ / ↓ to cycle through prompt history for current browser session.\n' +
       'Shift + Enter for new line.';
+
+    let aiChatModelProvider = '';
+    let aiChatModelString = '';
+    let codeMatchThreshold: number;
+
     let openAiApiKey = '';
     let openAiBaseUrl = '';
     let openAiModel = '';
-    let aiService: AiService = 'Use Pretzel AI Server';
+
     let azureBaseUrl = '';
     let azureDeploymentName = '';
     let azureApiKey = '';
+
     let aiClient: OpenAI | OpenAIClient | null = null;
+
     let posthogPromptTelemetry: boolean = true;
-    let codeMatchThreshold: number;
     let isAIEnabled: boolean = false;
     let promptHistoryStack: FixedSizeStack<string> = new FixedSizeStack<string>(50, '', '');
 
@@ -117,11 +122,11 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     function setAIEnabled() {
       // check to make sure we have all the settings set
-      if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel) {
+      if (aiChatModelProvider === 'OpenAI' && openAiApiKey && openAiModel) {
         isAIEnabled = true;
-      } else if (aiService === 'Use Azure API' && azureBaseUrl && azureDeploymentName && azureApiKey) {
+      } else if (aiChatModelProvider === 'Azure' && azureBaseUrl && azureDeploymentName && azureApiKey) {
         isAIEnabled = true;
-      } else if (aiService === 'Use Pretzel AI Server') {
+      } else if (aiChatModelProvider === 'Pretzel AI') {
         isAIEnabled = true;
       } else {
         isAIEnabled = false;
@@ -130,25 +135,43 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     async function loadSettings(updateFunc?: () => void) {
       try {
-        const oldSettings = await settingRegistry.load(PLUGIN_ID);
-        // Run migration
-        await migrate_1_0_to_1_1(oldSettings);
-
         const settings = await settingRegistry.load(PLUGIN_ID);
-        const openAiSettings = settings.get('openAiSettings').composite as any;
-        openAiApiKey = openAiSettings?.openAiApiKey || '';
-        openAiBaseUrl = openAiSettings?.openAiBaseUrl || '';
-        openAiModel = openAiSettings?.openAiModel;
+        let pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+        let pretzelSettingsJSONVersion = settings.get('pretzelSettingsJSONVersion').composite as string;
 
-        const azureSettings = settings.get('azureSettings').composite as any;
-        azureBaseUrl = azureSettings?.azureBaseUrl || '';
-        azureDeploymentName = azureSettings?.azureDeploymentName || '';
-        azureApiKey = azureSettings?.azureApiKey || '';
+        const currentVersion = pretzelSettingsJSON?.version || '1.0';
+        const targetVersion = pretzelSettingsJSONVersion;
 
-        const aiServiceSetting = settings.get('aiService').composite;
-        aiService = (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
-        posthogPromptTelemetry = settings.get('posthogPromptTelemetry').composite as boolean;
-        codeMatchThreshold = (settings.get('codeMatchThreshold').composite as number) / 100;
+        if (Object.keys(pretzelSettingsJSON).length === 0 || currentVersion !== targetVersion) {
+          pretzelSettingsJSON = await migrateSettings(pretzelSettingsJSON, currentVersion, targetVersion);
+          await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
+        }
+
+        // Extract settings from pretzelSettingsJSON
+
+        const features = pretzelSettingsJSON.features || {};
+        const providers = pretzelSettingsJSON.providers || [];
+
+        // AI Chat settings
+        const aiChatSettings = features?.aiChat || {};
+        aiChatModelProvider = aiChatSettings.modelProvider || 'Pretzel AI';
+        aiChatModelString = aiChatSettings.modelString || 'gpt-4o';
+        codeMatchThreshold = (aiChatSettings.codeMatchThreshold ?? 20) / 100;
+
+        // OpenAI settings
+        const openAiProvider = providers.find((p: any) => p.name === 'OpenAI');
+        openAiApiKey = openAiProvider?.apiSettings?.apiKey.value || '';
+        openAiBaseUrl = openAiProvider?.apiSettings?.baseUrl.value || '';
+        openAiModel = features?.aiChat?.modelString; // FIXME - use generic model string aiChatModelString
+
+        // Azure settings
+        const azureProvider = providers.find((p: any) => p.name === 'Azure');
+        azureBaseUrl = azureProvider?.apiSettings?.baseUrl?.value || '';
+        azureDeploymentName = azureProvider?.apiSettings?.deploymentName?.value || '';
+        azureApiKey = azureProvider?.apiSettings?.apiKey?.value || '';
+
+        // Posthog settings
+        posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
 
         const cookieSettings = await settingRegistry.load('@jupyterlab/apputils-extension:notification');
         const posthogCookieConsent = cookieSettings.get('posthogCookieConsent').composite as string;
@@ -166,12 +189,13 @@ const extension: JupyterFrontEndPlugin<void> = {
     loadSettings();
 
     function loadAIClient() {
-      if (aiService === 'OpenAI API key') {
+      if (aiChatModelProvider === 'OpenAI') {
         aiClient = new OpenAI({
           apiKey: openAiApiKey,
-          dangerouslyAllowBrowser: true
+          dangerouslyAllowBrowser: true,
+          baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
         });
-      } else if (aiService === 'Use Azure API') {
+      } else if (aiChatModelProvider === 'Azure') {
         aiClient = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
       } else {
         aiClient = null;
@@ -180,7 +204,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     loadAIClient(); // first time load, later settings will trigger this
 
     notebookTracker.currentChanged.connect(() => {
-      getEmbeddings(notebookTracker, app, aiClient, aiService);
+      getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
     });
 
     // getEmbeddings when a file is renamed
@@ -188,7 +212,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       if (change.type === 'rename') {
         // wait for the file to be renamed before creating embeddings file
         setTimeout(() => {
-          getEmbeddings(notebookTracker, app, aiClient, aiService);
+          getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
         }, 2000);
       }
     });
@@ -202,7 +226,7 @@ const extension: JupyterFrontEndPlugin<void> = {
             clearTimeout(debounceTimeout);
           }
           debounceTimeout = setTimeout(() => {
-            getEmbeddings(notebookTracker, app, aiClient, aiService);
+            getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
           }, 1000);
         });
       }
@@ -347,7 +371,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
       aiAssistantComponentRoot.render(
         <AIAssistantComponent
-          aiService={aiService}
+          aiChatModelProvider={aiChatModelProvider}
           openAiApiKey={openAiApiKey}
           openAiBaseUrl={openAiBaseUrl}
           openAiModel={openAiModel}
@@ -402,7 +426,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           aiAssistantComponentRoot.render(
             <AIAssistantComponent
-              aiService={aiService}
+              aiChatModelProvider={aiChatModelProvider}
               openAiApiKey={openAiApiKey}
               openAiBaseUrl={openAiBaseUrl}
               openAiModel={openAiModel}
@@ -431,7 +455,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     // Function to create and add the side panel
     function createAndAddSidePanel(expandPanel = false) {
       const newSidePanel = createChat({
-        aiService,
+        aiChatModelProvider,
         openAiApiKey,
         openAiBaseUrl,
         openAiModel,

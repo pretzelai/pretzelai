@@ -16,16 +16,18 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
     const inlineCopilotEnabled = inlineCopilotSettings?.enabled || false;
     const inlineCopilotProvider = inlineCopilotSettings?.provider || 'Pretzel AI';
 
+    const posthogPromptTelemetry = settings.get('posthogPromptTelemetry').composite as boolean;
+
     const inlineCopilotModelString = (() => {
       switch (inlineCopilotProvider) {
         case 'Pretzel AI':
-          return 'pretzel-ai';
+          return 'pretzelai';
         case 'Mistral':
           return 'codestral-latest';
         case 'OpenAI':
           return 'gpt-4o';
         default:
-          return 'pretzel-ai';
+          return 'pretzelai';
       }
     })();
 
@@ -36,8 +38,22 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
         case 'Use Azure API':
           return azureSettings?.azureDeploymentName || 'gpt-4';
         case 'Use Pretzel AI Server':
+          return 'pretzelai';
         default:
-          return 'pretzel-ai';
+          return 'pretzelai';
+      }
+    })();
+
+    const aiChatModelProvider = (() => {
+      switch (aiService) {
+        case 'OpenAI API key':
+          return 'OpenAI';
+        case 'Use Azure API':
+          return 'Azure';
+        case 'Use Pretzel AI Server':
+          return 'Pretzel AI Server';
+        default:
+          return 'Pretzel AI';
       }
     })();
 
@@ -46,12 +62,19 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
       features: {
         inlineCompletion: {
           enabled: inlineCopilotEnabled,
-          model: inlineCopilotModelString
+          modelProvider: inlineCopilotProvider,
+          modelString: inlineCopilotModelString
         },
         aiChat: {
           enabled: true,
-          model: aiCompletionModelString,
+          modelProvider: aiChatModelProvider,
+          modelString: aiCompletionModelString,
           codeMatchThreshold: codeMatchThreshold
+        },
+        posthogTelemetry: {
+          posthogPromptTelemetry: {
+            enabled: posthogPromptTelemetry
+          }
         }
       },
       providers: [
@@ -60,7 +83,7 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
           enabled: true,
           showSettings: false,
           apiSettings: {},
-          models: [{ name: 'pretzel-ai', enabled: true }]
+          models: [{ name: 'pretzelai', enabled: true }]
         },
         {
           name: 'OpenAI',
@@ -70,13 +93,15 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
             apiKey: {
               type: 'string',
               required: true,
-              default: openAiSettings?.openAiApiKey || '',
+              default: '',
+              value: openAiSettings?.openAiApiKey,
               showSetting: true
             },
             baseUrl: {
               type: 'string',
               required: false,
-              default: openAiSettings?.openAiBaseUrl || '',
+              default: '',
+              value: openAiSettings?.openAiBaseUrl,
               showSetting: false
             }
           },
@@ -103,19 +128,22 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
             apiKey: {
               type: 'string',
               required: true,
-              default: azureSettings?.azureApiKey || '',
+              default: '',
+              value: azureSettings?.azureApiKey || '',
               showSetting: true
             },
             baseUrl: {
               type: 'string',
               required: true,
-              default: azureSettings?.azureBaseUrl || '',
+              default: '',
+              value: azureSettings?.azureBaseUrl || '',
               showSetting: true
             },
             deploymentName: {
               type: 'string',
               required: true,
-              default: azureSettings?.azureDeploymentName || '',
+              default: '',
+              value: azureSettings?.azureDeploymentName || '',
               showSetting: true
             }
           },

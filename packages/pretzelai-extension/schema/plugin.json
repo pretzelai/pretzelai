@@ -112,6 +112,11 @@
       "description": "Store Pretzel Settings as JSON",
       "default": {},
       "additionalProperties": true
+    },
+    "pretzelSettingsJSONVersion": {
+      "type": "string",
+      "title": "Pretzel Settings Schema Version",
+      "default": ""
     }
   },
   "additionalProperties": true

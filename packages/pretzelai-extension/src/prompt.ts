@@ -221,10 +221,10 @@ Take a deep breath, think step-by-step and respond with MODIFIED version of CURR
 
 export const openaiEmbeddings = async (
   source: string,
-  aiService: AiService,
+  aiChatModelProvider: string,
   aiClient: OpenAI | OpenAIClient | null
 ): Promise<OpenAI.Embeddings.CreateEmbeddingResponse | Embeddings> => {
-  if (aiService === 'Use Pretzel AI Server') {
+  if (aiChatModelProvider === 'Pretzel AI') {
     return (await (
       await fetch('https://api.pretzelai.app/embeddings/', {
         method: 'POST',
@@ -236,12 +236,12 @@ export const openaiEmbeddings = async (
         })
       })
     ).json()) as OpenAI.Embeddings.CreateEmbeddingResponse;
-  } else if (aiService === 'OpenAI API key') {
+  } else if (aiChatModelProvider === 'OpenAI') {
     return await (aiClient as OpenAI).embeddings.create({
       model: EMBEDDING_MODEL,
       input: source
     });
-  } else if (aiService === 'Use Azure API') {
+  } else if (aiChatModelProvider === 'Azure') {
     return await (aiClient as OpenAIClient).getEmbeddings('text-embedding-ada-002', [source]);
   } else {
     throw new Error('Invalid AI service');

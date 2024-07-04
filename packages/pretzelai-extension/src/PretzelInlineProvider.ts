@@ -182,18 +182,19 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
   ): Promise<IInlineCompletionList<IInlineCompletionItem>> {
     clearTimeout(this.debounceTimer);
     const settings = await this.settingRegistry.load(PLUGIN_ID);
-    const inlineCopilotSettings = settings.get('inlineCopilotSettings').composite as any;
-    const isEnabled = inlineCopilotSettings?.enabled;
+    const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+    const inlineCopilotSettings = pretzelSettingsJSON.features?.inlineCompletion || {};
+    const isEnabled = inlineCopilotSettings.enabled ?? false;
     if (!isEnabled) {
       return {
         items: []
       };
     }
-    const copilotProvider = inlineCopilotSettings?.provider || 'pretzelai';
-    const mistralApiKey = inlineCopilotSettings?.mistralApiKey || '';
-    const openAiSettings = settings.get('openAiSettings').composite as any;
-    const openAiApiKey = openAiSettings?.openAiApiKey || '';
-
+    const copilotProvider = inlineCopilotSettings.model || 'pretzelai';
+    const mistralSettings = pretzelSettingsJSON.providers?.find((p: any) => p.name === 'Mistral')?.apiSettings || {};
+    const mistralApiKey = mistralSettings?.apiKey?.value || '';
+    const openAiSettings = pretzelSettingsJSON.providers?.find((p: any) => p.name === 'OpenAI')?.apiSettings || {};
+    const openAiApiKey = openAiSettings?.apiKey?.value || '';
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
         let prompt = this._prefixFromRequest(request);

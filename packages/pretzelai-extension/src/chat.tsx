@@ -19,7 +19,6 @@ import { JupyterFrontEnd } from '@jupyterlab/application';
 import { getSelectedCode, getTopSimilarities, PRETZEL_FOLDER, readEmbeddings } from './utils';
 import { RendermimeMarkdown } from './components/rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { AiService } from './prompt';
 import { OpenAI } from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { URLExt } from '@jupyterlab/coreutils';
@@ -44,7 +43,7 @@ const historyPrevKeyCombination = isMac ? '⇧⌘<' : '⇧^<';
 const historyNextKeyCombination = isMac ? '⇧⌘>' : '⇧^>';
 
 interface IChatProps {
-  aiService: AiService;
+  aiChatModelProvider: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   openAiModel?: string;
@@ -60,7 +59,7 @@ interface IChatProps {
 }
 
 export function Chat({
-  aiService,
+  aiChatModelProvider,
   openAiApiKey,
   openAiBaseUrl,
   openAiModel,
@@ -231,7 +230,7 @@ export function Chat({
       embeddings,
       5,
       aiClient,
-      aiService,
+      aiChatModelProvider,
       'no-match-id',
       codeMatchThreshold
     );
@@ -241,7 +240,7 @@ export function Chat({
     setStopGeneration(() => () => controller.abort());
 
     await chatAIStream({
-      aiService,
+      aiChatModelProvider,
       openAiApiKey,
       openAiBaseUrl,
       openAiModel,
