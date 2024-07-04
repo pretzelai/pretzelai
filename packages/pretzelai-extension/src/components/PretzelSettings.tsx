@@ -85,27 +85,32 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const errors: Record<string, string> = {};
 
     if (tempSettings.aiService === 'OpenAI API key') {
-      const openAIError = await validateOpenAIApiKey(tempSettings.openAiSettings.openAiApiKey);
+      const openAIError = await validateOpenAIApiKey(tempSettings.openAiSettings?.openAiApiKey);
       if (openAIError) {
         errors['openAiSettings.openAiApiKey'] = openAIError;
       }
     }
 
     if (tempSettings.inlineCopilotSettings?.enabled && tempSettings.inlineCopilotSettings.provider === 'Mistral') {
-      try {
-        const response = await fetch('https://api.mistral.ai/v1/models', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${tempSettings.inlineCopilotSettings.mistralApiKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
+      const mistralApiKey = tempSettings.inlineCopilotSettings?.mistralApiKey;
+      if (!mistralApiKey) {
+        errors['inlineCopilotSettings.mistralApiKey'] = 'Mistral API Key is required';
+      } else {
+        try {
+          const response = await fetch('https://api.mistral.ai/v1/models', {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${mistralApiKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
 
-        if (!response.ok) {
-          errors['inlineCopilotSettings.mistralApiKey'] = 'Invalid Mistral API Key';
+          if (!response.ok) {
+            errors['inlineCopilotSettings.mistralApiKey'] = 'Invalid Mistral API Key';
+          }
+        } catch (error) {
+          errors['inlineCopilotSettings.mistralApiKey'] = 'Error validating Mistral API Key';
         }
-      } catch (error) {
-        errors['inlineCopilotSettings.mistralApiKey'] = 'Invalid Mistral API Key';
       }
     }
 
@@ -116,9 +121,17 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const handleSave = async () => {
     const isValid = await validateSettings();
     if (isValid) {
-      const plugin = await settingRegistry.load(PLUGIN_ID);
-      await plugin.save(tempSettings);
-      setSettings(tempSettings);
+      try {
+        const plugin = await settingRegistry.load(PLUGIN_ID);
+        // Save each setting individually
+        for (const [key, value] of Object.entries(tempSettings)) {
+          await plugin.set(key, value as PartialJSONValue);
+        }
+        setSettings(tempSettings);
+      } catch (error) {
+        console.error('Error saving settings:', error);
+        // Handle the error (e.g., show an error message to the user)
+      }
     }
   };
 
@@ -193,26 +206,103 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     }
   };
 
-  const renderTextField = (label: string, path: string, type: string = 'text') => (
-    <TextField
-      fullWidth
-      label={label}
-      type={type}
-      value={path.split('.').reduce((obj, key) => obj[key], tempSettings)}
-      onChange={e => handleChange(path, e.target.value)}
-      sx={{
-        ...commonTextFieldSx,
-        '& .MuiOutlinedInput-root': {
-          ...commonTextFieldSx['& .MuiOutlinedInput-root'],
-          '& fieldset': {
-            borderColor: validationErrors[path] || dynamicValidationErrors[path] ? 'red' : 'var(--jp-border-color1)'
+  const renderTextField = (label: string, path: string, type: string = 'text') => {
+    const value = path.split('.').reduce((obj, key) => obj && obj[key], tempSettings) || '';
+    return (
+      <TextField
+        fullWidth
+        label={label}
+        type={type}
+        value={value}
+        onChange={e => handleChange(path, e.target.value)}
+        sx={{
+          ...commonTextFieldSx,
+          '& .MuiOutlinedInput-root': {
+            ...commonTextFieldSx['& .MuiOutlinedInput-root'],
+            '& fieldset': {
+              borderColor: validationErrors[path] || dynamicValidationErrors[path] ? 'red' : 'var(--jp-border-color1)'
+            }
           }
-        }
-      }}
-      error={!!(validationErrors[path] || dynamicValidationErrors[path])}
-      helperText={validationErrors[path] || dynamicValidationErrors[path] || ''}
-    />
-  );
+        }}
+        error={!!(validationErrors[path] || dynamicValidationErrors[path])}
+        helperText={validationErrors[path] || dynamicValidationErrors[path] || ''}
+      />
+    );
+  };
+
+  const renderProviderSettings = (provider: string, prefix: string) => {
+    switch (provider) {
+      case 'OpenAI API key':
+        return (
+          <>
+            <Grid item xs={4}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI API Key</InputLabel>
+            </Grid>
+            <Grid item xs={8}>
+              {renderTextField('OpenAI API Key', `${prefix}.openAiSettings.openAiApiKey`)}
+            </Grid>
+            <Grid item xs={4}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI Base URL</InputLabel>
+            </Grid>
+            <Grid item xs={8}>
+              {renderTextField('OpenAI Base URL', `${prefix}.openAiSettings.openAiBaseUrl`)}
+            </Grid>
+            <Grid item xs={4}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI Model</InputLabel>
+            </Grid>
+            <Grid item xs={8}>
+              <FormControl fullWidth>
+                <Select
+                  value={tempSettings[prefix]?.openAiSettings?.openAiModel || ''}
+                  onChange={e => handleChange(`${prefix}.openAiSettings.openAiModel`, e.target.value)}
+                  sx={commonSelectSx}
+                >
+                  <MenuItem value="gpt-4">GPT-4</MenuItem>
+                  <MenuItem value="gpt-4-turbo">GPT-4 Turbo</MenuItem>
+                  <MenuItem value="gpt-3.5-turbo">GPT-3.5 Turbo</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </>
+        );
+      case 'Use Azure API':
+        return (
+          <>
+            <Grid item xs={4}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Azure Base URL</InputLabel>
+            </Grid>
+            <Grid item xs={8}>
+              {renderTextField('Azure Base URL', `${prefix}.azureSettings.azureBaseUrl`)}
+            </Grid>
+            <Grid item xs={4}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Azure Deployment Name</InputLabel>
+            </Grid>
+            <Grid item xs={8}>
+              {renderTextField('Azure Deployment Name', `${prefix}.azureSettings.azureDeploymentName`)}
+            </Grid>
+            <Grid item xs={4}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Azure API Key</InputLabel>
+            </Grid>
+            <Grid item xs={8}>
+              {renderTextField('Azure API Key', `${prefix}.azureSettings.azureApiKey`, 'password')}
+            </Grid>
+          </>
+        );
+      case 'Mistral':
+        return (
+          <>
+            <Grid item xs={4}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Mistral API Key</InputLabel>
+            </Grid>
+            <Grid item xs={8}>
+              {renderTextField('Mistral API Key', `${prefix}.mistralSettings.mistralApiKey`, 'password')}
+            </Grid>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <Box sx={{ p: 3, backgroundColor: 'var(--jp-layout-color1)', color: 'var(--jp-ui-font-color1)' }}>
@@ -238,67 +328,9 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
               </Select>
             </FormControl>
           </Grid>
+
+          {renderProviderSettings(tempSettings.aiService, '')}
         </Grid>
-
-        {tempSettings.aiService === 'OpenAI API key' && (
-          <Box sx={{ mt: 2 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={4}>
-                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI API Key</InputLabel>
-              </Grid>
-              <Grid item xs={8}>
-                {renderTextField('OpenAI API Key', 'openAiSettings.openAiApiKey')}
-              </Grid>
-
-              <Grid item xs={4}>
-                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI Base URL</InputLabel>
-              </Grid>
-              <Grid item xs={8}>
-                {renderTextField('OpenAI Base URL', 'openAiSettings.openAiBaseUrl')}
-              </Grid>
-              <Grid item xs={4}>
-                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>OpenAI Model</InputLabel>
-              </Grid>
-              <Grid item xs={8}>
-                <FormControl fullWidth>
-                  <Select
-                    value={tempSettings.openAiSettings.openAiModel}
-                    onChange={e => handleChange('openAiSettings.openAiModel', e.target.value)}
-                    sx={commonSelectSx}
-                  >
-                    <MenuItem value="gpt-4">GPT-4</MenuItem>
-                    <MenuItem value="gpt-4-turbo">GPT-4 Turbo</MenuItem>
-                    <MenuItem value="gpt-3.5-turbo">GPT-3.5 Turbo</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Box>
-        )}
-        {tempSettings.aiService === 'Use Azure API' && (
-          <Box sx={{ mt: 2 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={4}>
-                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Azure Base URL</InputLabel>
-              </Grid>
-              <Grid item xs={8}>
-                {renderTextField('Azure Base URL', 'azureSettings.azureBaseUrl')}
-              </Grid>
-              <Grid item xs={4}>
-                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Azure Deployment Name</InputLabel>
-              </Grid>
-              <Grid item xs={8}>
-                {renderTextField('Azure Deployment Name', 'azureSettings.azureDeploymentName')}
-              </Grid>
-              <Grid item xs={4}>
-                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Azure API Key</InputLabel>
-              </Grid>
-              <Grid item xs={8}>
-                {renderTextField('Azure API Key', 'azureSettings.azureApiKey', 'password')}
-              </Grid>
-            </Grid>
-          </Box>
-        )}
 
         <Box sx={{ mt: 3 }}>
           <Typography variant="h6" gutterBottom sx={{ color: 'var(--jp-ui-font-color0)' }}>
@@ -329,23 +361,17 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                       onChange={e => handleChange('inlineCopilotSettings.provider', e.target.value)}
                       sx={commonSelectSx}
                     >
-                      <MenuItem value="OpenAI">OpenAI</MenuItem>
+                      <MenuItem value="Pretzel AI">Pretzel AI Server</MenuItem>
+                      <MenuItem value="OpenAI API key">OpenAI</MenuItem>
                       <MenuItem value="Mistral">Mistral</MenuItem>
+                      <MenuItem value="Use Azure API">Use Azure API</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
-              </Grid>
 
-              {tempSettings.inlineCopilotSettings.provider === 'Mistral' && (
-                <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-                  <Grid item xs={4}>
-                    <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Mistral API Key</InputLabel>
-                  </Grid>
-                  <Grid item xs={8}>
-                    {renderTextField('Mistral API Key', 'inlineCopilotSettings.mistralApiKey', 'password')}
-                  </Grid>
-                </Grid>
-              )}
+                {tempSettings.inlineCopilotSettings.provider !== tempSettings.aiService &&
+                  renderProviderSettings(tempSettings.inlineCopilotSettings.provider, 'inlineCopilotSettings')}
+              </Grid>
             </>
           )}
         </Box>
@@ -385,10 +411,10 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         </Grid>
 
         <Grid container spacing={2} alignItems="center" sx={{ mt: 2 }}>
-          <Grid item xs={10}>
+          <Grid item xs={4}>
             <Typography sx={{ color: 'var(--jp-ui-font-color1)' }}>Enable Prompt Telemetry</Typography>
           </Grid>
-          <Grid item xs={2}>
+          <Grid item xs={8}>
             <Switch
               checked={settings.posthogPromptTelemetry}
               onChange={e => handleChange('posthogPromptTelemetry', e.target.checked)}
