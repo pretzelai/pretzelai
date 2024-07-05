@@ -11,14 +11,14 @@ const migrations: { [key: string]: IMigrationFunction } = {
 };
 
 export async function migrateSettings(settings: any, currentVersion: string, targetVersion: string): Promise<any> {
-  let currentSettings = { ...settings };
+  let currentSettings = settings.get('pretzelSettingsJSON').composite as any;
   const versions = Object.keys(migrations).sort();
 
   for (const version of versions) {
     const [fromVersion, toVersion] = version.split('_to_');
     if (currentVersion < fromVersion) continue;
     if (toVersion <= targetVersion) {
-      currentSettings = await migrations[version](currentSettings);
+      currentSettings = await migrations[version](toVersion === '1.1' ? settings : currentSettings);
       currentVersion = toVersion;
     }
     if (currentVersion === targetVersion) break;

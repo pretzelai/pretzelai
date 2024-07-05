@@ -12,7 +12,7 @@ import { IIOPubMessage } from '@jupyterlab/services/src/kernel/messages';
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { AiService, Embedding, generatePrompt, openaiEmbeddings } from './prompt';
+import { Embedding, generatePrompt, openaiEmbeddings } from './prompt';
 import OpenAI from 'openai';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';

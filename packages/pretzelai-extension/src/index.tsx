@@ -137,18 +137,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       try {
         const settings = await settingRegistry.load(PLUGIN_ID);
         let pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
-        let pretzelSettingsJSONVersion = settings.get('pretzelSettingsJSONVersion').composite as string;
-
-        const currentVersion = pretzelSettingsJSON?.version || '1.0';
-        const targetVersion = pretzelSettingsJSONVersion;
-
-        if (Object.keys(pretzelSettingsJSON).length === 0 || currentVersion !== targetVersion) {
-          pretzelSettingsJSON = await migrateSettings(pretzelSettingsJSON, currentVersion, targetVersion);
-          await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
-        }
 
         // Extract settings from pretzelSettingsJSON
-
         const features = pretzelSettingsJSON.features || {};
         const providers = pretzelSettingsJSON.providers || [];
 
@@ -186,7 +176,27 @@ const extension: JupyterFrontEndPlugin<void> = {
         console.error('Failed to load settings for Pretzel', reason);
       }
     }
-    loadSettings();
+
+    async function migrateAndSetSettings(): Promise<void> {
+      try {
+        const settings = await settingRegistry.load(PLUGIN_ID);
+        let pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+        let pretzelSettingsJSONVersion = settings.get('pretzelSettingsJSONVersion').composite as string;
+
+        const currentVersion = pretzelSettingsJSON?.version || '1.0';
+        const targetVersion = pretzelSettingsJSONVersion;
+
+        if (Object.keys(pretzelSettingsJSON).length === 0 || currentVersion !== targetVersion) {
+          pretzelSettingsJSON = await migrateSettings(settings, currentVersion, targetVersion);
+          await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
+        }
+
+        await loadSettings();
+      } catch (error) {
+        console.error('Error migrating and setting settings:', error);
+      }
+    }
+    await migrateAndSetSettings();
 
     function loadAIClient() {
       if (aiChatModelProvider === 'OpenAI') {

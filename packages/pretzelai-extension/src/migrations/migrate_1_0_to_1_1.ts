@@ -1,15 +1,14 @@
 /* eslint-disable camelcase */
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { AiService } from '../prompt';
 
-export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): Promise<void> {
+export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): Promise<any> {
   const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
 
   if (Object.keys(pretzelSettingsJSON).length === 0) {
     const openAiSettings = settings.get('openAiSettings').composite as any;
     const azureSettings = settings.get('azureSettings').composite as any;
     const aiServiceSetting = settings.get('aiService').composite;
-    const aiService = (aiServiceSetting as AiService) || 'Use Pretzel AI Server';
+    const aiService = aiServiceSetting || 'Use Pretzel AI Server';
     const codeMatchThreshold = settings.get('codeMatchThreshold').composite as number;
     const inlineCopilotSettings = settings.get('inlineCopilotSettings').composite as any;
 
@@ -51,7 +50,7 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
         case 'Use Azure API':
           return 'Azure';
         case 'Use Pretzel AI Server':
-          return 'Pretzel AI Server';
+          return 'Pretzel AI';
         default:
           return 'Pretzel AI';
       }
@@ -79,7 +78,7 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
       },
       providers: [
         {
-          name: 'Pretzel AI Server',
+          name: 'Pretzel AI',
           enabled: true,
           showSettings: false,
           apiSettings: {},
@@ -162,6 +161,6 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
         }
       ]
     };
-    await settings.set('pretzelSettingsJSON', newSettings);
+    return newSettings;
   }
 }

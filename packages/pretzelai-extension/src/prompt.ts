@@ -13,7 +13,7 @@ import { OpenAIClient } from '@azure/openai';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
-export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Use Azure API';
+// export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Use Azure API';
 
 export type Embedding = {
   id: string;
