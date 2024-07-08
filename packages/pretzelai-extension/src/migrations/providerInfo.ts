@@ -38,7 +38,7 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           models: {
             pretzelai: {
               displayName: "Pretzel's Free AI Server (recommended)",
-              description: 'Best for most users. Free and no API key required. Fast and accurate'
+              description: 'Best for most users. Free and no API key required. Fast and accurate.'
             }
           }
         },
@@ -56,7 +56,7 @@ export function getProvidersInfo(version: string): IProvidersInfo {
             },
             'gpt-3.5-turbo': {
               displayName: 'GPT-3.5 Turbo',
-              description: 'Faster and more cost-effective model for many tasks. Good for simple tasks'
+              description: 'Faster and more cost-effective model for many tasks. Good for simple tasks.'
             }
           },
           apiSettings: {
@@ -67,14 +67,14 @@ export function getProvidersInfo(version: string): IProvidersInfo {
             baseUrl: {
               displayName: 'Base URL (Optional)',
               description:
-                'If your organization uses enterprise version of OpenAI/ChatGPT, you probably have a Custom URL for API requests. Get your custom URL from your IT department and fill it here. Leave blank to use the default OpenAI URL.'
+                'If your organization uses an enterprise version of OpenAI/ChatGPT, you probably have a custom URL for API requests. Get your custom URL from your IT department and fill it here. Leave blank to use the default OpenAI URL.'
             }
           }
         },
         Azure: {
           displayName: 'Azure Enterprise AI Server',
           description:
-            "If your company uses an Enterprise version of OpenAI, it may be hosted on Azure. Get your Azure connection details from your IT department and fill them here to connect to your company's AI server.",
+            "If your company uses an enterprise version of OpenAI, it may be hosted on Azure. Get your Azure connection details from your IT department and fill them here to connect to your company's AI server.",
           models: {
             'gpt-4': {
               displayName: 'GPT-4',
