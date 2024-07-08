@@ -4923,7 +4923,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=ecf1ce&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=27be9b&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
@@ -4953,7 +4953,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: be0e7260f1ed1875f2ad802c3736fa5d9b29cc49641926ecc5f3a42db676d060a04bb469e236ff2603be6d112b8df1bc7c48cc01b4d929faf4efa2e5e0fcb484
+  checksum: 56c819e5339777139597c63b4ed1d1690c22366bda83106b55f7572f305801453f82d56f63e4189006120b88a9b8dc2ecbd02883f3d6d305f340193aef8a2ba7
   languageName: node
   linkType: hard
 

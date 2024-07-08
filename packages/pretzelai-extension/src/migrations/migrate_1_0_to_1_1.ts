@@ -14,6 +14,7 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
 
     const inlineCopilotEnabled = inlineCopilotSettings?.enabled || false;
     const inlineCopilotProvider = inlineCopilotSettings?.provider || 'Pretzel AI';
+    const mistralApiKey = inlineCopilotSettings?.mistralApiKey || '';
 
     const posthogPromptTelemetry = settings.get('posthogPromptTelemetry').composite as boolean;
 
@@ -76,15 +77,17 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
           }
         }
       },
-      providers: [
-        {
+      providers: {
+        'Pretzel AI': {
           name: 'Pretzel AI',
           enabled: true,
           showSettings: false,
           apiSettings: {},
-          models: [{ name: 'pretzelai', enabled: true }]
+          models: {
+            pretzelai: { name: 'pretzelai', enabled: true }
+          }
         },
-        {
+        OpenAI: {
           name: 'OpenAI',
           enabled: true,
           showSettings: true,
@@ -104,22 +107,22 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
               showSetting: false
             }
           },
-          models: [
-            {
+          models: {
+            'gpt-4-turbo': {
               name: 'gpt-4-turbo',
               enabled: true,
               showSetting: true,
               settings: { maxTokens: { type: 'number', default: 2048, showSetting: false, required: false } }
             },
-            {
+            'gpt-4o': {
               name: 'gpt-4o',
               enabled: true,
               showSetting: true,
               settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
             }
-          ]
+          }
         },
-        {
+        Azure: {
           name: 'Azure',
           enabled: true,
           showSettings: true,
@@ -146,21 +149,43 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
               showSetting: true
             }
           },
-          models: [
-            {
+          models: {
+            'gpt-4': {
               name: 'gpt-4',
               enabled: true,
               showSetting: true
             },
-            {
+            'gpt-35-turbo': {
               name: 'gpt-35-turbo',
               enabled: true,
               showSetting: true
             }
-          ]
+          }
+        },
+        Mistral: {
+          name: 'Mistral',
+          enabled: true,
+          showSettings: true,
+          apiSettings: {
+            apiKey: {
+              type: 'string',
+              required: true,
+              default: '',
+              value: mistralApiKey,
+              showSetting: true
+            }
+          },
+          models: {
+            'codestral-latest': {
+              name: 'codestral-latest',
+              enabled: true,
+              showSetting: true
+            }
+          }
         }
-      ]
+      }
     };
     return newSettings;
   }
+  return pretzelSettingsJSON;
 }

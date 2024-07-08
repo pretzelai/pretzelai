@@ -140,7 +140,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
         // Extract settings from pretzelSettingsJSON
         const features = pretzelSettingsJSON.features || {};
-        const providers = pretzelSettingsJSON.providers || [];
+        const providers = pretzelSettingsJSON.providers || {};
 
         // AI Chat settings
         const aiChatSettings = features?.aiChat || {};
@@ -149,13 +149,13 @@ const extension: JupyterFrontEndPlugin<void> = {
         codeMatchThreshold = (aiChatSettings.codeMatchThreshold ?? 20) / 100;
 
         // OpenAI settings
-        const openAiProvider = providers.find((p: any) => p.name === 'OpenAI');
-        openAiApiKey = openAiProvider?.apiSettings?.apiKey.value || '';
-        openAiBaseUrl = openAiProvider?.apiSettings?.baseUrl.value || '';
-        openAiModel = features?.aiChat?.modelString; // FIXME - use generic model string aiChatModelString
+        const openAiProvider = providers['OpenAI'] || {};
+        openAiApiKey = openAiProvider?.apiSettings?.apiKey?.value || '';
+        openAiBaseUrl = openAiProvider?.apiSettings?.baseUrl?.value || '';
+        openAiModel = aiChatSettings.modelString || 'gpt-4o';
 
         // Azure settings
-        const azureProvider = providers.find((p: any) => p.name === 'Azure');
+        const azureProvider = providers['Azure'] || {};
         azureBaseUrl = azureProvider?.apiSettings?.baseUrl?.value || '';
         azureDeploymentName = azureProvider?.apiSettings?.deploymentName?.value || '';
         azureApiKey = azureProvider?.apiSettings?.apiKey?.value || '';

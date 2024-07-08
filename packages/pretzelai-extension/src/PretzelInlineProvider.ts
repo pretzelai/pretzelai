@@ -186,15 +186,16 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     const inlineCopilotSettings = pretzelSettingsJSON.features?.inlineCompletion || {};
     const isEnabled = inlineCopilotSettings.enabled ?? false;
     if (!isEnabled) {
-      return {
-        items: []
-      };
+      return { items: [] };
     }
-    const copilotProvider = inlineCopilotSettings.model || 'pretzelai';
-    const mistralSettings = pretzelSettingsJSON.providers?.find((p: any) => p.name === 'Mistral')?.apiSettings || {};
+    const copilotProvider = inlineCopilotSettings.modelProvider || 'Pretzel AI';
+    const copilotModel = inlineCopilotSettings.modelString || 'pretzelai'; // FIXME: use this in code
+    const providers = pretzelSettingsJSON.providers || {};
+    const mistralSettings = providers['Mistral']?.apiSettings || {};
     const mistralApiKey = mistralSettings?.apiKey?.value || '';
-    const openAiSettings = pretzelSettingsJSON.providers?.find((p: any) => p.name === 'OpenAI')?.apiSettings || {};
+    const openAiSettings = providers['OpenAI']?.apiSettings || {};
     const openAiApiKey = openAiSettings?.apiKey?.value || '';
+
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
         let prompt = this._prefixFromRequest(request);
