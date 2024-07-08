@@ -23,22 +23,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { getDefaultSettings } from '../migrations/defaultSettings';
 import { PLUGIN_ID } from '../utils';
-
-const providerMap: Record<string, string> = {
-  'Pretzel AI': 'Pretzel AI Server',
-  OpenAI: 'OpenAI',
-  Azure: 'Azure Enterprise AI Server',
-  Mistral: 'Mistral'
-};
-
-const modelMap: Record<string, string> = {
-  pretzelai: "Pretzel's Free AI Server (default)",
-  'gpt-4': 'GPT-4',
-  'gpt-4-turbo': 'GPT-4 Turbo',
-  'gpt-4o': 'GPT-4o',
-  'gpt-35-turbo': 'GPT-3.5 Turbo',
-  'codestral-latest': 'Codestral'
-};
+import { getProvidersInfo } from '../migrations/providerInfo';
+import { IProvidersInfo } from '../migrations/providerInfo';
 
 const AI_SERVICES_ORDER = ['OpenAI', 'Mistral', 'Azure'];
 
@@ -116,6 +102,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const [isValidating, setIsValidating] = useState(false);
   const [showErrorBox, setShowErrorBox] = useState(false);
   const [selectedModels, setSelectedModels] = useState<Record<string, { provider: string; model: string }>>({});
+  const [providersInfo, setProvidersInfo] = useState<IProvidersInfo>({});
 
   useEffect(() => {
     if (Object.keys(validationErrors).length > 0) {
@@ -131,6 +118,8 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const loadSettings = async () => {
       const loadedSettings = await settingRegistry.load(PLUGIN_ID);
       const pretzelSettingsJSON = loadedSettings.get('pretzelSettingsJSON').composite as any;
+      const currentVersion = pretzelSettingsJSON.version || '1.1';
+      const providersInfo = getProvidersInfo(currentVersion);
       setSettings(pretzelSettingsJSON);
       setTempSettings(pretzelSettingsJSON);
       setSelectedModels({
@@ -143,6 +132,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           model: pretzelSettingsJSON.features.inlineCompletion.modelString
         }
       });
+      setProvidersInfo(providersInfo);
       setLoading(false);
     };
     loadSettings();
@@ -212,22 +202,22 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const renderModelSelect = (featurePath: string) => (
     <FormControl fullWidth size="small">
       <Select
-        value={`${tempSettings.features[featurePath].modelProvider}:${tempSettings.features[featurePath].modelString}`}
+        value={`${selectedModels[featurePath].provider}:${selectedModels[featurePath].model}`}
         onChange={e => {
           const [provider, model] = e.target.value.split(':');
-          handleChange(`features.${featurePath}.modelProvider`, provider);
-          handleChange(`features.${featurePath}.modelString`, model);
           setSelectedModels(prev => ({
             ...prev,
             [featurePath]: { provider, model }
           }));
+          handleChange(`features.${featurePath}.modelProvider`, provider);
+          handleChange(`features.${featurePath}.modelString`, model);
         }}
       >
-        {Object.entries(getGroupedModels()).map(([provider, models]) => [
-          <ListSubheader key={provider}>{provider}</ListSubheader>,
-          ...models.map(model => (
-            <MenuItem key={`${provider}:${model}`} value={`${provider}:${model}`}>
-              {modelMap[model] || model}
+        {Object.entries(providersInfo).map(([providerName, providerInfo]) => [
+          <ListSubheader key={providerName}>{providerInfo.displayName}</ListSubheader>,
+          ...Object.entries(providerInfo.models).map(([modelName, modelDisplayName]) => (
+            <MenuItem key={`${providerName}:${modelName}`} value={`${providerName}:${modelName}`}>
+              {modelDisplayName}
             </MenuItem>
           ))
         ])}
@@ -387,15 +377,18 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     return Object.keys(errors).length === 0;
   };
 
-  const renderProviderSettings = (providerName: string, displayName: string) => {
+  const renderProviderSettings = (providerName: string) => {
     const provider = tempSettings.providers[providerName];
-    if (!provider) return null;
+    const providerInfo = providersInfo[providerName];
+    if (!provider || !providerInfo) return null;
 
     return (
       <Box>
-        <CompactGrid container spacing={2} alignItems="center">
+        <CompactGrid container spacing={1} alignItems="center">
           <Grid item xs={6}>
-            <Typography variant="subtitle1">{displayName}</Typography>
+            <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem', fontWeight: 'bold' }}>
+              {providerInfo.displayName}
+            </InputLabel>
           </Grid>
           <Grid item xs={6}>
             <Switch
@@ -404,41 +397,32 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
               onChange={e => handleChange(`providers.${providerName}.enabled`, e.target.checked)}
             />
           </Grid>
-          {provider.enabled && (
-            <>
-              <Grid item xs={12} sx={{ mb: 2 }}></Grid>
-              {provider.showSettings && (
-                <Grid item xs={12}>
-                  <CompactGrid container spacing={2}>
-                    {Object.entries(provider.apiSettings).map(([settingKey, setting]: [string, any]) => (
-                      <React.Fragment key={settingKey}>
-                        <Grid item xs={6}>
-                          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-                            {setting.label || settingKey}
-                          </InputLabel>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <CompactTextField
-                            fullWidth
-                            variant="outlined"
-                            size="small"
-                            type={setting.type === 'string' ? 'text' : setting.type}
-                            value={setting.value}
-                            onChange={e =>
-                              handleChange(`providers.${providerName}.apiSettings.${settingKey}.value`, e.target.value)
-                            }
-                            error={!!validationErrors[`providers.${providerName}.apiSettings.${settingKey}`]}
-                            helperText={validationErrors[`providers.${providerName}.apiSettings.${settingKey}`]}
-                          />
-                        </Grid>
-                      </React.Fragment>
-                    ))}
-                  </CompactGrid>
-                </Grid>
-              )}
-            </>
-          )}
         </CompactGrid>
+        {provider.enabled && provider.showSettings && (
+          <Box sx={{ mt: 2 }}>
+            {Object.entries(provider.apiSettings).map(([key, setting]: [string, any], index) => (
+              <CompactGrid container spacing={1} alignItems="center" key={key} sx={{ mb: 2 }}>
+                <Grid item xs={6}>
+                  <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
+                    {providerInfo.apiSettings?.[key]?.displayName || key}
+                  </InputLabel>
+                </Grid>
+                <Grid item xs={6}>
+                  <CompactTextField
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    type="text"
+                    value={setting.value}
+                    onChange={e => handleChange(`providers.${providerName}.apiSettings.${key}.value`, e.target.value)}
+                    error={!!validationErrors[`providers.${providerName}.apiSettings.${key}`]}
+                    helperText={validationErrors[`providers.${providerName}.apiSettings.${key}`]}
+                  />
+                </Grid>
+              </CompactGrid>
+            ))}
+          </Box>
+        )}
       </Box>
     );
   };
@@ -525,7 +509,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           </Stack>
         </ErrorContainer>
       </Fade>
-
       {renderAIChatSettings()}
       <SectionDivider sx={{ my: 2 }} />
       <SectionTitle variant="h6">Inline Copilot Settings</SectionTitle>
@@ -557,16 +540,15 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       <SectionTitle variant="h6">Configure AI Services</SectionTitle>
       {AI_SERVICES_ORDER.map(providerName => {
         const provider = tempSettings.providers[providerName];
-        if (!provider) return null;
+        const providerInfo = providersInfo[providerName];
+        if (!provider || !providerInfo) return null;
         return (
           <React.Fragment key={providerName}>
-            <ProviderSection>
-              {renderProviderSettings(providerName, providerMap[providerName] || providerName)}
-            </ProviderSection>
+            <ProviderSection>{renderProviderSettings(providerName)}</ProviderSection>
             {providerName !== AI_SERVICES_ORDER[AI_SERVICES_ORDER.length - 1] && <Divider sx={{ my: 2 }} />}
           </React.Fragment>
         );
-      })}
+      })}{' '}
       <SectionDivider sx={{ my: 2 }} />
       {renderOtherSettings()}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>

@@ -190,8 +190,6 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
   return pretzelSettingsJSON;
 }
 
-// ... existing code ...
-
 export function returnDefaults_1_1(): any {
   return {
     version: '1.1',
