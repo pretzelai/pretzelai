@@ -18,6 +18,22 @@ import { styled } from '@mui/material/styles';
 import React, { useCallback, useEffect, useState } from 'react';
 import { PLUGIN_ID } from '../utils';
 
+const providerMap: Record<string, string> = {
+  'Pretzel AI': 'Pretzel AI Server',
+  OpenAI: 'OpenAI',
+  Azure: 'Azure Enterprise AI Server',
+  Mistral: 'Mistral'
+};
+
+const modelMap: Record<string, string> = {
+  pretzelai: "Pretzel's Free AI Server (default)",
+  'gpt-4': 'GPT-4',
+  'gpt-4-turbo': 'GPT-4 Turbo',
+  'gpt-4o': 'GPT-4o',
+  'gpt-35-turbo': 'GPT-3.5 Turbo',
+  'codestral-latest': 'Codestral'
+};
+
 interface IPretzelSettingsProps {
   settingRegistry: ISettingRegistry;
 }
@@ -80,14 +96,18 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const getGroupedModels = () => {
     const groupedModels: { [key: string]: string[] } = {};
     Object.entries(tempSettings.providers).forEach(([providerName, provider]: [string, any]) => {
-      if (!groupedModels[providerName]) {
-        groupedModels[providerName] = [];
-      }
-      Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
-        if (model.enabled) {
-          groupedModels[providerName].push(modelName);
+      if (provider.enabled) {
+        const mappedProviderName = providerMap[providerName] || providerName;
+        if (!groupedModels[mappedProviderName]) {
+          groupedModels[mappedProviderName] = [];
         }
-      });
+        Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
+          if (model.enabled) {
+            const mappedModelName = modelMap[modelName] || modelName;
+            groupedModels[mappedProviderName].push(mappedModelName);
+          }
+        });
+      }
     });
     return groupedModels;
   };
@@ -95,11 +115,15 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const getAvailableModels = () => {
     const models: string[] = [];
     Object.entries(tempSettings.providers).forEach(([providerName, provider]: [string, any]) => {
-      Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
-        if (model.enabled) {
-          models.push(`${providerName}: ${modelName}`);
-        }
-      });
+      if (provider.enabled) {
+        const mappedProviderName = providerMap[providerName] || providerName;
+        Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
+          if (model.enabled) {
+            const mappedModelName = modelMap[modelName] || modelName;
+            models.push(`${mappedProviderName}: ${mappedModelName}`);
+          }
+        });
+      }
     });
     return models;
   };
@@ -107,11 +131,18 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const renderModelSelect = (featurePath: string) => (
     <FormControl fullWidth size="small">
       <Select
-        value={`${tempSettings.features[featurePath].modelProvider}: ${tempSettings.features[featurePath].modelString}`}
+        value={`${
+          providerMap[tempSettings.features[featurePath].modelProvider] ||
+          tempSettings.features[featurePath].modelProvider
+        }: ${
+          modelMap[tempSettings.features[featurePath].modelString] || tempSettings.features[featurePath].modelString
+        }`}
         onChange={e => {
           const [provider, model] = e.target.value.split(': ');
-          handleChange(`features.${featurePath}.modelProvider`, provider);
-          handleChange(`features.${featurePath}.modelString`, model);
+          const originalProvider = Object.keys(providerMap).find(key => providerMap[key] === provider) || provider;
+          const originalModel = Object.keys(modelMap).find(key => modelMap[key] === model) || model;
+          handleChange(`features.${featurePath}.modelProvider`, originalProvider);
+          handleChange(`features.${featurePath}.modelString`, originalModel);
         }}
       >
         {Object.entries(getGroupedModels()).map(([provider, models]) => [
@@ -125,6 +156,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       </Select>
     </FormControl>
   );
+
   const handleChange = useCallback((path: string, value: any) => {
     setTempSettings(prevSettings => {
       const updatedSettings = { ...prevSettings };
@@ -154,22 +186,17 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
         // Update available models for AI Chat and Inline Copilot
         const availableModels = getAvailableModels();
-        if (
-          !availableModels.includes(
-            `${tempSettings.features.aiChat.modelProvider}: ${tempSettings.features.aiChat.modelString}`
-          )
-        ) {
-          handleChange('features.aiChat.modelProvider', availableModels[0].split(': ')[0]);
-          handleChange('features.aiChat.modelString', availableModels[0].split(': ')[1]);
-        }
-        if (
-          !availableModels.includes(
-            `${tempSettings.features.inlineCompletion.modelProvider}: ${tempSettings.features.inlineCompletion.modelString}`
-          )
-        ) {
-          handleChange('features.inlineCompletion.modelProvider', availableModels[0].split(': ')[0]);
-          handleChange('features.inlineCompletion.modelString', availableModels[0].split(': ')[1]);
-        }
+        const updateModelIfUnavailable = (featurePath: string) => {
+          const currentModel = `${tempSettings.features[featurePath].modelProvider}: ${tempSettings.features[featurePath].modelString}`;
+          if (!availableModels.includes(currentModel)) {
+            const [newProvider, newModel] = availableModels[0].split(': ');
+            handleChange(`features.${featurePath}.modelProvider`, newProvider);
+            handleChange(`features.${featurePath}.modelString`, newModel);
+          }
+        };
+
+        updateModelIfUnavailable('aiChat');
+        updateModelIfUnavailable('inlineCompletion');
       } catch (error) {
         console.error('Error saving settings:', error);
       }
@@ -219,7 +246,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     return Object.keys(errors).length === 0;
   };
 
-  const renderProviderSettings = (providerName: string) => {
+  const renderProviderSettings = (providerName: string, displayName: string) => {
     const provider = tempSettings.providers[providerName];
     if (!provider) return null;
 
@@ -227,7 +254,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       <Box>
         <CompactGrid container spacing={2} alignItems="center">
           <Grid item xs={6}>
-            <Typography variant="subtitle1">{providerName}</Typography>
+            <Typography variant="subtitle1">{displayName}</Typography>
           </Grid>
           <Grid item xs={6}>
             <Switch
@@ -333,7 +360,9 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       <SectionTitle variant="h6">Configure AI Services</SectionTitle>
       {Object.entries(tempSettings.providers).map(([providerName, provider]: [string, any]) => (
         <React.Fragment key={providerName}>
-          <ProviderSection>{renderProviderSettings(providerName)}</ProviderSection>
+          <ProviderSection>
+            {renderProviderSettings(providerName, providerMap[providerName] || providerName)}
+          </ProviderSection>
           {providerName !== Object.keys(tempSettings.providers).slice(-1)[0] && <Divider sx={{ my: 2 }} />}
         </React.Fragment>
       ))}
