@@ -7,7 +7,7 @@
     <a href="https://pretzelai.app" target="_blank"><strong>Try it here »</strong></a>
     <br />
     <br />
-    <a href="https://discord.gg/DuDDmCTF" target="_blank">Discord</a>
+    <a href="https://discord.gg/bYNEgbPzRy" target="_blank">Discord</a>
     ·
     <a href="https://withpretzel.com" target="_blank">Website</a>
     ·
