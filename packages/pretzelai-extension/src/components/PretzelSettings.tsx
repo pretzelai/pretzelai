@@ -325,18 +325,36 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       }
     };
 
-    const validateMistral = () => {
+    const validateMistral = async () => {
       const mistralProvider = tempSettings.providers.Mistral;
       if (mistralProvider?.enabled && mistralProvider?.apiSettings?.apiKey?.value) {
-        if (mistralProvider.apiSettings.apiKey.value.length < 32) {
-          errors['providers.Mistral.apiSettings.apiKey'] = 'Invalid Mistral API Key';
+        try {
+          const response = await fetch('https://api.mistral.ai/v1/models', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${mistralProvider.apiSettings.apiKey.value}`
+            }
+          });
+
+          if (response.status === 200) {
+            // API key is valid
+          } else if (response.status === 401) {
+            errors['providers.Mistral.apiSettings.apiKey'] = 'Invalid Mistral API Key';
+          } else {
+            errors['providers.Mistral.apiSettings.apiKey'] = `Unexpected response from Mistral API: ${response.status}`;
+          }
+        } catch (error) {
+          console.error('Error validating Mistral API Key:', error);
+          errors['providers.Mistral.apiSettings.apiKey'] =
+            'Error validating Mistral API Key. Please check your internet connection.';
         }
       }
     };
 
     await validateOpenAI();
     validateAzure();
-    validateMistral();
+    await validateMistral();
 
     setValidationErrors(errors);
     setIsValidating(false);
