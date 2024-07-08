@@ -1,24 +1,28 @@
-import { ISettingRegistry } from '@jupyterlab/settingregistry';
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Box,
   Button,
   CircularProgress,
   Divider,
+  Fade,
   FormControl,
   Grid,
+  IconButton,
   InputLabel,
   ListSubheader,
   MenuItem,
   Select,
+  Stack,
   Switch,
   TextField,
   Typography
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-
 import React, { useCallback, useEffect, useState } from 'react';
-import { PLUGIN_ID } from '../utils';
+
+import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { getDefaultSettings } from '../migrations/defaultSettings';
+import { PLUGIN_ID } from '../utils';
 
 const providerMap: Record<string, string> = {
   'Pretzel AI': 'Pretzel AI Server',
@@ -88,12 +92,43 @@ const SectionDivider = styled(Divider)(({ theme }) => ({
   height: '1px'
 }));
 
+const ErrorBox = styled(Box)(({ theme }) => ({
+  backgroundColor: 'rgba(211, 47, 47, 0.1)', // Muted red background
+  color: theme.palette.error.dark,
+  padding: theme.spacing(1.5),
+  marginBottom: theme.spacing(1),
+  borderRadius: theme.shape.borderRadius,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  border: `1px solid ${theme.palette.error.light}`
+}));
+
+const ErrorContainer = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(2)
+}));
+
 export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegistry }) => {
   const [settings, setSettings] = useState<any>({});
   const [tempSettings, setTempSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isValidating, setIsValidating] = useState(false);
+  const [showErrorBox, setShowErrorBox] = useState(false);
+
+  useEffect(() => {
+    if (Object.keys(validationErrors).length > 0) {
+      setShowErrorBox(true);
+      const timer = setTimeout(() => {
+        setShowErrorBox(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [validationErrors]);
+
+  const handleCloseErrorBox = () => {
+    setShowErrorBox(false);
+  };
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -421,16 +456,32 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       <Typography variant="h5" gutterBottom>
         Pretzel AI Settings
       </Typography>
-      {Object.keys(validationErrors).length > 0 && (
-        <Box sx={{ mb: 2, color: 'error.main' }}>
-          <Typography variant="subtitle2">Validation Errors:</Typography>
-          <ul>
+      <Fade in={showErrorBox} timeout={1000}>
+        <ErrorContainer sx={{ display: showErrorBox ? 'block' : 'none' }}>
+          <Stack spacing={1}>
             {Object.entries(validationErrors).map(([key, error]) => (
-              <li key={key}>{error}</li>
+              <ErrorBox key={key}>
+                <Typography variant="body2">{error}</Typography>
+                <IconButton
+                  size="small"
+                  aria-label="close"
+                  onClick={() => {
+                    const newErrors = { ...validationErrors };
+                    delete newErrors[key];
+                    setValidationErrors(newErrors);
+                    if (Object.keys(newErrors).length === 0) {
+                      setShowErrorBox(false);
+                    }
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </ErrorBox>
             ))}
-          </ul>
-        </Box>
-      )}
+          </Stack>
+        </ErrorContainer>
+      </Fade>
+
       {renderAIChatSettings()}
       <SectionDivider sx={{ my: 2 }} />
       <SectionTitle variant="h6">Inline Copilot Settings</SectionTitle>
