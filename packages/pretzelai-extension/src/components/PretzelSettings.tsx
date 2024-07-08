@@ -2,6 +2,7 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import {
   Box,
   Button,
+  CircularProgress,
   Divider,
   FormControl,
   Grid,
@@ -53,14 +54,17 @@ const CompactGrid = styled(Grid)({
   }
 });
 
-const CompactTextField = styled(TextField)({
+const CompactTextField = styled(TextField)(({ theme }) => ({
   '& .MuiInputBase-input': {
     padding: '8px 12px'
   },
   '& .MuiOutlinedInput-root': {
     height: '36px'
+  },
+  '& .Mui-error': {
+    borderColor: theme.palette.error.main
   }
-});
+}));
 
 const SettingsContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2),
@@ -79,11 +83,17 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 'bold'
 }));
 
+const SectionDivider = styled(Divider)(({ theme }) => ({
+  backgroundColor: 'var(--jp-border-color2)',
+  height: '1px'
+}));
+
 export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegistry }) => {
   const [settings, setSettings] = useState<any>({});
   const [tempSettings, setTempSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isValidating, setIsValidating] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -237,45 +247,64 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   };
 
   const validateSettings = async (): Promise<boolean> => {
+    setIsValidating(true);
     const errors: Record<string, string> = {};
 
-    // Validate OpenAI API Key
-    const openAIProvider = tempSettings.providers.OpenAI;
-    if (openAIProvider?.apiSettings?.apiKey?.value) {
-      try {
-        const response = await fetch('https://api.openai.com/v1/models', {
-          headers: {
-            Authorization: `Bearer ${openAIProvider.apiSettings.apiKey.value}`
+    const validateOpenAI = async () => {
+      const openAIProvider = tempSettings.providers.OpenAI;
+      if (openAIProvider?.enabled && openAIProvider?.apiSettings?.apiKey?.value) {
+        try {
+          const baseUrl = openAIProvider.apiSettings?.baseUrl?.value || 'https://api.openai.com';
+          const response = await fetch(`${baseUrl}/v1/models`, {
+            headers: {
+              Authorization: `Bearer ${openAIProvider.apiSettings.apiKey.value}`
+            }
+          });
+          if (!response.ok) {
+            errors['providers.OpenAI.apiSettings.apiKey'] =
+              'Invalid OpenAI API Key' + (openAIProvider.apiSettings?.baseUrl?.value ? ' or incorrect base URL' : '');
           }
-        });
-        if (!response.ok) {
-          errors['providers.OpenAI.apiSettings.apiKey'] = 'Invalid OpenAI API Key';
+        } catch (error) {
+          errors['providers.OpenAI.apiSettings.apiKey'] =
+            'Error validating OpenAI API Key' +
+            (openAIProvider.apiSettings?.baseUrl?.value ? ' or incorrect base URL' : '');
         }
-      } catch (error) {
-        errors['providers.OpenAI.apiSettings.apiKey'] = 'Error validating OpenAI API Key';
       }
-    }
+    };
 
-    // Validate Azure API Key and Base URL
-    const azureProvider = tempSettings.providers.Azure;
-    if (azureProvider?.apiSettings?.apiKey?.value && azureProvider?.apiSettings?.baseUrl?.value) {
-      if (azureProvider.apiSettings.apiKey.value.length < 32) {
-        errors['providers.Azure.apiSettings.apiKey'] = 'Invalid Azure API Key';
+    const validateAzure = () => {
+      const azureProvider = tempSettings.providers.Azure;
+      if (azureProvider?.enabled) {
+        if (azureProvider?.apiSettings?.apiKey?.value && azureProvider.apiSettings.apiKey.value.length < 32) {
+          errors['providers.Azure.apiSettings.apiKey'] = 'Invalid Azure API Key';
+        }
+        if (
+          azureProvider?.apiSettings?.baseUrl?.value &&
+          !azureProvider.apiSettings.baseUrl.value.startsWith('https://')
+        ) {
+          errors['providers.Azure.apiSettings.baseUrl'] = 'Invalid Azure Base URL';
+        }
+        if (!azureProvider?.apiSettings?.deploymentName?.value) {
+          errors['providers.Azure.apiSettings.deploymentName'] = 'Deployment Name is required';
+        }
       }
-      if (!azureProvider.apiSettings.baseUrl.value.startsWith('https://')) {
-        errors['providers.Azure.apiSettings.baseUrl'] = 'Invalid Azure Base URL';
-      }
-    }
+    };
 
-    // Validate Mistral API Key
-    const mistralProvider = tempSettings.providers.Mistral;
-    if (mistralProvider?.apiSettings?.apiKey?.value) {
-      if (mistralProvider.apiSettings.apiKey.value.length < 32) {
-        errors['providers.Mistral.apiSettings.apiKey'] = 'Invalid Mistral API Key';
+    const validateMistral = () => {
+      const mistralProvider = tempSettings.providers.Mistral;
+      if (mistralProvider?.enabled && mistralProvider?.apiSettings?.apiKey?.value) {
+        if (mistralProvider.apiSettings.apiKey.value.length < 32) {
+          errors['providers.Mistral.apiSettings.apiKey'] = 'Invalid Mistral API Key';
+        }
       }
-    }
+    };
+
+    await validateOpenAI();
+    validateAzure();
+    validateMistral();
 
     setValidationErrors(errors);
+    setIsValidating(false);
     return Object.keys(errors).length === 0;
   };
 
@@ -296,33 +325,39 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
               onChange={e => handleChange(`providers.${providerName}.enabled`, e.target.checked)}
             />
           </Grid>
-          <Grid item xs={12} sx={{ mb: 2 }}></Grid>
-          {provider.enabled && provider.showSettings && (
-            <Grid item xs={12}>
-              <CompactGrid container spacing={2}>
-                {Object.entries(provider.apiSettings).map(([settingKey, setting]: [string, any]) => (
-                  <React.Fragment key={settingKey}>
-                    <Grid item xs={6}>
-                      <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-                        {setting.label || settingKey}
-                      </InputLabel>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <CompactTextField
-                        fullWidth
-                        variant="outlined"
-                        size="small"
-                        type={setting.type === 'string' ? 'text' : setting.type}
-                        value={setting.value}
-                        onChange={e =>
-                          handleChange(`providers.${providerName}.apiSettings.${settingKey}.value`, e.target.value)
-                        }
-                      />
-                    </Grid>
-                  </React.Fragment>
-                ))}
-              </CompactGrid>
-            </Grid>
+          {provider.enabled && (
+            <>
+              <Grid item xs={12} sx={{ mb: 2 }}></Grid>
+              {provider.showSettings && (
+                <Grid item xs={12}>
+                  <CompactGrid container spacing={2}>
+                    {Object.entries(provider.apiSettings).map(([settingKey, setting]: [string, any]) => (
+                      <React.Fragment key={settingKey}>
+                        <Grid item xs={6}>
+                          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
+                            {setting.label || settingKey}
+                          </InputLabel>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <CompactTextField
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            type={setting.type === 'string' ? 'text' : setting.type}
+                            value={setting.value}
+                            onChange={e =>
+                              handleChange(`providers.${providerName}.apiSettings.${settingKey}.value`, e.target.value)
+                            }
+                            error={!!validationErrors[`providers.${providerName}.apiSettings.${settingKey}`]}
+                            helperText={validationErrors[`providers.${providerName}.apiSettings.${settingKey}`]}
+                          />
+                        </Grid>
+                      </React.Fragment>
+                    ))}
+                  </CompactGrid>
+                </Grid>
+              )}
+            </>
           )}
         </CompactGrid>
       </Box>
@@ -332,6 +367,54 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   if (loading) {
     return <div>Loading settings...</div>;
   }
+
+  const renderAIChatSettings = () => (
+    <Box>
+      <SectionTitle variant="h6">AI Chat Settings</SectionTitle>
+      <CompactGrid container spacing={1} alignItems="center">
+        <Grid item xs={6}>
+          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Model</InputLabel>
+        </Grid>
+        <Grid item xs={6}>
+          {renderModelSelect('aiChat')}
+        </Grid>
+        <Grid item xs={6}>
+          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Code Match Threshold</InputLabel>
+        </Grid>
+        <Grid item xs={6}>
+          <CompactTextField
+            fullWidth
+            variant="outlined"
+            size="small"
+            type="number"
+            value={tempSettings.features.aiChat.codeMatchThreshold}
+            onChange={e => handleChange('features.aiChat.codeMatchThreshold', Number(e.target.value))}
+          />
+        </Grid>
+      </CompactGrid>
+    </Box>
+  );
+
+  // Add this new section to render PostHog Telemetry settings
+  const renderOtherSettings = () => (
+    <Box>
+      <SectionTitle variant="h6">Other Settings</SectionTitle>
+      <CompactGrid container spacing={1} alignItems="center">
+        <Grid item xs={6}>
+          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
+            Enable PostHog Prompt Telemetry
+          </InputLabel>
+        </Grid>
+        <Grid item xs={6}>
+          <Switch
+            size="small"
+            checked={tempSettings.features.posthogTelemetry.posthogPromptTelemetry.enabled}
+            onChange={e => handleChange('features.posthogTelemetry.posthogPromptTelemetry.enabled', e.target.checked)}
+          />
+        </Grid>
+      </CompactGrid>
+    </Box>
+  );
 
   return (
     <SettingsContainer>
@@ -348,16 +431,8 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           </ul>
         </Box>
       )}
-      <SectionTitle variant="h6">AI Chat Settings</SectionTitle>
-      <CompactGrid container spacing={1} alignItems="center">
-        <Grid item xs={6}>
-          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Model</InputLabel>
-        </Grid>
-        <Grid item xs={6}>
-          {renderModelSelect('aiChat')}
-        </Grid>
-      </CompactGrid>
-      <Divider sx={{ my: 2 }} />
+      {renderAIChatSettings()}
+      <SectionDivider sx={{ my: 2 }} />
       <SectionTitle variant="h6">Inline Copilot Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
         <Grid item xs={6}>
@@ -383,7 +458,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           </>
         )}
       </CompactGrid>
-      <Divider sx={{ my: 2 }} />
+      <SectionDivider sx={{ my: 2 }} />
       <SectionTitle variant="h6">Configure AI Services</SectionTitle>
       {AI_SERVICES_ORDER.map(providerName => {
         const provider = tempSettings.providers[providerName];
@@ -397,14 +472,22 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           </React.Fragment>
         );
       })}
+      <SectionDivider sx={{ my: 2 }} />
+      {renderOtherSettings()}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
         <Button variant="outlined" color="secondary" onClick={handleRestoreDefaults}>
           Restore Defaults
         </Button>
-        <Button variant="contained" color="primary" onClick={handleSave}>
-          Save Settings
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSave}
+          disabled={isValidating}
+          startIcon={isValidating ? <CircularProgress size={20} /> : null}
+        >
+          {isValidating ? 'Validating...' : 'Save Settings'}
         </Button>
-      </Box>{' '}
+      </Box>
     </SettingsContainer>
   );
 };
