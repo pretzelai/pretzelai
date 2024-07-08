@@ -13,12 +13,38 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { PLUGIN_ID } from '../utils';
 
 interface IPretzelSettingsProps {
   settingRegistry: ISettingRegistry;
 }
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  backgroundColor: 'var(--jp-layout-color1)',
+  color: 'var(--jp-ui-font-color0)',
+  '& .MuiTypography-root': {
+    color: 'var(--jp-ui-font-color0)'
+  }
+}));
+
+const SectionTitle = styled(Typography)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+  fontWeight: 'bold',
+  borderBottom: '1px solid var(--jp-border-color1)',
+  paddingBottom: theme.spacing(1)
+}));
+
+const ProviderSection = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+  padding: theme.spacing(1),
+  backgroundColor: 'var(--jp-layout-color2)',
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' // Subtle shadow for separation
+}));
 
 export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegistry }) => {
   const [settings, setSettings] = useState<any>({});
@@ -148,46 +174,42 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     if (!provider) return null;
 
     return (
-      <Box sx={{ mb: 3 }}>
+      <Box>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={6}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ color: 'var(--jp-ui-font-color0)', display: 'flex', alignItems: 'center' }}
-            >
+          <Grid item xs={4}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
               {providerName}
-              <Switch
-                checked={provider.enabled}
-                onChange={e => handleChange(`providers.${providerName}.enabled`, e.target.checked)}
-                sx={{ marginLeft: 2 }}
-              />
             </Typography>
           </Grid>
+          <Grid item xs={8}>
+            <Switch
+              checked={provider.enabled}
+              onChange={e => handleChange(`providers.${providerName}.enabled`, e.target.checked)}
+            />
+          </Grid>
           {provider.enabled && provider.showSettings && (
-            <Grid container item xs={12} spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="API Key"
-                  variant="outlined"
-                  value={provider.apiSettings.apiKey.value}
-                  onChange={e => handleChange(`providers.${providerName}.apiSettings.apiKey.value`, e.target.value)}
-                  margin="normal"
-                />
+            <Grid item xs={12}>
+              <Grid container spacing={2}>
+                {Object.entries(provider.apiSettings).map(([settingKey, setting]: [string, any]) => (
+                  <React.Fragment key={settingKey}>
+                    <Grid item xs={4}>
+                      <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>{setting.label || settingKey}</InputLabel>
+                    </Grid>
+                    <Grid item xs={8}>
+                      <TextField
+                        fullWidth
+                        variant="outlined"
+                        type={setting.type === 'string' ? 'text' : setting.type}
+                        value={setting.value}
+                        onChange={e =>
+                          handleChange(`providers.${providerName}.apiSettings.${settingKey}.value`, e.target.value)
+                        }
+                        margin="dense"
+                      />
+                    </Grid>
+                  </React.Fragment>
+                ))}
               </Grid>
-              {provider.apiSettings.baseUrl && (
-                <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Base URL"
-                    variant="outlined"
-                    value={provider.apiSettings.baseUrl.value}
-                    onChange={e => handleChange(`providers.${providerName}.apiSettings.baseUrl.value`, e.target.value)}
-                    margin="normal"
-                  />
-                </Grid>
-              )}
             </Grid>
           )}
         </Grid>
@@ -200,12 +222,9 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   }
 
   return (
-    <Paper elevation={3} sx={{ p: 3, backgroundColor: 'var(--jp-layout-color1)' }}>
-      <Typography variant="h5" gutterBottom sx={{ color: 'var(--jp-ui-font-color0)' }}>
-        Pretzel AI Settings
-      </Typography>
+    <StyledPaper elevation={3}>
+      <SectionTitle variant="h5">Pretzel AI Settings</SectionTitle>
 
-      {/* Display validation errors at the top of the form */}
       {Object.keys(validationErrors).length > 0 && (
         <Box sx={{ mb: 3, color: 'error.main' }}>
           <Typography variant="h6">Validation Errors:</Typography>
@@ -217,92 +236,81 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         </Box>
       )}
 
-      {/* AI Chat Settings */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ color: 'var(--jp-ui-font-color0)' }}>
-          AI Chat Settings
-        </Typography>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={4}>
-            <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Model</InputLabel>
-          </Grid>
-          <Grid item xs={8}>
-            <FormControl fullWidth>
-              <Select
-                value={`${tempSettings.features.aiChat.modelProvider}: ${tempSettings.features.aiChat.modelString}`}
-                onChange={e => {
-                  const [provider, model] = e.target.value.split(': ');
-                  handleChange('features.aiChat.modelProvider', provider);
-                  handleChange('features.aiChat.modelString', model);
-                }}
-              >
-                {getAvailableModels().map((model: string) => (
-                  <MenuItem key={model} value={model}>
-                    {model}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+      <SectionTitle variant="h6">AI Chat Settings</SectionTitle>
+      <Grid container spacing={2} alignItems="center">
+        {' '}
+        {/* Reduced spacing */}
+        <Grid item xs={4}>
+          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Model</InputLabel>
         </Grid>
-      </Box>
-
-      {/* Inline Copilot Settings */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ color: 'var(--jp-ui-font-color0)' }}>
-          Inline Copilot Settings
-        </Typography>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={4}>
-            <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Enable Inline Copilot</InputLabel>
-          </Grid>
-          <Grid item xs={8}>
-            <Switch
-              checked={tempSettings.features.inlineCompletion.enabled}
-              onChange={e => handleChange('features.inlineCompletion.enabled', e.target.checked)}
-            />
-          </Grid>
-          {tempSettings.features.inlineCompletion.enabled && (
-            <>
-              <Grid item xs={4}>
-                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Model</InputLabel>
-              </Grid>
-              <Grid item xs={8}>
-                <FormControl fullWidth>
-                  <Select
-                    value={`${tempSettings.features.inlineCompletion.modelProvider}: ${tempSettings.features.inlineCompletion.modelString}`}
-                    onChange={e => {
-                      const [provider, model] = e.target.value.split(': ');
-                      handleChange('features.inlineCompletion.modelProvider', provider);
-                      handleChange('features.inlineCompletion.modelString', model);
-                    }}
-                  >
-                    {getAvailableModels().map((model: string) => (
-                      <MenuItem key={model} value={model}>
-                        {model}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </>
-          )}
+        <Grid item xs={8}>
+          <FormControl fullWidth>
+            <Select
+              value={`${tempSettings.features.aiChat.modelProvider}: ${tempSettings.features.aiChat.modelString}`}
+              onChange={e => {
+                const [provider, model] = e.target.value.split(': ');
+                handleChange('features.aiChat.modelProvider', provider);
+                handleChange('features.aiChat.modelString', model);
+              }}
+            >
+              {getAvailableModels().map((model: string) => (
+                <MenuItem key={model} value={model}>
+                  {model}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
-      </Box>
+      </Grid>
 
-      <Divider sx={{ my: 3 }} />
+      <SectionTitle variant="h6">Inline Copilot Settings</SectionTitle>
+      <Grid container spacing={2} alignItems="center">
+        {' '}
+        {/* Reduced spacing */}
+        <Grid item xs={4}>
+          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Enable Inline Copilot</InputLabel>
+        </Grid>
+        <Grid item xs={8}>
+          <Switch
+            checked={tempSettings.features.inlineCompletion.enabled}
+            onChange={e => handleChange('features.inlineCompletion.enabled', e.target.checked)}
+          />
+        </Grid>
+        {tempSettings.features.inlineCompletion.enabled && (
+          <>
+            <Grid item xs={4}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)' }}>Model</InputLabel>
+            </Grid>
+            <Grid item xs={8}>
+              <FormControl fullWidth>
+                <Select
+                  value={`${tempSettings.features.inlineCompletion.modelProvider}: ${tempSettings.features.inlineCompletion.modelString}`}
+                  onChange={e => {
+                    const [provider, model] = e.target.value.split(': ');
+                    handleChange('features.inlineCompletion.modelProvider', provider);
+                    handleChange('features.inlineCompletion.modelString', model);
+                  }}
+                >
+                  {getAvailableModels().map((model: string) => (
+                    <MenuItem key={model} value={model}>
+                      {model}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </>
+        )}
+      </Grid>
 
-      {/* Provider Settings */}
-      <Typography variant="h6" gutterBottom sx={{ color: 'var(--jp-ui-font-color0)' }}>
-        AI Model Providers
-      </Typography>
+      <SectionTitle variant="h6">Configure AI Services</SectionTitle>
       {Object.entries(tempSettings.providers).map(([providerName, provider]: [string, any]) => (
-        <React.Fragment key={providerName}>{renderProviderSettings(providerName)}</React.Fragment>
+        <ProviderSection key={providerName}>{renderProviderSettings(providerName)}</ProviderSection>
       ))}
 
-      <Button variant="contained" color="primary" onClick={handleSave} sx={{ mt: 3 }}>
+      <Button variant="contained" color="primary" onClick={handleSave} sx={{ mt: 3, mb: 2 }}>
         Save Settings
       </Button>
-    </Paper>
+    </StyledPaper>
   );
 };
