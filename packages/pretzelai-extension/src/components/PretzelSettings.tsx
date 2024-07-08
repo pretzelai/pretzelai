@@ -49,8 +49,10 @@ const CompactGrid = styled(Grid)({
 
 const InfoIconStyled = styled(InfoIcon)(({ theme }) => ({
   fontSize: '1rem',
-  marginLeft: theme.spacing(1),
-  color: 'var(--jp-ui-font-color2)'
+  marginLeft: '5px',
+  color: 'var(--jp-ui-font-color2)',
+  opacity: 0.6,
+  verticalAlign: 'middle'
 }));
 
 const CompactTextField = styled(TextField)(({ theme }) => ({
@@ -210,9 +212,11 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             return [
               <ListSubheader key={providerName}>
                 {providerInfo.displayName}
-                <Tooltip title={providerInfo.description} placement="right">
-                  <InfoIconStyled />
-                </Tooltip>
+                {providerInfo.description && (
+                  <Tooltip title={providerInfo.description} placement="right">
+                    <InfoIconStyled />
+                  </Tooltip>
+                )}
               </ListSubheader>,
               ...Object.entries(providerInfo.models).map(([modelName, modelInfo]) => (
                 <MenuItem key={`${providerName}:${modelName}`} value={`${providerName}:${modelName}`}>
@@ -421,9 +425,11 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           <Grid item xs={6}>
             <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem', fontWeight: 'bold' }}>
               {providerInfo.displayName}
-              <Tooltip title={providerInfo.description} placement="right">
-                <InfoIconStyled />
-              </Tooltip>
+              {providerInfo.description && (
+                <Tooltip title={providerInfo.description} placement="right">
+                  <InfoIconStyled />
+                </Tooltip>
+              )}
             </InputLabel>
           </Grid>
           <Grid item xs={6}>
@@ -441,9 +447,11 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                 <Grid item xs={6}>
                   <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
                     {providerInfo.apiSettings?.[key]?.displayName || key}
-                    <Tooltip title={providerInfo.apiSettings?.[key]?.description || ''} placement="right">
-                      <InfoIconStyled />
-                    </Tooltip>
+                    {providerInfo.apiSettings?.[key]?.description && (
+                      <Tooltip title={providerInfo.apiSettings[key].description} placement="right">
+                        <InfoIconStyled />
+                      </Tooltip>
+                    )}
                   </InputLabel>
                 </Grid>
                 <Grid item xs={6}>
@@ -472,20 +480,10 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   const renderAIChatSettings = () => (
     <Box>
-      <SectionTitle variant="h6">
-        AI Chat Settings
-        <Tooltip title="Configure settings for the AI-powered chat feature" placement="right">
-          <InfoIconStyled />
-        </Tooltip>
-      </SectionTitle>
+      <SectionTitle variant="h6">AI Chat Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
         <Grid item xs={6}>
-          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-            Model
-            <Tooltip title="Select the AI model to use for chat interactions" placement="right">
-              <InfoIconStyled />
-            </Tooltip>
-          </InputLabel>
+          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Model</InputLabel>
         </Grid>
         <Grid item xs={6}>
           {renderModelSelect('aiChat')}
@@ -517,17 +515,15 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   const renderInlineCopilotSettings = () => (
     <Box>
-      <SectionTitle variant="h6">
-        Inline Copilot Settings
-        <Tooltip title="Configure settings for the AI-powered inline code completion feature" placement="right">
-          <InfoIconStyled />
-        </Tooltip>
-      </SectionTitle>
+      <SectionTitle variant="h6">Inline Copilot Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
         <Grid item xs={6}>
           <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
             Enable Inline Copilot
-            <Tooltip title="Turn on or off the inline code completion feature" placement="right">
+            <Tooltip
+              title="The inline copilot completes code as you type, similar to GitHub Copilot. You can turn it on or off here."
+              placement="right"
+            >
               <InfoIconStyled />
             </Tooltip>
           </InputLabel>
@@ -542,12 +538,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         {tempSettings.features.inlineCompletion.enabled && (
           <>
             <Grid item xs={6}>
-              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-                Model
-                <Tooltip title="Select the AI model to use for inline code completion" placement="right">
-                  <InfoIconStyled />
-                </Tooltip>
-              </InputLabel>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Model</InputLabel>
             </Grid>
             <Grid item xs={6}>
               {renderModelSelect('inlineCompletion')}

@@ -119,6 +119,12 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
               enabled: true,
               showSetting: true,
               settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
+            },
+            'gpt-3.5-turbo': {
+              name: 'gpt-3.5-turbo',
+              enabled: true,
+              showSetting: true,
+              settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
             }
           }
         },
@@ -250,6 +256,12 @@ export function returnDefaults_1_1(): any {
           },
           'gpt-4o': {
             name: 'gpt-4o',
+            enabled: true,
+            showSetting: true,
+            settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
+          },
+          'gpt-3.5-turbo': {
+            name: 'gpt-3.5-turbo',
             enabled: true,
             showSetting: true,
             settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }

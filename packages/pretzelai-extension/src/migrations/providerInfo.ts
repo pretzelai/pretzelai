@@ -28,38 +28,44 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           description: 'Free AI service provided by Pretzel AI. No API key required.',
           models: {
             pretzelai: {
-              displayName: "Pretzel's Free AI Server (default)",
-              description: 'General-purpose AI model suitable for most tasks.'
+              displayName: "Pretzel's Free AI Server (recommended)",
+              description: 'Best for most users. Free and no API key required. Fast and accurate'
             }
           }
         },
         OpenAI: {
           displayName: 'OpenAI',
-          description: "Connect to OpenAI's API for access to powerful language models.",
+          description: '',
           models: {
             'gpt-4-turbo': {
               displayName: 'GPT-4 Turbo',
-              description: 'Latest and most capable GPT-4 model. Faster and cheaper than the original GPT-4.'
+              description: 'Most capable GPT-4 model but slower than GPT-4o.'
             },
             'gpt-4o': {
               displayName: 'GPT-4o',
-              description: 'Original GPT-4 model. More expensive but may be more reliable for certain tasks.'
+              description: 'Fast and accurate. Cheaper than GPT-4 Turbo, but slightly less capable.'
+            },
+            'gpt-3.5-turbo': {
+              displayName: 'GPT-3.5 Turbo',
+              description: 'Faster and more cost-effective model for many tasks. Good for simple tasks'
             }
           },
           apiSettings: {
             apiKey: {
               displayName: 'API Key',
-              description: 'Your OpenAI API key. Keep this secret and secure.'
+              description: ''
             },
             baseUrl: {
               displayName: 'Base URL (Optional)',
-              description: 'Custom base URL for API requests. Leave blank to use the default OpenAI URL.'
+              description:
+                'If your organization uses enterprise version of OpenAI/ChatGPT, you probably have a Custom URL for API requests. Get your custom URL from your IT department and fill it here. Leave blank to use the default OpenAI URL.'
             }
           }
         },
         Azure: {
           displayName: 'Azure Enterprise AI Server',
-          description: 'Connect to your Azure OpenAI deployment for enterprise-grade AI services.',
+          description:
+            "If your company uses an Enterprise version of OpenAI, it may be hosted on Azure. Get your Azure connection details from your IT department and fill them here to connect to your company's AI server.",
           models: {
             'gpt-4': {
               displayName: 'GPT-4',
@@ -73,31 +79,31 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           apiSettings: {
             apiKey: {
               displayName: 'API Key',
-              description: 'Your Azure OpenAI API key.'
+              description: ''
             },
             baseUrl: {
               displayName: 'Base URL',
-              description: 'The base URL of your Azure OpenAI deployment.'
+              description: ''
             },
             deploymentName: {
               displayName: 'Deployment Name',
-              description: 'The name of your specific model deployment on Azure.'
+              description: ''
             }
           }
         },
         Mistral: {
           displayName: 'Mistral',
-          description: 'Connect to Mistral AI for access to their specialized AI models.',
+          description: '',
           models: {
             'codestral-latest': {
               displayName: 'Codestral',
-              description: 'Specialized model for code-related tasks and programming assistance.'
+              description: 'Fast and accurate code generation model.'
             }
           },
           apiSettings: {
             apiKey: {
               displayName: 'API Key',
-              description: 'Your Mistral AI API key.'
+              description: ''
             }
           }
         }
