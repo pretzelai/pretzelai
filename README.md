@@ -20,7 +20,7 @@
 <p align="center">
    <a href="https://github.com/pretzelai/pretzelai/stargazers" target="_blank"><img src="https://img.shields.io/github/stars/pretzelai/pretzelai" alt="Github Stars"></a>
    <a href="https://pypi.org/project/pretzelai/" target="_blank"><img src="https://img.shields.io/pypi/v/pretzelai.svg?style=flat-square&label=PyPI+PretzelAI" alt="Issues"></a>
-   <a href="https://discord.gg/6vUNF3A2" target="_blank"><img src="https://img.shields.io/badge/Discord-PretzelAI-blue?logo=discord" alt="Join Pretzel on Discord"></a>
+   <a href="https://discord.gg/bYNEgbPzRy" target="_blank"><img src="https://img.shields.io/badge/Discord-PretzelAI-blue?logo=discord" alt="Join Pretzel on Discord"></a>
    <a href="https://github.com/pretzelai/pretzelai/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
    <a href="https://github.com/pretzelai/pretzelai/pulse"><img src="https://img.shields.io/github/commit-activity/m/pretzelai/pretzelai" alt="Commits-per-month"></a>
 </p>
