@@ -189,3 +189,136 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
   }
   return pretzelSettingsJSON;
 }
+
+// ... existing code ...
+
+export function returnDefaults_1_1(): any {
+  return {
+    version: '1.1',
+    features: {
+      inlineCompletion: {
+        enabled: true,
+        modelProvider: 'Pretzel AI',
+        modelString: 'pretzelai'
+      },
+      aiChat: {
+        enabled: true,
+        modelProvider: 'Pretzel AI',
+        modelString: 'pretzelai',
+        codeMatchThreshold: 20
+      },
+      posthogTelemetry: {
+        posthogPromptTelemetry: {
+          enabled: true
+        }
+      }
+    },
+    providers: {
+      'Pretzel AI': {
+        name: 'Pretzel AI',
+        enabled: true,
+        showSettings: false,
+        apiSettings: {},
+        models: {
+          pretzelai: { name: 'pretzelai', enabled: true }
+        }
+      },
+      OpenAI: {
+        name: 'OpenAI',
+        enabled: true,
+        showSettings: true,
+        apiSettings: {
+          apiKey: {
+            type: 'string',
+            required: true,
+            default: '',
+            value: '',
+            showSetting: true
+          },
+          baseUrl: {
+            type: 'string',
+            required: false,
+            default: '',
+            value: '',
+            showSetting: false
+          }
+        },
+        models: {
+          'gpt-4-turbo': {
+            name: 'gpt-4-turbo',
+            enabled: true,
+            showSetting: true,
+            settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
+          },
+          'gpt-4o': {
+            name: 'gpt-4o',
+            enabled: true,
+            showSetting: true,
+            settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
+          }
+        }
+      },
+      Azure: {
+        name: 'Azure',
+        enabled: false,
+        showSettings: true,
+        apiSettings: {
+          apiKey: {
+            type: 'string',
+            required: true,
+            default: '',
+            value: '',
+            showSetting: true
+          },
+          baseUrl: {
+            type: 'string',
+            required: true,
+            default: '',
+            value: '',
+            showSetting: true
+          },
+          deploymentName: {
+            type: 'string',
+            required: true,
+            default: '',
+            value: '',
+            showSetting: true
+          }
+        },
+        models: {
+          'gpt-4': {
+            name: 'gpt-4',
+            enabled: true,
+            showSetting: true
+          },
+          'gpt-35-turbo': {
+            name: 'gpt-35-turbo',
+            enabled: true,
+            showSetting: true
+          }
+        }
+      },
+      Mistral: {
+        name: 'Mistral',
+        enabled: true,
+        showSettings: true,
+        apiSettings: {
+          apiKey: {
+            type: 'string',
+            required: true,
+            default: '',
+            value: '',
+            showSetting: true
+          }
+        },
+        models: {
+          'codestral-latest': {
+            name: 'codestral-latest',
+            enabled: true,
+            showSetting: true
+          }
+        }
+      }
+    }
+  };
+}

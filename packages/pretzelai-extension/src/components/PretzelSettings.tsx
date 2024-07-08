@@ -17,6 +17,7 @@ import { styled } from '@mui/material/styles';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { PLUGIN_ID } from '../utils';
+import { getDefaultSettings } from '../migrations/defaultSettings';
 
 const providerMap: Record<string, string> = {
   'Pretzel AI': 'Pretzel AI Server',
@@ -33,6 +34,8 @@ const modelMap: Record<string, string> = {
   'gpt-35-turbo': 'GPT-3.5 Turbo',
   'codestral-latest': 'Codestral'
 };
+
+const AI_SERVICES_ORDER = ['OpenAI', 'Mistral', 'Azure'];
 
 interface IPretzelSettingsProps {
   settingRegistry: ISettingRegistry;
@@ -92,6 +95,36 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     };
     loadSettings();
   }, [settingRegistry]);
+
+  const handleRestoreDefaults = async () => {
+    const currentVersion = tempSettings.version || '1.1';
+    const defaultSettings = getDefaultSettings(currentVersion);
+    setTempSettings(defaultSettings);
+
+    // Save the default settings
+    try {
+      const plugin = await settingRegistry.load(PLUGIN_ID);
+      await plugin.set('pretzelSettingsJSON', defaultSettings);
+      setSettings(defaultSettings);
+      setValidationErrors({});
+
+      // Update available models for AI Chat and Inline Copilot
+      const availableModels = getAvailableModels();
+      const updateModelIfUnavailable = (featurePath: string) => {
+        const currentModel = `${defaultSettings.features[featurePath].modelProvider}: ${defaultSettings.features[featurePath].modelString}`;
+        if (!availableModels.includes(currentModel)) {
+          const [newProvider, newModel] = availableModels[0].split(': ');
+          handleChange(`features.${featurePath}.modelProvider`, newProvider);
+          handleChange(`features.${featurePath}.modelString`, newModel);
+        }
+      };
+
+      updateModelIfUnavailable('aiChat');
+      updateModelIfUnavailable('inlineCompletion');
+    } catch (error) {
+      console.error('Error saving default settings:', error);
+    }
+  };
 
   const getGroupedModels = () => {
     const groupedModels: { [key: string]: string[] } = {};
@@ -305,7 +338,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       <Typography variant="h5" gutterBottom>
         Pretzel AI Settings
       </Typography>
-
       {Object.keys(validationErrors).length > 0 && (
         <Box sx={{ mb: 2, color: 'error.main' }}>
           <Typography variant="subtitle2">Validation Errors:</Typography>
@@ -316,7 +348,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           </ul>
         </Box>
       )}
-
       <SectionTitle variant="h6">AI Chat Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
         <Grid item xs={6}>
@@ -326,9 +357,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           {renderModelSelect('aiChat')}
         </Grid>
       </CompactGrid>
-
       <Divider sx={{ my: 2 }} />
-
       <SectionTitle variant="h6">Inline Copilot Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
         <Grid item xs={6}>
@@ -354,22 +383,28 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           </>
         )}
       </CompactGrid>
-
       <Divider sx={{ my: 2 }} />
-
       <SectionTitle variant="h6">Configure AI Services</SectionTitle>
-      {Object.entries(tempSettings.providers).map(([providerName, provider]: [string, any]) => (
-        <React.Fragment key={providerName}>
-          <ProviderSection>
-            {renderProviderSettings(providerName, providerMap[providerName] || providerName)}
-          </ProviderSection>
-          {providerName !== Object.keys(tempSettings.providers).slice(-1)[0] && <Divider sx={{ my: 2 }} />}
-        </React.Fragment>
-      ))}
-
-      <Button variant="contained" color="primary" onClick={handleSave} sx={{ mt: 2 }}>
-        Save Settings
-      </Button>
+      {AI_SERVICES_ORDER.map(providerName => {
+        const provider = tempSettings.providers[providerName];
+        if (!provider) return null;
+        return (
+          <React.Fragment key={providerName}>
+            <ProviderSection>
+              {renderProviderSettings(providerName, providerMap[providerName] || providerName)}
+            </ProviderSection>
+            {providerName !== AI_SERVICES_ORDER[AI_SERVICES_ORDER.length - 1] && <Divider sx={{ my: 2 }} />}
+          </React.Fragment>
+        );
+      })}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+        <Button variant="outlined" color="secondary" onClick={handleRestoreDefaults}>
+          Restore Defaults
+        </Button>
+        <Button variant="contained" color="primary" onClick={handleSave}>
+          Save Settings
+        </Button>
+      </Box>{' '}
     </SettingsContainer>
   );
 };
