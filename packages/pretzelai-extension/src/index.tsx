@@ -97,7 +97,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       'Shift + Enter for new line.';
 
     let aiChatModelProvider = '';
-    let aiChatModelString = '';
+    let aiChatModelString = ''; // FIXME: This is not used but we should change code to use it directly
     let codeMatchThreshold: number;
 
     let openAiApiKey = '';

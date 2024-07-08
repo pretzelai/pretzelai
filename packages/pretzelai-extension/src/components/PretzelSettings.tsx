@@ -6,6 +6,7 @@ import {
   Divider,
   Fade,
   FormControl,
+  FormHelperText,
   Grid,
   IconButton,
   InputLabel,
@@ -168,23 +169,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     }
   };
 
-  const getGroupedModels = () => {
-    const groupedModels: { [key: string]: string[] } = {};
-    Object.entries(tempSettings.providers).forEach(([providerName, provider]: [string, any]) => {
-      if (provider.enabled) {
-        if (!groupedModels[providerName]) {
-          groupedModels[providerName] = [];
-        }
-        Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
-          if (model.enabled) {
-            groupedModels[providerName].push(modelName);
-          }
-        });
-      }
-    });
-    return groupedModels;
-  };
-
   const getAvailableModels = () => {
     const models: string[] = [];
     Object.entries(tempSettings.providers).forEach(([providerName, provider]: [string, any]) => {
@@ -200,7 +184,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   };
 
   const renderModelSelect = (featurePath: string) => (
-    <FormControl fullWidth size="small">
+    <FormControl fullWidth size="small" error={!!validationErrors[`features.${featurePath}.model`]}>
       <Select
         value={`${selectedModels[featurePath].provider}:${selectedModels[featurePath].model}`}
         onChange={e => {
@@ -213,15 +197,24 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           handleChange(`features.${featurePath}.modelString`, model);
         }}
       >
-        {Object.entries(providersInfo).map(([providerName, providerInfo]) => [
-          <ListSubheader key={providerName}>{providerInfo.displayName}</ListSubheader>,
-          ...Object.entries(providerInfo.models).map(([modelName, modelDisplayName]) => (
-            <MenuItem key={`${providerName}:${modelName}`} value={`${providerName}:${modelName}`}>
-              {modelDisplayName}
-            </MenuItem>
-          ))
-        ])}
+        {Object.entries(providersInfo).map(([providerName, providerInfo]) => {
+          // Only render options for enabled providers
+          if (tempSettings.providers[providerName]?.enabled) {
+            return [
+              <ListSubheader key={providerName}>{providerInfo.displayName}</ListSubheader>,
+              ...Object.entries(providerInfo.models).map(([modelName, modelDisplayName]) => (
+                <MenuItem key={`${providerName}:${modelName}`} value={`${providerName}:${modelName}`}>
+                  {modelDisplayName}
+                </MenuItem>
+              ))
+            ];
+          }
+          return null;
+        })}
       </Select>
+      {validationErrors[`features.${featurePath}.model`] && (
+        <FormHelperText>{validationErrors[`features.${featurePath}.model`]}</FormHelperText>
+      )}
     </FormControl>
   );
 
@@ -312,20 +305,30 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
     const validateAzure = () => {
       const azureProvider = tempSettings.providers.Azure;
-      if (azureProvider?.enabled) {
-        if (azureProvider?.apiSettings?.apiKey?.value && azureProvider.apiSettings.apiKey.value.length < 32) {
+      const apiKey = azureProvider?.apiSettings?.apiKey?.value;
+      const baseUrl = azureProvider?.apiSettings?.baseUrl?.value;
+      const deploymentName = azureProvider?.apiSettings?.deploymentName?.value;
+
+      // Check if any of the three settings are present
+      if (apiKey || baseUrl || deploymentName) {
+        // If any are present, all three must be provided
+        if (!apiKey) {
+          errors['providers.Azure.apiSettings.apiKey'] = 'Azure API Key is required';
+        } else if (apiKey.length < 32) {
           errors['providers.Azure.apiSettings.apiKey'] = 'Invalid Azure API Key';
         }
-        if (
-          azureProvider?.apiSettings?.baseUrl?.value &&
-          !azureProvider.apiSettings.baseUrl.value.startsWith('https://')
-        ) {
+
+        if (!baseUrl) {
+          errors['providers.Azure.apiSettings.baseUrl'] = 'Azure Base URL is required';
+        } else if (!baseUrl.startsWith('https://')) {
           errors['providers.Azure.apiSettings.baseUrl'] = 'Invalid Azure Base URL';
         }
-        if (!azureProvider?.apiSettings?.deploymentName?.value) {
-          errors['providers.Azure.apiSettings.deploymentName'] = 'Deployment Name is required';
+
+        if (!deploymentName) {
+          errors['providers.Azure.apiSettings.deploymentName'] = 'Azure Deployment Name is required';
         }
       }
+      // If none are present, validation passes silently
     };
 
     const validateMistral = async () => {
@@ -355,16 +358,32 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       }
     };
 
-    const availableModels = getAvailableModels();
-    const validateModel = (featurePath: string) => {
-      const { provider, model } = selectedModels[featurePath];
-      const currentModel = `${provider}:${model}`;
-
-      if (!availableModels.includes(currentModel)) {
-        errors[`features.${featurePath}.model`] = 'Selected model is not available with current provider settings';
+    const validateModelApiKey = (featurePath: string) => {
+      const { provider } = selectedModels[featurePath];
+      if (provider !== 'Pretzel AI') {
+        const apiKey = tempSettings.providers[provider]?.apiSettings?.apiKey?.value;
+        if (!apiKey) {
+          errors[`providers.${provider}.apiSettings.apiKey`] = `${provider} API key is required for the selected model`;
+        }
       }
     };
 
+    validateModelApiKey('aiChat');
+    validateModelApiKey('inlineCompletion');
+
+    const availableModels = getAvailableModels();
+    const validateModel = (featurePath: string) => {
+      const { provider, model } = selectedModels[featurePath];
+
+      if (!provider || !model) {
+        errors[`features.${featurePath}.model`] = 'Please select a model';
+      } else {
+        const currentModel = `${provider}:${model}`;
+        if (!availableModels.includes(currentModel)) {
+          errors[`features.${featurePath}.model`] = 'Selected model is not available with current provider settings';
+        }
+      }
+    };
     validateModel('aiChat');
     validateModel('inlineCompletion');
 

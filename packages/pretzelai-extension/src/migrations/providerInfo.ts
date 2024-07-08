@@ -35,7 +35,7 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               displayName: 'API Key'
             },
             baseUrl: {
-              displayName: 'Base URL'
+              displayName: 'Base URL (Optional)'
             }
           }
         },
