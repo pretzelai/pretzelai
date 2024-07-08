@@ -115,6 +115,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isValidating, setIsValidating] = useState(false);
   const [showErrorBox, setShowErrorBox] = useState(false);
+  const [selectedModels, setSelectedModels] = useState<Record<string, { provider: string; model: string }>>({});
 
   useEffect(() => {
     if (Object.keys(validationErrors).length > 0) {
@@ -126,16 +127,22 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     }
   }, [validationErrors]);
 
-  const handleCloseErrorBox = () => {
-    setShowErrorBox(false);
-  };
-
   useEffect(() => {
     const loadSettings = async () => {
       const loadedSettings = await settingRegistry.load(PLUGIN_ID);
       const pretzelSettingsJSON = loadedSettings.get('pretzelSettingsJSON').composite as any;
       setSettings(pretzelSettingsJSON);
       setTempSettings(pretzelSettingsJSON);
+      setSelectedModels({
+        aiChat: {
+          provider: pretzelSettingsJSON.features.aiChat.modelProvider,
+          model: pretzelSettingsJSON.features.aiChat.modelString
+        },
+        inlineCompletion: {
+          provider: pretzelSettingsJSON.features.inlineCompletion.modelProvider,
+          model: pretzelSettingsJSON.features.inlineCompletion.modelString
+        }
+      });
       setLoading(false);
     };
     loadSettings();
@@ -175,14 +182,12 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const groupedModels: { [key: string]: string[] } = {};
     Object.entries(tempSettings.providers).forEach(([providerName, provider]: [string, any]) => {
       if (provider.enabled) {
-        const mappedProviderName = providerMap[providerName] || providerName;
-        if (!groupedModels[mappedProviderName]) {
-          groupedModels[mappedProviderName] = [];
+        if (!groupedModels[providerName]) {
+          groupedModels[providerName] = [];
         }
         Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
           if (model.enabled) {
-            const mappedModelName = modelMap[modelName] || modelName;
-            groupedModels[mappedProviderName].push(mappedModelName);
+            groupedModels[providerName].push(modelName);
           }
         });
       }
@@ -194,11 +199,9 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const models: string[] = [];
     Object.entries(tempSettings.providers).forEach(([providerName, provider]: [string, any]) => {
       if (provider.enabled) {
-        const mappedProviderName = providerMap[providerName] || providerName;
         Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
           if (model.enabled) {
-            const mappedModelName = modelMap[modelName] || modelName;
-            models.push(`${mappedProviderName}: ${mappedModelName}`);
+            models.push(`${providerName}:${modelName}`);
           }
         });
       }
@@ -209,25 +212,22 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const renderModelSelect = (featurePath: string) => (
     <FormControl fullWidth size="small">
       <Select
-        value={`${
-          providerMap[tempSettings.features[featurePath].modelProvider] ||
-          tempSettings.features[featurePath].modelProvider
-        }: ${
-          modelMap[tempSettings.features[featurePath].modelString] || tempSettings.features[featurePath].modelString
-        }`}
+        value={`${tempSettings.features[featurePath].modelProvider}:${tempSettings.features[featurePath].modelString}`}
         onChange={e => {
-          const [provider, model] = e.target.value.split(': ');
-          const originalProvider = Object.keys(providerMap).find(key => providerMap[key] === provider) || provider;
-          const originalModel = Object.keys(modelMap).find(key => modelMap[key] === model) || model;
-          handleChange(`features.${featurePath}.modelProvider`, originalProvider);
-          handleChange(`features.${featurePath}.modelString`, originalModel);
+          const [provider, model] = e.target.value.split(':');
+          handleChange(`features.${featurePath}.modelProvider`, provider);
+          handleChange(`features.${featurePath}.modelString`, model);
+          setSelectedModels(prev => ({
+            ...prev,
+            [featurePath]: { provider, model }
+          }));
         }}
       >
         {Object.entries(getGroupedModels()).map(([provider, models]) => [
           <ListSubheader key={provider}>{provider}</ListSubheader>,
           ...models.map(model => (
-            <MenuItem key={`${provider}: ${model}`} value={`${provider}: ${model}`}>
-              {model}
+            <MenuItem key={`${provider}:${model}`} value={`${provider}:${model}`}>
+              {modelMap[model] || model}
             </MenuItem>
           ))
         ])}
@@ -265,11 +265,24 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         // Update available models for AI Chat and Inline Copilot
         const availableModels = getAvailableModels();
         const updateModelIfUnavailable = (featurePath: string) => {
-          const currentModel = `${tempSettings.features[featurePath].modelProvider}: ${tempSettings.features[featurePath].modelString}`;
+          const currentModel = `${selectedModels[featurePath].provider}:${selectedModels[featurePath].model}`;
           if (!availableModels.includes(currentModel)) {
-            const [newProvider, newModel] = availableModels[0].split(': ');
-            handleChange(`features.${featurePath}.modelProvider`, newProvider);
-            handleChange(`features.${featurePath}.modelString`, newModel);
+            const [newProvider, newModel] = availableModels[0].split(':');
+            setTempSettings(prev => ({
+              ...prev,
+              features: {
+                ...prev.features,
+                [featurePath]: {
+                  ...prev.features[featurePath],
+                  modelProvider: newProvider,
+                  modelString: newModel
+                }
+              }
+            }));
+            setSelectedModels(prev => ({
+              ...prev,
+              [featurePath]: { provider: newProvider, model: newModel }
+            }));
           }
         };
 
@@ -351,6 +364,19 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         }
       }
     };
+
+    const availableModels = getAvailableModels();
+    const validateModel = (featurePath: string) => {
+      const { provider, model } = selectedModels[featurePath];
+      const currentModel = `${provider}:${model}`;
+
+      if (!availableModels.includes(currentModel)) {
+        errors[`features.${featurePath}.model`] = 'Selected model is not available with current provider settings';
+      }
+    };
+
+    validateModel('aiChat');
+    validateModel('inlineCompletion');
 
     await validateOpenAI();
     validateAzure();
