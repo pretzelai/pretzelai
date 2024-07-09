@@ -121,7 +121,10 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isValidating, setIsValidating] = useState(false);
   const [showErrorBox, setShowErrorBox] = useState(false);
-  const [selectedModels, setSelectedModels] = useState<Record<string, { provider: string; model: string }>>({});
+  const [selectedModels, setSelectedModels] = useState<Record<string, { provider: string; model: string }>>({
+    aiChat: { provider: '', model: '' },
+    inlineCompletion: { provider: '', model: '' }
+  });
   const [providersInfo, setProvidersInfo] = useState<IProvidersInfo>({});
 
   useEffect(() => {
@@ -161,13 +164,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const handleRestoreDefaults = async () => {
     const currentVersion = tempSettings.version || '1.1';
     const defaultSettings = getDefaultSettings(currentVersion);
-
-    // Correctly split the modelProvider and modelString
-    defaultSettings.features.inlineCompletion.modelProvider = 'Pretzel AI';
-    defaultSettings.features.inlineCompletion.modelString = 'pretzelai';
-    defaultSettings.features.aiChat.modelProvider = 'Pretzel AI';
-    defaultSettings.features.aiChat.modelString = 'pretzelai';
-
     setTempSettings(defaultSettings);
 
     // Save the default settings
@@ -188,20 +184,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           model: defaultSettings.features.inlineCompletion.modelString
         }
       });
-
-      // Optionally, update available models for AI Chat and Inline Copilot
-      const availableModels = getAvailableModels();
-      const updateModelIfUnavailable = (featurePath: string) => {
-        const currentModel = `${defaultSettings.features[featurePath].modelProvider}: ${defaultSettings.features[featurePath].modelString}`;
-        if (!availableModels.includes(currentModel)) {
-          const [newProvider, newModel] = availableModels[0].split(': ');
-          handleChange(`features.${featurePath}.modelProvider`, newProvider);
-          handleChange(`features.${featurePath}.modelString`, newModel);
-        }
-      };
-
-      updateModelIfUnavailable('aiChat');
-      updateModelIfUnavailable('inlineCompletion');
     } catch (error) {
       console.error('Error saving default settings:', error);
     }
@@ -299,32 +281,17 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         setSettings(tempSettings);
         setValidationErrors({});
 
-        // Update available models for AI Chat and Inline Copilot
-        const availableModels = getAvailableModels();
-        const updateModelIfUnavailable = (featurePath: string) => {
-          const currentModel = `${selectedModels[featurePath].provider}:${selectedModels[featurePath].model}`;
-          if (!availableModels.includes(currentModel)) {
-            const [newProvider, newModel] = availableModels[0].split(':');
-            setTempSettings(prev => ({
-              ...prev,
-              features: {
-                ...prev.features,
-                [featurePath]: {
-                  ...prev.features[featurePath],
-                  modelProvider: newProvider,
-                  modelString: newModel
-                }
-              }
-            }));
-            setSelectedModels(prev => ({
-              ...prev,
-              [featurePath]: { provider: newProvider, model: newModel }
-            }));
+        // Update selectedModels state to reflect the saved models
+        setSelectedModels({
+          aiChat: {
+            provider: tempSettings.features.aiChat.modelProvider,
+            model: tempSettings.features.aiChat.modelString
+          },
+          inlineCompletion: {
+            provider: tempSettings.features.inlineCompletion.modelProvider,
+            model: tempSettings.features.inlineCompletion.modelString
           }
-        };
-
-        updateModelIfUnavailable('aiChat');
-        updateModelIfUnavailable('inlineCompletion');
+        });
       } catch (error) {
         console.error('Error saving settings:', error);
       }
@@ -441,9 +408,21 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     validateModel('aiChat');
     validateModel('inlineCompletion');
 
+    const validateCodeMatchThreshold = () => {
+      const threshold = tempSettings.features.aiChat.codeMatchThreshold;
+      if (threshold === null || threshold === '') {
+        errors['features.aiChat.codeMatchThreshold'] = 'Code match threshold is required';
+      } else {
+        const thresholdNumber = Number(threshold);
+        if (isNaN(thresholdNumber) || thresholdNumber < 0 || thresholdNumber > 100) {
+          errors['features.aiChat.codeMatchThreshold'] = 'Code match threshold must be a number between 0 and 100';
+        }
+      }
+    };
     await validateOpenAI();
     validateAzure();
     await validateMistral();
+    validateCodeMatchThreshold();
 
     setValidationErrors(errors);
     setIsValidating(false);
@@ -528,7 +507,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
             Code Match Threshold
             <Tooltip
-              title="This threshold is used to find matching code in the current Jupyter notebook. Number between 0-100. Lower values will match more (but possibly irrelavant) code."
+              title="This threshold is used to find matching code in the current Jupyter notebook. Number between 0-100. Lower values will match more (but possibly irrelevant) code."
               placement="right"
             >
               <InfoIconStyled />
@@ -540,9 +519,16 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             fullWidth
             variant="outlined"
             size="small"
-            type="number"
-            value={tempSettings.features.aiChat.codeMatchThreshold}
-            onChange={e => handleChange('features.aiChat.codeMatchThreshold', Number(e.target.value))}
+            type="text"
+            value={tempSettings.features.aiChat.codeMatchThreshold ?? ''}
+            onChange={e => {
+              const value = e.target.value;
+              if (value === '' || (Number(value) >= 0 && Number(value) <= 100)) {
+                handleChange('features.aiChat.codeMatchThreshold', value === '' ? null : Number(value));
+              }
+            }}
+            error={!!validationErrors['features.aiChat.codeMatchThreshold']}
+            helperText={validationErrors['features.aiChat.codeMatchThreshold']}
           />
         </Grid>
       </CompactGrid>
