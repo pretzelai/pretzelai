@@ -2481,7 +2481,7 @@ __metadata:
 
 "@jupyterlab/application-extension@file:../packages/application-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.7
-  resolution: "@jupyterlab/application-extension@file:../packages/application-extension#../packages/application-extension::hash=6f23b7&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/application-extension@file:../packages/application-extension#../packages/application-extension::hash=9e81f2&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@jupyterlab/application": ^4.2.7
     "@jupyterlab/apputils": ^4.3.0
@@ -2498,7 +2498,7 @@ __metadata:
     "@lumino/disposable": ^2.1.2
     "@lumino/widgets": ^2.3.2
     react: ^18.2.0
-  checksum: 1d6fe027a3422a2652b503522bf718fb7f893134494be3966d83b659139c858cfd515092aabd865d78a234e91d87770bfccaa94f08b667466ec628b2341f2a1d
+  checksum: 5dfbcfd7b2b1fcfb95acb4dc5b662fe2fc2421a6cade53d940c784b452284e7fabe09506e3e849d9ae22eb1d82ae146d704edd05cff8d59b0fb451511ff80b48
   languageName: node
   linkType: hard
 
@@ -2617,7 +2617,7 @@ __metadata:
 
 "@jupyterlab/application@file:../packages/application::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.7
-  resolution: "@jupyterlab/application@file:../packages/application#../packages/application::hash=951b68&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/application@file:../packages/application#../packages/application::hash=470a5c&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@fortawesome/fontawesome-free": ^5.12.0
     "@jupyterlab/apputils": ^4.3.0
@@ -2639,7 +2639,7 @@ __metadata:
     "@lumino/properties": ^2.0.1
     "@lumino/signaling": ^2.1.2
     "@lumino/widgets": ^2.3.2
-  checksum: 5450d0419d59a77c51a1cefefc189708ca5db9bd50e7f936cef8950603b3d377d7c67355230d55b5fedeff2d8799d598672e8e466ca6c96609b75f8d208e1769
+  checksum: 4bec774cc58337d1f3158115499f3bad91b3466741c8f6ca8e5e23c47759f4de64fd3d99dbfd67f4670a2db2a07f3b66ced41fb881744ed612288b3a464c4233
   languageName: node
   linkType: hard
 
@@ -2677,7 +2677,7 @@ __metadata:
 
 "@jupyterlab/apputils-extension@file:../packages/apputils-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.0
-  resolution: "@jupyterlab/apputils-extension@file:../packages/apputils-extension#../packages/apputils-extension::hash=b8bab4&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/apputils-extension@file:../packages/apputils-extension#../packages/apputils-extension::hash=d68030&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@jupyterlab/application": ^4.2.7
     "@jupyterlab/apputils": ^4.3.0
@@ -2702,7 +2702,7 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
     react-toastify: ^9.0.8
-  checksum: 95cfb62ed7699b0f56ccbf593a6a148e369f29006f49f343e8cd7c065b931dd345dc7714ee9c514466136311ac8ecd4b8d7d6cf82eb3e42a1fb59118f5d13cac
+  checksum: 699cb8c41cfbedc1d5ce80d313282a3eb7b5f8c41e44579d7e2512d3ffcc6ba157c8ed9d64caf2efdbcc894402901c7b6013dbe5b11c2dd9b949fe4549b0cb93
   languageName: node
   linkType: hard
 
@@ -2994,7 +2994,7 @@ __metadata:
 
 "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.0
-  resolution: "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension#../packages/codemirror-extension::hash=45e964&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension#../packages/codemirror-extension::hash=b68b91&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@codemirror/commands": ^6.3.3
     "@codemirror/lang-markdown": ^6.2.4
@@ -3015,7 +3015,7 @@ __metadata:
     "@rjsf/utils": ^5.13.4
     "@rjsf/validator-ajv8": ^5.13.4
     react: ^18.2.0
-  checksum: 5e37985bda55723de34e2c3f2431a87965fc7ed9ce50ead81e2a44d63ab71eb714828bdfca9616543abf577895e1217f0f8ff700ca2ddd9121497dcfb982574f
+  checksum: c49f8ce22eda027437f7ee640a525027d1611a9c7b14fb0c81a06454ed6868de294fe814fa2f89e2ea4fd802383a8799525dddb867f7504c4f7ba4f3f0e6a455
   languageName: node
   linkType: hard
 
@@ -4007,7 +4007,7 @@ __metadata:
 
 "@jupyterlab/help-extension@file:../packages/help-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.0
-  resolution: "@jupyterlab/help-extension@file:../packages/help-extension#../packages/help-extension::hash=fb1b82&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/help-extension@file:../packages/help-extension#../packages/help-extension::hash=8b33aa&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@jupyterlab/application": ^4.2.7
     "@jupyterlab/apputils": ^4.3.0
@@ -4021,7 +4021,7 @@ __metadata:
     "@lumino/virtualdom": ^2.0.1
     "@lumino/widgets": ^2.3.2
     react: ^18.2.0
-  checksum: ccbdb53c47f819ae15afdd5e30b2e5562567ace25edeb7afac564c18072766ec65982981c77c2d68f40fd1116a65e359aa43b107a5b673793381d20d7d9426d3
+  checksum: 2f6cc3254d5411bb54627163177bf566fd076050962f265693a28b2806376c62ec42bedbd3661c98287dc9007e28e048a6224c37761a4ebdfe3dc5021397c00c
   languageName: node
   linkType: hard
 
@@ -4893,6 +4893,7 @@ __metadata:
     "@jupyterlab/ui-components": ^4.2.0
     "@lumino/commands": ^2.3.0
     "@lumino/widgets": ^2.3.2
+    "@mistralai/mistralai": ^0.5.0
     "@mui/icons-material": ~5.15.18
     "@mui/material": ^5.15.21
     "@types/jest": ^29.2.0
@@ -4923,7 +4924,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=1ec2e6&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=fa72f2&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
@@ -4953,7 +4954,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 6ff0200515054a12178493afc5285ad10b37674c933db3d1c84b07c492da1b8bb7a99eb63c449d2433378abfaf467c7c6bb1e3bb777303ad184d209bf6cc9ce5
+  checksum: 5e02575f24a86dc63c04f15bdf0d90c5d85da15ccf93ac73dd5658de8a6212b1a8f728b92822b6ccc4db238e8aa819ab078ed0485205cabbd9c861012e083e5f
   languageName: node
   linkType: hard
 
@@ -6104,6 +6105,15 @@ __metadata:
   dependencies:
     exenv-es6: ^1.1.1
   checksum: 303e87847f962944f474e3716c3eb305668243916ca9e0719e26bb9a32346144bc958d915c103776b3e552cea0f0f6233f839fad66adfdf96a8436b947288ca7
+  languageName: node
+  linkType: hard
+
+"@mistralai/mistralai@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "@mistralai/mistralai@npm:0.5.0"
+  dependencies:
+    node-fetch: ^2.6.7
+  checksum: b421f314bf22c4db883fe981517fed43e5177d83e9a5fb0fb6b1ff6915fc0e5503c0ec2e70e5302113d70f22477477fa6a9499300980e4ee9b71ca60b9ce8599
   languageName: node
   linkType: hard
 

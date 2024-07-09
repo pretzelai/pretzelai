@@ -24,6 +24,7 @@ import { OpenAIClient } from '@azure/openai';
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import posthog from 'posthog-js';
+import MistralClient from '@mistralai/mistralai';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -53,7 +54,7 @@ interface IChatProps {
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
-  aiClient: OpenAI | OpenAIClient | null;
+  aiClient: OpenAI | OpenAIClient | MistralClient | null;
   codeMatchThreshold: number;
   posthogPromptTelemetry: boolean;
 }

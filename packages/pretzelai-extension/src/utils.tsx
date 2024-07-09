@@ -17,6 +17,7 @@ import OpenAI from 'openai';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
 import { showErrorDialog } from './components/ErrorDialog';
+import MistralClient from '@mistralai/mistralai';
 
 export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
@@ -189,7 +190,7 @@ export async function createAndSaveEmbeddings(
   cells: any[],
   path: string,
   app: JupyterFrontEnd,
-  aiClient: OpenAI | OpenAIClient | null,
+  aiClient: OpenAI | OpenAIClient | MistralClient | null,
   aiChatModelProvider: string
 ): Promise<Embedding[]> {
   let embeddings = existingEmbeddingsJSON;
@@ -252,7 +253,7 @@ export async function createAndSaveEmbeddings(
 export async function getEmbeddings(
   notebookTracker: INotebookTracker,
   app: JupyterFrontEnd,
-  aiClient: OpenAI | OpenAIClient | null,
+  aiClient: OpenAI | OpenAIClient | MistralClient | null,
   aiChatModelProvider: string
 ): Promise<Embedding[]> {
   const notebook = notebookTracker.currentWidget;
@@ -334,7 +335,7 @@ export const getTopSimilarities = async (
   userInput: string,
   embeddings: Embedding[],
   numberOfSimilarities: number,
-  aiClient: OpenAI | OpenAIClient | null,
+  aiClient: OpenAI | OpenAIClient | MistralClient | null,
   aiChatModelProvider: string,
   cellId: string,
   codeMatchThreshold: number
@@ -469,7 +470,7 @@ export const generateAIStream = async ({
   isInject
 }: {
   aiChatModelProvider: string;
-  aiClient: OpenAI | OpenAIClient | null;
+  aiClient: OpenAI | OpenAIClient | MistralClient | null;
   embeddings: Embedding[];
   userInput: string;
   oldCodeForPrompt: string;

@@ -8,8 +8,10 @@
  * the root of the project) are licensed under AGPLv3.
  */
 import { OpenAI } from 'openai';
-import { Embeddings } from '@azure/openai/types/openai';
+import { Embeddings as AzureEmbeddings } from '@azure/openai/types/openai';
 import { OpenAIClient } from '@azure/openai';
+import MistralClient, { EmbeddingResponse as MistralEmbeddings } from '@mistralai/mistralai';
+import { CreateEmbeddingResponse as OpenAIEmbeddings } from 'openai/resources/embeddings';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
@@ -222,8 +224,8 @@ Take a deep breath, think step-by-step and respond with MODIFIED version of CURR
 export const openaiEmbeddings = async (
   source: string,
   aiChatModelProvider: string,
-  aiClient: OpenAI | OpenAIClient | null
-): Promise<OpenAI.Embeddings.CreateEmbeddingResponse | Embeddings> => {
+  aiClient: OpenAI | OpenAIClient | MistralClient | null
+): Promise<OpenAIEmbeddings | AzureEmbeddings | MistralEmbeddings> => {
   if (aiChatModelProvider === 'Pretzel AI') {
     return (await (
       await fetch('https://api.pretzelai.app/embeddings/', {
@@ -235,7 +237,7 @@ export const openaiEmbeddings = async (
           source: source
         })
       })
-    ).json()) as OpenAI.Embeddings.CreateEmbeddingResponse;
+    ).json()) as OpenAIEmbeddings;
   } else if (aiChatModelProvider === 'OpenAI') {
     return await (aiClient as OpenAI).embeddings.create({
       model: EMBEDDING_MODEL,
@@ -243,6 +245,11 @@ export const openaiEmbeddings = async (
     });
   } else if (aiChatModelProvider === 'Azure') {
     return await (aiClient as OpenAIClient).getEmbeddings('text-embedding-ada-002', [source]);
+  } else if (aiChatModelProvider === 'Mistral') {
+    return await (aiClient as MistralClient).embeddings({
+      model: 'mistral-embed',
+      input: source
+    });
   } else {
     throw new Error('Invalid AI service');
   }

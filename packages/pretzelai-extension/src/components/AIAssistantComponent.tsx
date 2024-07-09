@@ -17,6 +17,7 @@ import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
+import MistralClient from '@mistralai/mistralai';
 
 interface IAIAssistantComponentProps {
   aiChatModelProvider: string;
@@ -35,7 +36,7 @@ interface IAIAssistantComponentProps {
   handleRemove: () => void;
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
-  aiClient: OpenAI | OpenAIClient | null;
+  aiClient: OpenAI | OpenAIClient | MistralClient | null;
   codeMatchThreshold: number;
   numberOfSimilarCells: number;
   posthogPromptTelemetry: boolean;

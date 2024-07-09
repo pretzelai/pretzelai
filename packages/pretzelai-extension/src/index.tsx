@@ -15,6 +15,7 @@ import { ILabShell, ILayoutRestorer, JupyterFrontEnd, JupyterFrontEndPlugin, Lab
 import { ICommandPalette } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
+import MistralClient from '@mistralai/mistralai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import { FixedSizeStack, getEmbeddings, PLUGIN_ID } from './utils';
@@ -108,7 +109,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     let azureDeploymentName = '';
     let azureApiKey = '';
 
-    let aiClient: OpenAI | OpenAIClient | null = null;
+    let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
+    let pretzelSettingsJSON: any = null;
 
     let posthogPromptTelemetry: boolean = true;
     let isAIEnabled: boolean = false;
@@ -136,7 +138,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     async function loadSettings(updateFunc?: () => void) {
       try {
         const settings = await settingRegistry.load(PLUGIN_ID);
-        let pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
 
         // Extract settings from pretzelSettingsJSON
         const features = pretzelSettingsJSON.features || {};
@@ -198,15 +200,29 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
     await migrateAndSetSettings();
 
+    // FIXME: this is only used for embeddings. We need to standardize this to work
+    // when embedding model is not present to use local embddings
     function loadAIClient() {
+      const aiChatSettings = pretzelSettingsJSON.features.aiChat;
+      const aiChatModelProvider = aiChatSettings.modelProvider;
+      const providers = pretzelSettingsJSON.providers;
+
       if (aiChatModelProvider === 'OpenAI') {
+        const openAIProvider = providers.OpenAI;
         aiClient = new OpenAI({
-          apiKey: openAiApiKey,
+          apiKey: openAIProvider.apiSettings.apiKey.value,
           dangerouslyAllowBrowser: true,
-          baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
+          baseURL: openAIProvider.apiSettings.baseUrl.value || undefined
         });
       } else if (aiChatModelProvider === 'Azure') {
-        aiClient = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
+        const azureProvider = providers.Azure;
+        aiClient = new OpenAIClient(
+          azureProvider.apiSettings.baseUrl.value,
+          new AzureKeyCredential(azureProvider.apiSettings.apiKey.value)
+        );
+      } else if (aiChatModelProvider === 'Mistral') {
+        const mistralProvider = providers.Mistral;
+        aiClient = new MistralClient(mistralProvider.apiSettings.apiKey.value);
       } else {
         aiClient = null;
       }
