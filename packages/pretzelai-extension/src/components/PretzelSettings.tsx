@@ -161,6 +161,13 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   const handleRestoreDefaults = async () => {
     const currentVersion = tempSettings.version || '1.1';
     const defaultSettings = getDefaultSettings(currentVersion);
+
+    // Correctly split the modelProvider and modelString
+    defaultSettings.features.inlineCompletion.modelProvider = 'Pretzel AI';
+    defaultSettings.features.inlineCompletion.modelString = 'pretzelai';
+    defaultSettings.features.aiChat.modelProvider = 'Pretzel AI';
+    defaultSettings.features.aiChat.modelString = 'pretzelai';
+
     setTempSettings(defaultSettings);
 
     // Save the default settings
@@ -170,7 +177,19 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       setSettings(defaultSettings);
       setValidationErrors({});
 
-      // Update available models for AI Chat and Inline Copilot
+      // Update selectedModels state to reflect the default models correctly
+      setSelectedModels({
+        aiChat: {
+          provider: defaultSettings.features.aiChat.modelProvider,
+          model: defaultSettings.features.aiChat.modelString
+        },
+        inlineCompletion: {
+          provider: defaultSettings.features.inlineCompletion.modelProvider,
+          model: defaultSettings.features.inlineCompletion.modelString
+        }
+      });
+
+      // Optionally, update available models for AI Chat and Inline Copilot
       const availableModels = getAvailableModels();
       const updateModelIfUnavailable = (featurePath: string) => {
         const currentModel = `${defaultSettings.features[featurePath].modelProvider}: ${defaultSettings.features[featurePath].modelString}`;

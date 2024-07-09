@@ -321,14 +321,24 @@ export async function getEmbeddings(
   return embeddings;
 }
 
-export const readEmbeddings = async (notebookTracker: INotebookTracker, app: JupyterFrontEnd): Promise<Embedding[]> => {
+export const readEmbeddings = async (
+  notebookTracker: INotebookTracker,
+  app: JupyterFrontEnd,
+  aiClient: OpenAI | OpenAIClient | MistralClient | null,
+  aiChatModelProvider: string
+): Promise<Embedding[]> => {
   const notebook = notebookTracker.currentWidget;
   const currentNotebookPath = notebook!.context.path;
   const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
   const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
   const embeddingsPath = currentDir + '/' + PRETZEL_FOLDER + '/' + notebookName + '_embeddings.json';
-  const file = await app.serviceManager.contents.get(embeddingsPath);
-  return JSON.parse(file.content);
+  try {
+    const file = await app.serviceManager.contents.get(embeddingsPath);
+    return JSON.parse(file.content);
+  } catch (error) {
+    await getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+    return await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+  }
 };
 
 export const getTopSimilarities = async (

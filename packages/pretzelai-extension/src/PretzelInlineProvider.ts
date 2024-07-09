@@ -21,6 +21,7 @@ import OpenAI from 'openai';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import posthog from 'posthog-js';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
+import MistralClient from '@mistralai/mistralai';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(
@@ -268,29 +269,51 @@ Fill in the blank to complete the code block. Your response should include only 
             completion = openaiResponse.choices[0].message.content;
           } else if (copilotProvider === 'Mistral' && mistralApiKey) {
             // FIXME: Allow for newer data types
-            const model = 'codestral-latest';
-            if (model !== 'codestral-latest') {
-              throw new Error('The only available model for Mistral is "codestral-latest".');
+            if (copilotModel === 'mistral-medium') {
+              const data = await fetch('https://api.mistral.ai/v1/fim/completions', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Accept: 'application/json',
+                  Authorization: `Bearer ${mistralApiKey}`
+                },
+                body: JSON.stringify({
+                  copilotModel,
+                  prompt,
+                  suffix,
+                  stop: stops,
+                  // eslint-disable-next-line
+                  max_tokens: 500,
+                  temperature: 0
+                })
+              });
+              // Note: Response parsing might not work as expected due to 'no-cors' mode, which can lead to an opaque response.
+              completion = (await data.json()).choices[0].message.content;
+            } else {
+              const mistral = new MistralClient(mistralApiKey);
+              const mistralResponse = await mistral.chat({
+                model: copilotModel,
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a staff software engineer'
+                  },
+                  {
+                    role: 'user',
+                    content: `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+                  }
+                ],
+                temperature: 0.7,
+                topP: 1,
+                maxTokens: 500,
+                safePrompt: false
+              });
+              completion = mistralResponse.choices[0].message.content;
             }
-            const data = await fetch('https://api.mistral.ai/v1/fim/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                Authorization: `Bearer ${mistralApiKey}`
-              },
-              body: JSON.stringify({
-                model,
-                prompt,
-                suffix,
-                stop: stops,
-                // eslint-disable-next-line
-                max_tokens: 500,
-                temperature: 0
-              })
-            });
-            // Note: Response parsing might not work as expected due to 'no-cors' mode, which can lead to an opaque response.
-            completion = (await data.json()).choices[0].message.content;
           } else if (copilotProvider === 'Azure' && azureApiKey && azureBaseUrl && azureDeploymentName) {
             const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
             const result = await client.getCompletions(azureDeploymentName, [

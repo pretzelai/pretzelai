@@ -204,7 +204,7 @@ export function Chat({
     posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? input : 'no_telemetry' });
     const inputMarkdown = input.replace(/\n/g, '  \n');
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
-    const embeddings = await readEmbeddings(notebookTracker, app);
+    const embeddings = await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
     const selectedCode = getSelectedCode(notebookTracker).extractedCode;
 
     const formattedMessages = [

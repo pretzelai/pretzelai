@@ -67,7 +67,12 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     setShowInputComponent(false);
     setShowStatusElement(true);
     setStatusElementText('Calculating embeddings...');
-    const embeddings = await readEmbeddings(props.notebookTracker, props.app);
+    const embeddings = await readEmbeddings(
+      props.notebookTracker,
+      props.app,
+      props.aiClient,
+      props.aiChatModelProvider
+    );
     let oldCodeForPrompt = props.notebookTracker.activeCell!.model.sharedModel.source;
 
     try {
@@ -106,7 +111,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     const { extractedCode } = getSelectedCode(props.notebookTracker);
 
     let activeCell = props.notebookTracker.activeCell;
-    let embeddings = await readEmbeddings(props.notebookTracker, props.app);
+    let embeddings = await readEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiChatModelProvider);
 
     if (userInput !== '') {
       setShowInputComponent(false);

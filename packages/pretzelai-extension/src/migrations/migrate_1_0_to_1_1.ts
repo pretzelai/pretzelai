@@ -139,7 +139,7 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
         },
         Azure: {
           name: 'Azure',
-          enabled: true,
+          enabled: false,
           showSettings: true,
           apiSettings: {
             apiKey: {
