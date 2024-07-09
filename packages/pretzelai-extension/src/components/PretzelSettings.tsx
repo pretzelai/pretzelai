@@ -501,7 +501,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
             Code Match Threshold
             <Tooltip
-              title="Set the minimum similarity score for code matching. Higher values require closer matches."
+              title="This threshold is used to find matching code in the current Jupyter notebook. Number between 0-100. Lower values will match more (but possibly irrelavant) code."
               placement="right"
             >
               <InfoIconStyled />
