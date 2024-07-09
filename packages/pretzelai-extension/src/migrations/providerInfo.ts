@@ -14,6 +14,8 @@ export interface IProviderInfo {
     [key: string]: {
       displayName: string;
       description: string;
+      canBeUsedForChat: boolean;
+      canBeUsedForInlineCompletion: boolean;
     };
   };
   apiSettings?: {
@@ -38,7 +40,9 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           models: {
             pretzelai: {
               displayName: "Pretzel's Free AI Server (recommended)",
-              description: 'Best for most users. Free and no API key required. Fast and accurate.'
+              description: 'Best for most users. Free and no API key required. Fast and accurate.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
             }
           }
         },
@@ -48,15 +52,21 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           models: {
             'gpt-4-turbo': {
               displayName: 'GPT-4 Turbo',
-              description: 'Most capable GPT-4 model but slower than GPT-4o.'
+              description: 'Most capable GPT-4 model but slower than GPT-4o.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
             },
             'gpt-4o': {
               displayName: 'GPT-4o',
-              description: 'Fast and accurate. Cheaper than GPT-4 Turbo, but slightly less capable.'
+              description: 'Fast and accurate. Cheaper than GPT-4 Turbo, but slightly less capable.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
             },
             'gpt-3.5-turbo': {
               displayName: 'GPT-3.5 Turbo',
-              description: 'Faster and more cost-effective model for many tasks. Good for simple tasks.'
+              description: 'Faster and more cost-effective model for many tasks. Good for simple tasks.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
             }
           },
           apiSettings: {
@@ -78,11 +88,15 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           models: {
             'gpt-4': {
               displayName: 'GPT-4',
-              description: 'Most advanced GPT-4 model available on Azure.'
+              description: 'Most advanced GPT-4 model available on Azure.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
             },
             'gpt-35-turbo': {
               displayName: 'GPT-3.5 Turbo',
-              description: 'Faster and more cost-effective model for many tasks.'
+              description: 'Faster and more cost-effective model for many tasks.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
             }
           },
           apiSettings: {
@@ -106,7 +120,15 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           models: {
             'codestral-latest': {
               displayName: 'Codestral',
-              description: 'Fast and accurate code generation model.'
+              description: 'Fast and accurate code generation model.',
+              canBeUsedForChat: false,
+              canBeUsedForInlineCompletion: true
+            },
+            'mistral-large-latest': {
+              displayName: 'Mistral Large',
+              description: 'General Purpose LLM with slighly less performance and accuracy compared to GPT-4.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
             }
           },
           apiSettings: {

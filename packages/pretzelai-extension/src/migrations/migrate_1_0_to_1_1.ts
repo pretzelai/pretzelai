@@ -195,6 +195,11 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
               name: 'codestral-latest',
               enabled: true,
               showSetting: true
+            },
+            'mistral-large-latest': {
+              name: 'mistral-large-latest',
+              enabled: true,
+              showSetting: true
             }
           }
         }
@@ -333,6 +338,11 @@ export function returnDefaults_1_1(): any {
         models: {
           'codestral-latest': {
             name: 'codestral-latest',
+            enabled: true,
+            showSetting: true
+          },
+          'mistral-large-latest': {
+            name: 'mistral-large-latest',
             enabled: true,
             showSetting: true
           }

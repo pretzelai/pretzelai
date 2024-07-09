@@ -227,13 +227,21 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                   </Tooltip>
                 )}
               </ListSubheader>,
-              ...Object.entries(providerInfo.models).map(([modelName, modelInfo]) => (
-                <MenuItem key={`${providerName}:${modelName}`} value={`${providerName}:${modelName}`}>
-                  <Tooltip title={modelInfo.description} placement="right">
-                    <span>{modelInfo.displayName}</span>
-                  </Tooltip>
-                </MenuItem>
-              ))
+              ...Object.entries(providerInfo.models).map(([modelName, modelInfo]) => {
+                if (
+                  (featurePath === 'aiChat' && modelInfo.canBeUsedForChat) ||
+                  (featurePath === 'inlineCompletion' && modelInfo.canBeUsedForInlineCompletion)
+                ) {
+                  return (
+                    <MenuItem key={`${providerName}:${modelName}`} value={`${providerName}:${modelName}`}>
+                      <Tooltip title={modelInfo.description} placement="right">
+                        <span>{modelInfo.displayName}</span>
+                      </Tooltip>
+                    </MenuItem>
+                  );
+                }
+                return null;
+              })
             ];
           }
           return null;

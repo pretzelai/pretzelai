@@ -21,12 +21,14 @@ import MistralClient from '@mistralai/mistralai';
 
 interface IAIAssistantComponentProps {
   aiChatModelProvider: string;
+  aiChatModelString: string;
   openAiApiKey: string;
   openAiBaseUrl: string;
-  openAiModel: string;
   azureBaseUrl: string;
   azureApiKey: string;
   deploymentId: string;
+  mistralApiKey: string;
+  mistralModel: string;
   commands: CommandRegistry;
   traceback: string;
   placeholderEnabled: string;
@@ -82,10 +84,12 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         posthogPromptTelemetry: props.posthogPromptTelemetry,
         openAiApiKey: props.openAiApiKey,
         openAiBaseUrl: props.openAiBaseUrl,
-        openAiModel: props.openAiModel,
+        aiChatModelString: props.aiChatModelString,
         azureBaseUrl: props.azureBaseUrl,
         azureApiKey: props.azureApiKey,
         deploymentId: props.deploymentId,
+        mistralApiKey: props.mistralApiKey,
+        mistralModel: props.mistralModel,
         isInject: false
       });
 
@@ -138,10 +142,12 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           posthogPromptTelemetry: props.posthogPromptTelemetry,
           openAiApiKey: props.openAiApiKey,
           openAiBaseUrl: props.openAiBaseUrl,
-          openAiModel: props.openAiModel,
+          aiChatModelString: props.aiChatModelString,
           azureBaseUrl: props.azureBaseUrl,
           azureApiKey: props.azureApiKey,
           deploymentId: props.deploymentId,
+          mistralApiKey: props.mistralApiKey,
+          mistralModel: props.mistralModel,
           isInject: isInject
         });
 

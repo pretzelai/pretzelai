@@ -364,33 +364,37 @@ export const getTopSimilarities = async (
 
 const setupStream = async ({
   aiChatModelProvider,
+  aiChatModelString,
   openAiApiKey,
   openAiBaseUrl,
-  openAiModel,
   prompt,
   azureBaseUrl,
   azureApiKey,
-  deploymentId
+  deploymentId,
+  mistralApiKey,
+  mistralModel
 }: {
   aiChatModelProvider: string;
+  aiChatModelString: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
-  openAiModel?: string;
   prompt: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
+  mistralApiKey?: string;
+  mistralModel?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
 
-  if (aiChatModelProvider === 'OpenAI' && openAiApiKey && openAiModel && prompt) {
+  if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && prompt) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
       baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
     });
     stream = await openai.chat.completions.create({
-      model: openAiModel,
+      model: aiChatModelString,
       messages: [
         {
           role: 'user',
@@ -434,12 +438,28 @@ const setupStream = async ({
     };
   } else if (aiChatModelProvider === 'Azure' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
+    // FIXME: the aiChatModelString has no effect since the model name is the deploymentId
+    // we need to validate this in settings at some point
     const result = await client.getCompletions(deploymentId, [prompt]);
 
     stream = {
       async *[Symbol.asyncIterator]() {
         for (const choice of result.choices) {
           yield { choices: [{ delta: { content: choice.text } }] };
+        }
+      }
+    };
+  } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && aiChatModelString && prompt) {
+    const client = new MistralClient(mistralApiKey);
+    const chatStream = await client.chatStream({
+      model: aiChatModelString,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        for await (const chunk of chatStream) {
+          yield { choices: [{ delta: { content: chunk.choices[0].delta.content || '' } }] };
         }
       }
     };
@@ -452,6 +472,7 @@ const setupStream = async ({
 
 export const generateAIStream = async ({
   aiChatModelProvider,
+  aiChatModelString,
   aiClient,
   embeddings,
   userInput,
@@ -463,13 +484,15 @@ export const generateAIStream = async ({
   posthogPromptTelemetry,
   openAiApiKey,
   openAiBaseUrl,
-  openAiModel,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
+  mistralApiKey,
+  mistralModel,
   isInject
 }: {
   aiChatModelProvider: string;
+  aiChatModelString: string;
   aiClient: OpenAI | OpenAIClient | MistralClient | null;
   embeddings: Embedding[];
   userInput: string;
@@ -481,10 +504,11 @@ export const generateAIStream = async ({
   posthogPromptTelemetry: boolean;
   openAiApiKey: string;
   openAiBaseUrl: string;
-  openAiModel: string;
   azureBaseUrl: string;
   azureApiKey: string;
   deploymentId: string;
+  mistralApiKey: string;
+  mistralModel: string;
   isInject: boolean;
 }): Promise<AsyncIterable<any>> => {
   const { extractedCode } = getSelectedCode(notebookTracker);
@@ -508,13 +532,15 @@ export const generateAIStream = async ({
 
   return setupStream({
     aiChatModelProvider,
+    aiChatModelString,
     openAiApiKey,
     openAiBaseUrl,
-    openAiModel,
     prompt,
     azureBaseUrl,
     azureApiKey,
-    deploymentId
+    deploymentId,
+    mistralApiKey,
+    mistralModel
   });
 };
 

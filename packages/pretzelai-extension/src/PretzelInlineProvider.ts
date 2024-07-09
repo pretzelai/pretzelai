@@ -20,6 +20,7 @@ import { PLUGIN_ID } from './utils';
 import OpenAI from 'openai';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import posthog from 'posthog-js';
+import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(
@@ -196,6 +197,11 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     const openAiSettings = providers['OpenAI']?.apiSettings || {};
     const openAiApiKey = openAiSettings?.apiKey?.value || '';
 
+    let azureSettings = providers['Azure']?.apiSettings || {};
+    let azureApiKey = azureSettings?.apiKey?.value || '';
+    let azureBaseUrl = azureSettings?.baseUrl?.value || '';
+    let azureDeploymentName = azureSettings?.deploymentName?.value || '';
+
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
         let prompt = this._prefixFromRequest(request);
@@ -240,7 +246,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
           } else if (copilotProvider === 'OpenAI' && openAiApiKey) {
             const openai = new OpenAI({ apiKey: openAiApiKey, dangerouslyAllowBrowser: true });
             const openaiResponse = await openai.chat.completions.create({
-              model: 'gpt-4o',
+              model: copilotModel,
               stop: stops,
               // eslint-disable-next-line
               max_tokens: this._isMultiLine(prompt) ? 500 : 100,
@@ -261,6 +267,11 @@ Fill in the blank to complete the code block. Your response should include only 
             });
             completion = openaiResponse.choices[0].message.content;
           } else if (copilotProvider === 'Mistral' && mistralApiKey) {
+            // FIXME: Allow for newer data types
+            const model = 'codestral-latest';
+            if (model !== 'codestral-latest') {
+              throw new Error('The only available model for Mistral is "codestral-latest".');
+            }
             const data = await fetch('https://api.mistral.ai/v1/fim/completions', {
               method: 'POST',
               headers: {
@@ -269,7 +280,7 @@ Fill in the blank to complete the code block. Your response should include only 
                 Authorization: `Bearer ${mistralApiKey}`
               },
               body: JSON.stringify({
-                model: 'codestral-latest',
+                model,
                 prompt,
                 suffix,
                 stop: stops,
@@ -280,10 +291,19 @@ Fill in the blank to complete the code block. Your response should include only 
             });
             // Note: Response parsing might not work as expected due to 'no-cors' mode, which can lead to an opaque response.
             completion = (await data.json()).choices[0].message.content;
+          } else if (copilotProvider === 'Azure' && azureApiKey && azureBaseUrl && azureDeploymentName) {
+            const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
+            const result = await client.getCompletions(azureDeploymentName, [
+              `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+            ]);
+            completion = result.choices[0].text;
           } else {
             completion = '';
           }
-
           resolve({
             items: [
               {

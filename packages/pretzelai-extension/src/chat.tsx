@@ -45,12 +45,13 @@ const historyNextKeyCombination = isMac ? '⇧⌘>' : '⇧^>';
 
 interface IChatProps {
   aiChatModelProvider: string;
+  aiChatModelString: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
-  openAiModel?: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
+  mistralApiKey?: string;
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
@@ -61,12 +62,13 @@ interface IChatProps {
 
 export function Chat({
   aiChatModelProvider,
+  aiChatModelString,
   openAiApiKey,
   openAiBaseUrl,
-  openAiModel,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
+  mistralApiKey,
   notebookTracker,
   app,
   rmRegistry,
@@ -242,12 +244,13 @@ export function Chat({
 
     await chatAIStream({
       aiChatModelProvider,
+      aiChatModelString,
       openAiApiKey,
       openAiBaseUrl,
-      openAiModel,
       azureBaseUrl,
       azureApiKey,
       deploymentId,
+      mistralApiKey,
       renderChat,
       messages: formattedMessages as ChatCompletionMessage[],
       topSimilarities,

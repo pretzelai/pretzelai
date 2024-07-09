@@ -87,9 +87,9 @@ const extension: JupyterFrontEndPlugin<void> = {
     const rightSidebarShortcut = isMac ? 'Ctrl+Cmd+B' : 'Ctrl+Alt+B';
 
     const placeholderDisabled =
-      'To use AI features, please set your OpenAI API key or Azure API details in the Pretzel AI Settings.\n' +
+      'To use AI features, please set your API key or details for the selected AI provider in the Pretzel AI Settings.\n' +
       'You can also use the free Pretzel AI server.\n' +
-      'Go To: Settings > Settings Editor > Pretzel AI Settings to configure';
+      'Go To: Settings > Pretzel AI Settings to configure';
 
     const placeholderEnabled =
       `Ask AI. Use ${rightSidebarShortcut} to toggle AI Chat sidebar.\n` +
@@ -103,11 +103,13 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let openAiApiKey = '';
     let openAiBaseUrl = '';
-    let openAiModel = '';
 
     let azureBaseUrl = '';
     let azureDeploymentName = '';
     let azureApiKey = '';
+
+    let mistralApiKey = '';
+    let mistralModel = '';
 
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
     let pretzelSettingsJSON: any = null;
@@ -124,9 +126,17 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     function setAIEnabled() {
       // check to make sure we have all the settings set
-      if (aiChatModelProvider === 'OpenAI' && openAiApiKey && openAiModel) {
+      if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString) {
         isAIEnabled = true;
-      } else if (aiChatModelProvider === 'Azure' && azureBaseUrl && azureDeploymentName && azureApiKey) {
+      } else if (
+        aiChatModelProvider === 'Azure' &&
+        azureBaseUrl &&
+        azureDeploymentName &&
+        azureApiKey &&
+        aiChatModelString
+      ) {
+        isAIEnabled = true;
+      } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && mistralModel) {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Pretzel AI') {
         isAIEnabled = true;
@@ -154,13 +164,17 @@ const extension: JupyterFrontEndPlugin<void> = {
         const openAiProvider = providers['OpenAI'] || {};
         openAiApiKey = openAiProvider?.apiSettings?.apiKey?.value || '';
         openAiBaseUrl = openAiProvider?.apiSettings?.baseUrl?.value || '';
-        openAiModel = aiChatSettings.modelString || 'gpt-4o';
 
         // Azure settings
         const azureProvider = providers['Azure'] || {};
         azureBaseUrl = azureProvider?.apiSettings?.baseUrl?.value || '';
         azureDeploymentName = azureProvider?.apiSettings?.deploymentName?.value || '';
         azureApiKey = azureProvider?.apiSettings?.apiKey?.value || '';
+
+        // Mistral settings
+        const mistralProvider = providers['Mistral'] || {};
+        mistralApiKey = mistralProvider?.apiSettings?.apiKey?.value || '';
+        mistralModel = aiChatSettings.modelString || 'mistral-tiny';
 
         // Posthog settings
         posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
@@ -402,12 +416,14 @@ const extension: JupyterFrontEndPlugin<void> = {
       aiAssistantComponentRoot.render(
         <AIAssistantComponent
           aiChatModelProvider={aiChatModelProvider}
+          aiChatModelString={aiChatModelString}
           openAiApiKey={openAiApiKey}
           openAiBaseUrl={openAiBaseUrl}
-          openAiModel={openAiModel}
           azureBaseUrl={azureBaseUrl}
           azureApiKey={azureApiKey}
           deploymentId={azureDeploymentName}
+          mistralApiKey={mistralApiKey}
+          mistralModel={mistralModel}
           commands={commands}
           traceback={traceback}
           placeholderEnabled={placeholderEnabled}
@@ -457,12 +473,14 @@ const extension: JupyterFrontEndPlugin<void> = {
           aiAssistantComponentRoot.render(
             <AIAssistantComponent
               aiChatModelProvider={aiChatModelProvider}
+              aiChatModelString={aiChatModelString}
               openAiApiKey={openAiApiKey}
               openAiBaseUrl={openAiBaseUrl}
-              openAiModel={openAiModel}
               azureBaseUrl={azureBaseUrl}
               azureApiKey={azureApiKey}
               deploymentId={azureDeploymentName}
+              mistralApiKey={mistralApiKey}
+              mistralModel={mistralModel}
               commands={commands}
               traceback={''}
               placeholderEnabled={placeholderEnabled}
@@ -486,12 +504,13 @@ const extension: JupyterFrontEndPlugin<void> = {
     function createAndAddSidePanel(expandPanel = false) {
       const newSidePanel = createChat({
         aiChatModelProvider,
+        aiChatModelString,
         openAiApiKey,
         openAiBaseUrl,
-        openAiModel,
         azureBaseUrl,
         azureApiKey,
         deploymentId: azureDeploymentName,
+        mistralApiKey,
         notebookTracker,
         app,
         rmRegistry,

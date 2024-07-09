@@ -4924,7 +4924,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=fa72f2&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=19e663&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
@@ -4947,6 +4947,7 @@ __metadata:
     "@jupyterlab/ui-components": ^4.2.0
     "@lumino/commands": ^2.3.0
     "@lumino/widgets": ^2.3.2
+    "@mistralai/mistralai": ^0.5.0
     "@mui/icons-material": ~5.15.18
     "@mui/material": ^5.15.21
     monaco-editor: ^0.47.0
@@ -4954,7 +4955,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 5e02575f24a86dc63c04f15bdf0d90c5d85da15ccf93ac73dd5658de8a6212b1a8f728b92822b6ccc4db238e8aa819ab078ed0485205cabbd9c861012e083e5f
+  checksum: 929dd1bd6afcc9c487a89a68e29e7de8c2416968b7ca15348939bb4add11d5635942e4671b59b55e8985420aa07065d588aec23ef84970f8166a5a3ffa662c77
   languageName: node
   linkType: hard
 
