@@ -18,7 +18,7 @@ import OpenAI from 'openai';
 import MistralClient from '@mistralai/mistralai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { FixedSizeStack, getEmbeddings, PLUGIN_ID } from './utils';
+import { deleteExistingEmbeddings, FixedSizeStack, getEmbeddings, PLUGIN_ID } from './utils';
 
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
@@ -262,6 +262,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     settingRegistry.pluginChanged.connect(async (sender, plugin) => {
       if (plugin === extension.id) {
         const oldIsAIEnabled = isAIEnabled;
+        const oldAiChatModelProvider = aiChatModelProvider;
         const updateFunc = async () => {
           if (oldIsAIEnabled !== isAIEnabled) {
             const pretzelParentContainerAI = document.querySelector('.pretzelParentContainerAI');
@@ -272,6 +273,9 @@ const extension: JupyterFrontEndPlugin<void> = {
           }
         };
         await loadSettings(updateFunc);
+        if (oldAiChatModelProvider !== aiChatModelProvider) {
+          await deleteExistingEmbeddings(app, notebookTracker);
+        }
       }
     });
 

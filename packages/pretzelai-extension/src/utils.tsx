@@ -554,3 +554,29 @@ export class FixedSizeStack<T> {
     return this.stack.length >= this.maxSize;
   }
 }
+
+export async function deleteExistingEmbeddings(app: JupyterFrontEnd, notebookTracker: INotebookTracker) {
+  const notebook = notebookTracker.currentWidget;
+  if (!notebook) {
+    console.error('No active notebook found');
+    return;
+  }
+
+  const currentNotebookPath = notebook.context.path;
+  const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+  const embeddingsDir = `${currentDir}/${PRETZEL_FOLDER}`;
+
+  try {
+    // List all files in the directory
+    const fileList = await app.serviceManager.contents.get(embeddingsDir, { content: true });
+    const embeddingsFiles = fileList.content.filter((file: any) => file.name.endsWith('_embeddings.json'));
+
+    // Delete each embeddings file
+    for (const file of embeddingsFiles) {
+      await app.serviceManager.contents.delete(`${embeddingsDir}/${file.name}`);
+    }
+    console.log('All embeddings files deleted successfully');
+  } catch (error) {
+    console.error('Error deleting embeddings files:', error);
+  }
+}
