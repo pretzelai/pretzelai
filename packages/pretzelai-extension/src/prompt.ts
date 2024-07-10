@@ -8,12 +8,14 @@
  * the root of the project) are licensed under AGPLv3.
  */
 import { OpenAI } from 'openai';
-import { Embeddings } from '@azure/openai/types/openai';
+import { Embeddings as AzureEmbeddings } from '@azure/openai/types/openai';
 import { OpenAIClient } from '@azure/openai';
+import MistralClient, { EmbeddingResponse as MistralEmbeddings } from '@mistralai/mistralai';
+import { CreateEmbeddingResponse as OpenAIEmbeddings } from 'openai/resources/embeddings';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-large';
 
-export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Use Azure API';
+// export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Use Azure API';
 
 export type Embedding = {
   id: string;
@@ -221,10 +223,10 @@ Take a deep breath, think step-by-step and respond with MODIFIED version of CURR
 
 export const openaiEmbeddings = async (
   source: string,
-  aiService: AiService,
-  aiClient: OpenAI | OpenAIClient | null
-): Promise<OpenAI.Embeddings.CreateEmbeddingResponse | Embeddings> => {
-  if (aiService === 'Use Pretzel AI Server') {
+  aiChatModelProvider: string,
+  aiClient: OpenAI | OpenAIClient | MistralClient | null
+): Promise<OpenAIEmbeddings | AzureEmbeddings | MistralEmbeddings> => {
+  if (aiChatModelProvider === 'Pretzel AI') {
     return (await (
       await fetch('https://api.pretzelai.app/embeddings/', {
         method: 'POST',
@@ -235,14 +237,19 @@ export const openaiEmbeddings = async (
           source: source
         })
       })
-    ).json()) as OpenAI.Embeddings.CreateEmbeddingResponse;
-  } else if (aiService === 'OpenAI API key') {
+    ).json()) as OpenAIEmbeddings;
+  } else if (aiChatModelProvider === 'OpenAI') {
     return await (aiClient as OpenAI).embeddings.create({
       model: EMBEDDING_MODEL,
       input: source
     });
-  } else if (aiService === 'Use Azure API') {
+  } else if (aiChatModelProvider === 'Azure') {
     return await (aiClient as OpenAIClient).getEmbeddings('text-embedding-ada-002', [source]);
+  } else if (aiChatModelProvider === 'Mistral') {
+    return await (aiClient as MistralClient).embeddings({
+      model: 'mistral-embed',
+      input: source
+    });
   } else {
     throw new Error('Invalid AI service');
   }

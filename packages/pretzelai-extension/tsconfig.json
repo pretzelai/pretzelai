@@ -59,6 +59,9 @@
     },
     {
       "path": "../ui-components"
+    },
+    {
+      "path": "../mainmenu"
     }
   ],
   "extends": "../../tsconfigbase"

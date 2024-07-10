@@ -19,12 +19,12 @@ import { JupyterFrontEnd } from '@jupyterlab/application';
 import { getSelectedCode, getTopSimilarities, PRETZEL_FOLDER, readEmbeddings } from './utils';
 import { RendermimeMarkdown } from './components/rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { AiService } from './prompt';
 import { OpenAI } from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import posthog from 'posthog-js';
+import MistralClient from '@mistralai/mistralai';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -44,29 +44,31 @@ const historyPrevKeyCombination = isMac ? '⇧⌘<' : '⇧^<';
 const historyNextKeyCombination = isMac ? '⇧⌘>' : '⇧^>';
 
 interface IChatProps {
-  aiService: AiService;
+  aiChatModelProvider: string;
+  aiChatModelString: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
-  openAiModel?: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
+  mistralApiKey?: string;
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
-  aiClient: OpenAI | OpenAIClient | null;
+  aiClient: OpenAI | OpenAIClient | MistralClient | null;
   codeMatchThreshold: number;
   posthogPromptTelemetry: boolean;
 }
 
 export function Chat({
-  aiService,
+  aiChatModelProvider,
+  aiChatModelString,
   openAiApiKey,
   openAiBaseUrl,
-  openAiModel,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
+  mistralApiKey,
   notebookTracker,
   app,
   rmRegistry,
@@ -202,7 +204,7 @@ export function Chat({
     posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? input : 'no_telemetry' });
     const inputMarkdown = input.replace(/\n/g, '  \n');
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
-    const embeddings = await readEmbeddings(notebookTracker, app);
+    const embeddings = await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
     const selectedCode = getSelectedCode(notebookTracker).extractedCode;
 
     const formattedMessages = [
@@ -231,7 +233,7 @@ export function Chat({
       embeddings,
       5,
       aiClient,
-      aiService,
+      aiChatModelProvider,
       'no-match-id',
       codeMatchThreshold
     );
@@ -241,13 +243,14 @@ export function Chat({
     setStopGeneration(() => () => controller.abort());
 
     await chatAIStream({
-      aiService,
+      aiChatModelProvider,
+      aiChatModelString,
       openAiApiKey,
       openAiBaseUrl,
-      openAiModel,
       azureBaseUrl,
       azureApiKey,
       deploymentId,
+      mistralApiKey,
       renderChat,
       messages: formattedMessages as ChatCompletionMessage[],
       topSimilarities,

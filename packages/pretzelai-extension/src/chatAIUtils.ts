@@ -6,8 +6,10 @@
  * Contributions by contributors listed in the PRETZEL_CONTRIBUTORS file (found at
  * the root of the project) are licensed under AGPLv3.
  */
+import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import { OpenAI } from 'openai';
 import { ChatCompletionMessage } from 'openai/resources';
+import MistralClient, { Message } from '@mistralai/mistralai';
 
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
@@ -46,13 +48,14 @@ ${topSimilarities.join('\n```\n```python\n')}
 };
 
 export const chatAIStream = async ({
-  aiService,
+  aiChatModelProvider,
+  aiChatModelString,
   openAiApiKey,
   openAiBaseUrl,
-  openAiModel,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
+  mistralApiKey,
   renderChat,
   messages,
   topSimilarities,
@@ -62,13 +65,14 @@ export const chatAIStream = async ({
   setIsAiGenerating,
   signal
 }: {
-  aiService: string;
+  aiChatModelProvider: string;
+  aiChatModelString: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
-  openAiModel?: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
+  mistralApiKey?: string;
   renderChat: (message: string) => void;
   messages: OpenAI.ChatCompletionMessage[];
   topSimilarities: string[];
@@ -87,7 +91,7 @@ export const chatAIStream = async ({
     selectedCode
   );
   const messagesWithInjection = [...messages.slice(0, -1), { role: 'user', content: lastContentWithInjection }];
-  if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && messages) {
+  if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && messages) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
@@ -95,7 +99,7 @@ export const chatAIStream = async ({
     });
     const stream = await openai.chat.completions.create(
       {
-        model: openAiModel,
+        model: aiChatModelString,
         messages: messagesWithInjection as ChatCompletionMessage[],
         stream: true
       },
@@ -107,9 +111,28 @@ export const chatAIStream = async ({
       renderChat(chunk.choices[0]?.delta?.content || '');
     }
     setReferenceSource('');
-
     setIsAiGenerating(false);
-  } else if (aiService === 'Use Pretzel AI Server') {
+  } else if (
+    // FIXME : never tested
+    aiChatModelProvider === 'Azure' &&
+    azureBaseUrl &&
+    azureApiKey &&
+    deploymentId &&
+    aiChatModelString &&
+    messages
+  ) {
+    const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
+    const events = await client.streamChatCompletions(deploymentId, messagesWithInjection as ChatCompletionMessage[]);
+    for await (const event of events) {
+      for (const choice of event.choices) {
+        if (choice.delta?.content) {
+          renderChat(choice.delta.content);
+        }
+      }
+    }
+    setReferenceSource('');
+    setIsAiGenerating(false);
+  } else if (aiChatModelProvider === 'Pretzel AI') {
     const response = await fetch('https://api.pretzelai.app/chat/', {
       method: 'POST',
       headers: {
@@ -134,5 +157,30 @@ export const chatAIStream = async ({
         renderChat(chunk);
       }
     }
+  } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && aiChatModelString && messages) {
+    const client = new MistralClient(mistralApiKey);
+
+    // Convert messagesWithInjection to the required Message[] type
+    const convertedMessages = messagesWithInjection.map(msg => ({
+      role: msg.role,
+      content: msg.content || ''
+    }));
+
+    const chatStream = await client.chatStream({
+      model: aiChatModelString,
+      messages: convertedMessages as Message[]
+    });
+
+    for await (const chunk of chatStream) {
+      if (chunk.choices[0].delta.content) {
+        renderChat(chunk.choices[0].delta.content);
+      }
+    }
+    setReferenceSource('');
+    setIsAiGenerating(false);
+  } else {
+    renderChat('ERROR: No model provided. Fix your settings in Settings > Pretzel AI Settings');
+    setReferenceSource('');
+    setIsAiGenerating(false);
   }
 };

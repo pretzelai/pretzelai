@@ -7,7 +7,11 @@
       "type": "string",
       "title": "AI Service",
       "description": "Select the AI service to use for AI operations.",
-      "enum": ["OpenAI API key", "Use Pretzel AI Server", "Use Azure API"],
+      "enum": [
+        "OpenAI API key",
+        "Use Pretzel AI Server",
+        "Use Azure API"
+      ],
       "default": "Use Pretzel AI Server"
     },
     "openAiSettings": {
@@ -29,7 +33,11 @@
           "type": "string",
           "title": "OpenAI Model",
           "description": "Select the OpenAI model to be used for AI completions. Only works with your OpenAI API key.",
-          "enum": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"],
+          "enum": [
+            "gpt-4o",
+            "gpt-4-turbo",
+            "gpt-3.5-turbo"
+          ],
           "default": "gpt-4o"
         }
       }
@@ -46,7 +54,11 @@
           "type": "string",
           "title": "Which AI model provider to use",
           "description": "Recommended: Pretzel AI (no API key required) or Mistral (API key required)",
-          "enum": ["Pretzel AI", "Mistral", "OpenAI"]
+          "enum": [
+            "Pretzel AI",
+            "Mistral",
+            "OpenAI"
+          ]
         },
         "mistralApiKey": {
           "type": "string",
@@ -93,7 +105,19 @@
       "type": "boolean",
       "title": "Prompt Telemetry",
       "default": true
+    },
+    "pretzelSettingsJSON": {
+      "type": "object",
+      "title": "Pretzel Settings",
+      "description": "Store Pretzel Settings as JSON",
+      "default": {},
+      "additionalProperties": true
+    },
+    "pretzelSettingsJSONVersion": {
+      "type": "string",
+      "title": "Pretzel Settings Schema Version",
+      "default": "1.1"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": true
 }

@@ -20,6 +20,8 @@ import { PLUGIN_ID } from './utils';
 import OpenAI from 'openai';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import posthog from 'posthog-js';
+import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
+import MistralClient from '@mistralai/mistralai';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(
@@ -182,17 +184,24 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
   ): Promise<IInlineCompletionList<IInlineCompletionItem>> {
     clearTimeout(this.debounceTimer);
     const settings = await this.settingRegistry.load(PLUGIN_ID);
-    const inlineCopilotSettings = settings.get('inlineCopilotSettings').composite as any;
-    const isEnabled = inlineCopilotSettings?.enabled;
+    const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+    const inlineCopilotSettings = pretzelSettingsJSON.features?.inlineCompletion || {};
+    const isEnabled = inlineCopilotSettings.enabled ?? false;
     if (!isEnabled) {
-      return {
-        items: []
-      };
+      return { items: [] };
     }
-    const copilotProvider = inlineCopilotSettings?.provider || 'pretzelai';
-    const mistralApiKey = inlineCopilotSettings?.mistralApiKey || '';
-    const openAiSettings = settings.get('openAiSettings').composite as any;
-    const openAiApiKey = openAiSettings?.openAiApiKey || '';
+    const copilotProvider = inlineCopilotSettings.modelProvider || 'Pretzel AI';
+    const copilotModel = inlineCopilotSettings.modelString || 'pretzelai'; // FIXME: use this in code
+    const providers = pretzelSettingsJSON.providers || {};
+    const mistralSettings = providers['Mistral']?.apiSettings || {};
+    const mistralApiKey = mistralSettings?.apiKey?.value || '';
+    const openAiSettings = providers['OpenAI']?.apiSettings || {};
+    const openAiApiKey = openAiSettings?.apiKey?.value || '';
+
+    let azureSettings = providers['Azure']?.apiSettings || {};
+    let azureApiKey = azureSettings?.apiKey?.value || '';
+    let azureBaseUrl = azureSettings?.baseUrl?.value || '';
+    let azureDeploymentName = azureSettings?.deploymentName?.value || '';
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
@@ -238,7 +247,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
           } else if (copilotProvider === 'OpenAI' && openAiApiKey) {
             const openai = new OpenAI({ apiKey: openAiApiKey, dangerouslyAllowBrowser: true });
             const openaiResponse = await openai.chat.completions.create({
-              model: 'gpt-4o',
+              model: copilotModel,
               stop: stops,
               // eslint-disable-next-line
               max_tokens: this._isMultiLine(prompt) ? 500 : 100,
@@ -259,29 +268,65 @@ Fill in the blank to complete the code block. Your response should include only 
             });
             completion = openaiResponse.choices[0].message.content;
           } else if (copilotProvider === 'Mistral' && mistralApiKey) {
-            const data = await fetch('https://api.mistral.ai/v1/fim/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                Authorization: `Bearer ${mistralApiKey}`
-              },
-              body: JSON.stringify({
-                model: 'codestral-latest',
-                prompt,
-                suffix,
-                stop: stops,
-                // eslint-disable-next-line
-                max_tokens: 500,
-                temperature: 0
-              })
-            });
-            // Note: Response parsing might not work as expected due to 'no-cors' mode, which can lead to an opaque response.
-            completion = (await data.json()).choices[0].message.content;
+            // FIXME: Allow for newer model types
+            if (copilotModel === 'codestral-latest') {
+              const data = await fetch('https://api.mistral.ai/v1/fim/completions', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Accept: 'application/json',
+                  Authorization: `Bearer ${mistralApiKey}`
+                },
+                body: JSON.stringify({
+                  copilotModel,
+                  prompt,
+                  suffix,
+                  stop: stops,
+                  // eslint-disable-next-line
+                  max_tokens: 500,
+                  temperature: 0
+                })
+              });
+              // Note: Response parsing might not work as expected due to 'no-cors' mode, which can lead to an opaque response.
+              completion = (await data.json()).choices[0].message.content;
+            } else {
+              const mistral = new MistralClient(mistralApiKey);
+              const mistralResponse = await mistral.chat({
+                model: copilotModel,
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a staff software engineer'
+                  },
+                  {
+                    role: 'user',
+                    content: `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+                  }
+                ],
+                temperature: 0.7,
+                topP: 1,
+                maxTokens: 500,
+                safePrompt: false
+              });
+              completion = mistralResponse.choices[0].message.content;
+            }
+          } else if (copilotProvider === 'Azure' && azureApiKey && azureBaseUrl && azureDeploymentName) {
+            const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
+            const result = await client.getCompletions(azureDeploymentName, [
+              `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+            ]);
+            completion = result.choices[0].text;
           } else {
             completion = '';
           }
-
           resolve({
             items: [
               {

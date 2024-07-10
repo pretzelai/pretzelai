@@ -13,20 +13,22 @@ import { DiffComponent } from './DiffComponent';
 import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
-import { AiService } from '../prompt';
 import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
+import MistralClient from '@mistralai/mistralai';
 
 interface IAIAssistantComponentProps {
-  aiService: AiService;
+  aiChatModelProvider: string;
+  aiChatModelString: string;
   openAiApiKey: string;
   openAiBaseUrl: string;
-  openAiModel: string;
   azureBaseUrl: string;
   azureApiKey: string;
   deploymentId: string;
+  mistralApiKey: string;
+  mistralModel: string;
   commands: CommandRegistry;
   traceback: string;
   placeholderEnabled: string;
@@ -36,7 +38,7 @@ interface IAIAssistantComponentProps {
   handleRemove: () => void;
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
-  aiClient: OpenAI | OpenAIClient | null;
+  aiClient: OpenAI | OpenAIClient | MistralClient | null;
   codeMatchThreshold: number;
   numberOfSimilarCells: number;
   posthogPromptTelemetry: boolean;
@@ -65,12 +67,17 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     setShowInputComponent(false);
     setShowStatusElement(true);
     setStatusElementText('Calculating embeddings...');
-    const embeddings = await readEmbeddings(props.notebookTracker, props.app);
+    const embeddings = await readEmbeddings(
+      props.notebookTracker,
+      props.app,
+      props.aiClient,
+      props.aiChatModelProvider
+    );
     let oldCodeForPrompt = props.notebookTracker.activeCell!.model.sharedModel.source;
 
     try {
       const stream = await generateAIStream({
-        aiService: props.aiService,
+        aiChatModelProvider: props.aiChatModelProvider,
         aiClient: props.aiClient,
         embeddings: embeddings,
         userInput: '',
@@ -82,10 +89,12 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         posthogPromptTelemetry: props.posthogPromptTelemetry,
         openAiApiKey: props.openAiApiKey,
         openAiBaseUrl: props.openAiBaseUrl,
-        openAiModel: props.openAiModel,
+        aiChatModelString: props.aiChatModelString,
         azureBaseUrl: props.azureBaseUrl,
         azureApiKey: props.azureApiKey,
         deploymentId: props.deploymentId,
+        mistralApiKey: props.mistralApiKey,
+        mistralModel: props.mistralModel,
         isInject: false
       });
 
@@ -102,7 +111,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     const { extractedCode } = getSelectedCode(props.notebookTracker);
 
     let activeCell = props.notebookTracker.activeCell;
-    let embeddings = await readEmbeddings(props.notebookTracker, props.app);
+    let embeddings = await readEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiChatModelProvider);
 
     if (userInput !== '') {
       setShowInputComponent(false);
@@ -126,7 +135,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       userInput = await processTaggedVariables(userInput, props.notebookTracker);
       try {
         const stream = await generateAIStream({
-          aiService: props.aiService,
+          aiChatModelProvider: props.aiChatModelProvider,
           aiClient: props.aiClient,
           embeddings: embeddings,
           userInput,
@@ -138,10 +147,12 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           posthogPromptTelemetry: props.posthogPromptTelemetry,
           openAiApiKey: props.openAiApiKey,
           openAiBaseUrl: props.openAiBaseUrl,
-          openAiModel: props.openAiModel,
+          aiChatModelString: props.aiChatModelString,
           azureBaseUrl: props.azureBaseUrl,
           azureApiKey: props.azureApiKey,
           deploymentId: props.deploymentId,
+          mistralApiKey: props.mistralApiKey,
+          mistralModel: props.mistralModel,
           isInject: isInject
         });
 

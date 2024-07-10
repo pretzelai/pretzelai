@@ -12,11 +12,12 @@ import { IIOPubMessage } from '@jupyterlab/services/src/kernel/messages';
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { AiService, Embedding, generatePrompt, openaiEmbeddings } from './prompt';
+import { Embedding, generatePrompt, openaiEmbeddings } from './prompt';
 import OpenAI from 'openai';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
 import { showErrorDialog } from './components/ErrorDialog';
+import MistralClient from '@mistralai/mistralai';
 
 export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
@@ -189,8 +190,8 @@ export async function createAndSaveEmbeddings(
   cells: any[],
   path: string,
   app: JupyterFrontEnd,
-  aiClient: OpenAI | OpenAIClient | null,
-  aiService: AiService
+  aiClient: OpenAI | OpenAIClient | MistralClient | null,
+  aiChatModelProvider: string
 ): Promise<Embedding[]> {
   let embeddings = existingEmbeddingsJSON;
   const newEmbeddingsArray: Embedding[] = [];
@@ -203,7 +204,7 @@ export async function createAndSaveEmbeddings(
           const hash = await calculateHash(cell.source);
           if (hash !== embeddings[index].hash) {
             try {
-              const response = await openaiEmbeddings(cell.source, aiService, aiClient);
+              const response = await openaiEmbeddings(cell.source, aiChatModelProvider, aiClient);
               newEmbeddingsArray.push({
                 id: cell.id,
                 source: cell.source,
@@ -218,7 +219,7 @@ export async function createAndSaveEmbeddings(
           }
         } else {
           try {
-            const response = await openaiEmbeddings(cell.source, aiService, aiClient);
+            const response = await openaiEmbeddings(cell.source, aiChatModelProvider, aiClient);
             const hash = await calculateHash(cell.source);
             newEmbeddingsArray.push({
               id: cell.id,
@@ -252,8 +253,8 @@ export async function createAndSaveEmbeddings(
 export async function getEmbeddings(
   notebookTracker: INotebookTracker,
   app: JupyterFrontEnd,
-  aiClient: OpenAI | OpenAIClient | null,
-  aiService: AiService
+  aiClient: OpenAI | OpenAIClient | MistralClient | null,
+  aiChatModelProvider: string
 ): Promise<Embedding[]> {
   const notebook = notebookTracker.currentWidget;
   let embeddings: Embedding[] = [];
@@ -281,7 +282,7 @@ export async function getEmbeddings(
           embeddingsPath,
           app,
           aiClient,
-          aiService
+          aiChatModelProvider
         );
       } catch (error) {
         console.error('Error parsing embeddings JSON:', error);
@@ -315,36 +316,46 @@ export async function getEmbeddings(
       }
     }
   } else {
-    setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiService), 1000);
+    setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider), 1000);
   }
   return embeddings;
 }
 
-export const readEmbeddings = async (notebookTracker: INotebookTracker, app: JupyterFrontEnd): Promise<Embedding[]> => {
+export const readEmbeddings = async (
+  notebookTracker: INotebookTracker,
+  app: JupyterFrontEnd,
+  aiClient: OpenAI | OpenAIClient | MistralClient | null,
+  aiChatModelProvider: string
+): Promise<Embedding[]> => {
   const notebook = notebookTracker.currentWidget;
   const currentNotebookPath = notebook!.context.path;
   const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
   const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
   const embeddingsPath = currentDir + '/' + PRETZEL_FOLDER + '/' + notebookName + '_embeddings.json';
-  const file = await app.serviceManager.contents.get(embeddingsPath);
-  return JSON.parse(file.content);
+  try {
+    const file = await app.serviceManager.contents.get(embeddingsPath);
+    return JSON.parse(file.content);
+  } catch (error) {
+    await getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+    return await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+  }
 };
 
 export const getTopSimilarities = async (
   userInput: string,
   embeddings: Embedding[],
   numberOfSimilarities: number,
-  aiClient: OpenAI | OpenAIClient | null,
-  aiService: AiService,
+  aiClient: OpenAI | OpenAIClient | MistralClient | null,
+  aiChatModelProvider: string,
   cellId: string,
   codeMatchThreshold: number
 ): Promise<string[]> => {
   let response;
   try {
-    response = await openaiEmbeddings(userInput, aiService, aiClient);
+    response = await openaiEmbeddings(userInput, aiChatModelProvider, aiClient);
   } catch (error: any) {
     // Catching OpenAI errors here since this function is called for all prompts
-    showErrorDialog(`${aiService}: Error connecting`, error?.error?.message || JSON.stringify(error));
+    showErrorDialog(`${aiChatModelProvider}: Error connecting`, error?.error?.message || JSON.stringify(error));
     throw error;
   }
   const userInputEmbedding = response.data[0].embedding; // same API for openai and azure
@@ -362,34 +373,38 @@ export const getTopSimilarities = async (
 };
 
 const setupStream = async ({
-  aiService,
+  aiChatModelProvider,
+  aiChatModelString,
   openAiApiKey,
   openAiBaseUrl,
-  openAiModel,
   prompt,
   azureBaseUrl,
   azureApiKey,
-  deploymentId
+  deploymentId,
+  mistralApiKey,
+  mistralModel
 }: {
-  aiService: string;
+  aiChatModelProvider: string;
+  aiChatModelString: string;
   openAiApiKey?: string;
   openAiBaseUrl?: string;
-  openAiModel?: string;
   prompt: string;
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
+  mistralApiKey?: string;
+  mistralModel?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
 
-  if (aiService === 'OpenAI API key' && openAiApiKey && openAiModel && prompt) {
+  if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && prompt) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
       baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
     });
     stream = await openai.chat.completions.create({
-      model: openAiModel,
+      model: aiChatModelString,
       messages: [
         {
           role: 'user',
@@ -398,7 +413,7 @@ const setupStream = async ({
       ],
       stream: true
     });
-  } else if (aiService === 'Use Pretzel AI Server') {
+  } else if (aiChatModelProvider === 'Pretzel AI') {
     const response = await fetch('https://api.pretzelai.app/prompt/', {
       method: 'POST',
       headers: {
@@ -431,14 +446,30 @@ const setupStream = async ({
         }
       }
     };
-  } else if (aiService === 'Use Azure API' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
+  } else if (aiChatModelProvider === 'Azure' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
+    // FIXME: the aiChatModelString has no effect since the model name is the deploymentId
+    // we need to validate this in settings at some point
     const result = await client.getCompletions(deploymentId, [prompt]);
 
     stream = {
       async *[Symbol.asyncIterator]() {
         for (const choice of result.choices) {
           yield { choices: [{ delta: { content: choice.text } }] };
+        }
+      }
+    };
+  } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && aiChatModelString && prompt) {
+    const client = new MistralClient(mistralApiKey);
+    const chatStream = await client.chatStream({
+      model: aiChatModelString,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        for await (const chunk of chatStream) {
+          yield { choices: [{ delta: { content: chunk.choices[0].delta.content || '' } }] };
         }
       }
     };
@@ -450,7 +481,8 @@ const setupStream = async ({
 };
 
 export const generateAIStream = async ({
-  aiService,
+  aiChatModelProvider,
+  aiChatModelString,
   aiClient,
   embeddings,
   userInput,
@@ -462,14 +494,16 @@ export const generateAIStream = async ({
   posthogPromptTelemetry,
   openAiApiKey,
   openAiBaseUrl,
-  openAiModel,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
+  mistralApiKey,
+  mistralModel,
   isInject
 }: {
-  aiService: AiService;
-  aiClient: OpenAI | OpenAIClient | null;
+  aiChatModelProvider: string;
+  aiChatModelString: string;
+  aiClient: OpenAI | OpenAIClient | MistralClient | null;
   embeddings: Embedding[];
   userInput: string;
   oldCodeForPrompt: string;
@@ -480,10 +514,11 @@ export const generateAIStream = async ({
   posthogPromptTelemetry: boolean;
   openAiApiKey: string;
   openAiBaseUrl: string;
-  openAiModel: string;
   azureBaseUrl: string;
   azureApiKey: string;
   deploymentId: string;
+  mistralApiKey: string;
+  mistralModel: string;
   isInject: boolean;
 }): Promise<AsyncIterable<any>> => {
   const { extractedCode } = getSelectedCode(notebookTracker);
@@ -492,7 +527,7 @@ export const generateAIStream = async ({
     embeddings,
     numberOfSimilarCells,
     aiClient,
-    aiService,
+    aiChatModelProvider,
     notebookTracker.activeCell!.model.id,
     codeMatchThreshold
   );
@@ -506,14 +541,16 @@ export const generateAIStream = async ({
   }
 
   return setupStream({
-    aiService,
+    aiChatModelProvider,
+    aiChatModelString,
     openAiApiKey,
     openAiBaseUrl,
-    openAiModel,
     prompt,
     azureBaseUrl,
     azureApiKey,
-    deploymentId
+    deploymentId,
+    mistralApiKey,
+    mistralModel
   });
 };
 
@@ -551,5 +588,31 @@ export class FixedSizeStack<T> {
 
   isFull(): boolean {
     return this.stack.length >= this.maxSize;
+  }
+}
+
+export async function deleteExistingEmbeddings(app: JupyterFrontEnd, notebookTracker: INotebookTracker) {
+  const notebook = notebookTracker.currentWidget;
+  if (!notebook) {
+    console.error('No active notebook found');
+    return;
+  }
+
+  const currentNotebookPath = notebook.context.path;
+  const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+  const embeddingsDir = `${currentDir}/${PRETZEL_FOLDER}`;
+
+  try {
+    // List all files in the directory
+    const fileList = await app.serviceManager.contents.get(embeddingsDir, { content: true });
+    const embeddingsFiles = fileList.content.filter((file: any) => file.name.endsWith('_embeddings.json'));
+
+    // Delete each embeddings file
+    for (const file of embeddingsFiles) {
+      await app.serviceManager.contents.delete(`${embeddingsDir}/${file.name}`);
+    }
+    console.log('All embeddings files deleted successfully');
+  } catch (error) {
+    console.error('Error deleting embeddings files:', error);
   }
 }
