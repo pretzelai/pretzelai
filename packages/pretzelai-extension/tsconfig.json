@@ -43,6 +43,9 @@
       "path": "../coreutils"
     },
     {
+      "path": "../mainmenu"
+    },
+    {
       "path": "../notebook"
     },
     {
@@ -59,9 +62,6 @@
     },
     {
       "path": "../ui-components"
-    },
-    {
-      "path": "../mainmenu"
     }
   ],
   "extends": "../../tsconfigbase"

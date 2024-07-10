@@ -12,6 +12,7 @@ import '@jupyterlab/codemirror/style/index.js';
 import '@jupyterlab/outputarea/style/index.js';
 import '@jupyterlab/cells/style/index.js';
 import '@jupyterlab/completer/style/index.js';
+import '@jupyterlab/mainmenu/style/index.js';
 import '@jupyterlab/notebook/style/index.js';
 
 import './base.css';
