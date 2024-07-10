@@ -115,7 +115,6 @@ const ErrorContainer = styled(Box)(({ theme }) => ({
 }));
 
 export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegistry }) => {
-  const [settings, setSettings] = useState<any>({});
   const [tempSettings, setTempSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -143,7 +142,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       const pretzelSettingsJSON = loadedSettings.get('pretzelSettingsJSON').composite as any;
       const currentVersion = pretzelSettingsJSON.version || '1.1';
       const providersInfo = getProvidersInfo(currentVersion);
-      setSettings(pretzelSettingsJSON);
       setTempSettings(pretzelSettingsJSON);
       setSelectedModels({
         aiChat: {
@@ -170,7 +168,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     try {
       const plugin = await settingRegistry.load(PLUGIN_ID);
       await plugin.set('pretzelSettingsJSON', defaultSettings);
-      setSettings(defaultSettings);
       setValidationErrors({});
 
       // Update selectedModels state to reflect the default models correctly
@@ -278,7 +275,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       try {
         const plugin = await settingRegistry.load(PLUGIN_ID);
         await plugin.set('pretzelSettingsJSON', tempSettings);
-        setSettings(tempSettings);
         setValidationErrors({});
 
         // Update selectedModels state to reflect the saved models
@@ -495,7 +491,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   const renderAIChatSettings = () => (
     <Box>
-      <SectionTitle variant="h6">AI Chat Settings</SectionTitle>
+      <SectionTitle variant="h6">AI Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
         <Grid item xs={6}>
           <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Model</InputLabel>
@@ -537,11 +533,10 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   const renderInlineCopilotSettings = () => (
     <Box>
-      <SectionTitle variant="h6">Inline Copilot Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
         <Grid item xs={6}>
           <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-            Enable Inline Copilot
+            {`Enable AI inline autocomplete (Copilot)`}
             <Tooltip
               title="The inline copilot completes code as you type, similar to GitHub Copilot. You can turn it on or off here."
               placement="right"
@@ -560,7 +555,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         {tempSettings.features.inlineCompletion.enabled && (
           <>
             <Grid item xs={6}>
-              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Model</InputLabel>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Copilot Model</InputLabel>
             </Grid>
             <Grid item xs={6}>
               {renderModelSelect('inlineCompletion')}
@@ -595,7 +590,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   return (
     <SettingsContainer>
       <Typography variant="h5" gutterBottom>
-        Pretzel AI Settings
+        Pretzel Settings
       </Typography>
       <Fade in={showErrorBox} timeout={1000}>
         <ErrorContainer sx={{ display: showErrorBox ? 'block' : 'none' }}>
@@ -623,7 +618,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         </ErrorContainer>
       </Fade>
       {renderAIChatSettings()}
-      <SectionDivider sx={{ my: 2 }} />
+      <Divider sx={{ my: 2 }} />
       {renderInlineCopilotSettings()}
       <SectionDivider sx={{ my: 2 }} />
       <SectionTitle variant="h6">Configure AI Services</SectionTitle>

@@ -2617,7 +2617,7 @@ __metadata:
 
 "@jupyterlab/application@file:../packages/application::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.7
-  resolution: "@jupyterlab/application@file:../packages/application#../packages/application::hash=470a5c&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/application@file:../packages/application#../packages/application::hash=bd6be4&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@fortawesome/fontawesome-free": ^5.12.0
     "@jupyterlab/apputils": ^4.3.0
@@ -2639,7 +2639,7 @@ __metadata:
     "@lumino/properties": ^2.0.1
     "@lumino/signaling": ^2.1.2
     "@lumino/widgets": ^2.3.2
-  checksum: 4bec774cc58337d1f3158115499f3bad91b3466741c8f6ca8e5e23c47759f4de64fd3d99dbfd67f4670a2db2a07f3b66ced41fb881744ed612288b3a464c4233
+  checksum: 958a9d78a9b269e456c3747752d586ff4cba66485616d384a92c78738e29a778f08ffcf9956ffa47a0e90d5bbc00aa9eee695c5ad42ed4ca657fd3d0a95df78f
   languageName: node
   linkType: hard
 
@@ -4884,6 +4884,7 @@ __metadata:
     "@jupyterlab/codemirror": ^4.2.0
     "@jupyterlab/completer": ^4.2.0
     "@jupyterlab/coreutils": ^6.2.0
+    "@jupyterlab/mainmenu": ^4.2.0
     "@jupyterlab/notebook": ^4.2.0
     "@jupyterlab/outputarea": ^4.2.0
     "@jupyterlab/rendermime": ^4.2.0
@@ -4924,7 +4925,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=19e663&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=0d3767&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
@@ -4939,6 +4940,7 @@ __metadata:
     "@jupyterlab/codemirror": ^4.2.0
     "@jupyterlab/completer": ^4.2.0
     "@jupyterlab/coreutils": ^6.2.0
+    "@jupyterlab/mainmenu": ^4.2.0
     "@jupyterlab/notebook": ^4.2.0
     "@jupyterlab/outputarea": ^4.2.0
     "@jupyterlab/rendermime": ^4.2.0
@@ -4955,7 +4957,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 929dd1bd6afcc9c487a89a68e29e7de8c2416968b7ca15348939bb4add11d5635942e4671b59b55e8985420aa07065d588aec23ef84970f8166a5a3ffa662c77
+  checksum: 2ebc944915eb13ff898cb3d7113f34d4af0d8d27daffdee4e41edf508eb44bad95dfc1245d94d53340f262e6d8b6929140db6f36cd443ed1b0ab5260cde40482
   languageName: node
   linkType: hard
 
