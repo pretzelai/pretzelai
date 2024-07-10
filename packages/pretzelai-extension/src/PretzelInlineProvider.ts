@@ -268,8 +268,8 @@ Fill in the blank to complete the code block. Your response should include only 
             });
             completion = openaiResponse.choices[0].message.content;
           } else if (copilotProvider === 'Mistral' && mistralApiKey) {
-            // FIXME: Allow for newer data types
-            if (copilotModel === 'mistral-medium') {
+            // FIXME: Allow for newer model types
+            if (copilotModel === 'codestral-latest') {
               const data = await fetch('https://api.mistral.ai/v1/fim/completions', {
                 method: 'POST',
                 headers: {
