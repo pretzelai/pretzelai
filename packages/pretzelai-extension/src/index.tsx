@@ -251,8 +251,35 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
     loadAIClient(); // first time load, later settings will trigger this
 
+    const getKernel = async () => {
+      const sessionManager = app.serviceManager.sessions;
+      // @ts-expect-error typescript weird
+      const models = sessionManager._models;
+      console.log('🚀 ~ getKernel ~ models:', models);
+      const modelIds = Array.from(models.entries());
+      console.log('🚀 ~ getKernel ~ modelIds:', modelIds);
+      // @ts-expect-error typescript weird
+      const session = await sessionManager.connectTo({ model: models.get(modelIds[0][0]) });
+      console.log('🚀 ~ getKernel ~ session:', session);
+      const code = '%load_ext sql';
+      console.log('🚀 ~ getKernel ~ code:', code);
+
+      try {
+        // @ts-expect-error typescript weird
+        session._kernel.requestExecute({
+          code
+        });
+      } catch (error) {
+        console.error('Error executing SQL extension:', error);
+      }
+    };
     notebookTracker.currentChanged.connect(() => {
       getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+      try {
+        getKernel();
+      } catch (error) {
+        console.error('Error initializing session context or executing SQL extension:', error);
+      }
     });
 
     // getEmbeddings when a file is renamed
