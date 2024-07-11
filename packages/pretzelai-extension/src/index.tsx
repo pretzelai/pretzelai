@@ -252,25 +252,23 @@ const extension: JupyterFrontEndPlugin<void> = {
     loadAIClient(); // first time load, later settings will trigger this
 
     const getKernel = async () => {
-      const sessionManager = app.serviceManager.sessions;
-      // @ts-expect-error typescript weird
-      const models = sessionManager._models;
-      console.log('🚀 ~ getKernel ~ models:', models);
-      const modelIds = Array.from(models.entries());
-      console.log('🚀 ~ getKernel ~ modelIds:', modelIds);
-      // @ts-expect-error typescript weird
-      const session = await sessionManager.connectTo({ model: models.get(modelIds[0][0]) });
-      console.log('🚀 ~ getKernel ~ session:', session);
-      const code = '%load_ext sql';
-      console.log('🚀 ~ getKernel ~ code:', code);
-
-      try {
+      const path = notebookTracker.currentWidget?.context.path;
+      if (path) {
+        const sessionManager = app.serviceManager.sessions;
         // @ts-expect-error typescript weird
-        session._kernel.requestExecute({
-          code
-        });
-      } catch (error) {
-        console.error('Error executing SQL extension:', error);
+        const models = Array.from(sessionManager._models.entries());
+        // @ts-expect-error typescript weird
+        const currentModel = models.find(model => model[1].path === path)[1];
+        const session = await sessionManager.connectTo({ model: currentModel });
+        const code = '%load_ext sql';
+        try {
+          // @ts-expect-error typescript weird
+          session._kernel.requestExecute({
+            code
+          });
+        } catch (error) {
+          console.error('Error executing SQL extension:', error);
+        }
       }
     };
     notebookTracker.currentChanged.connect(() => {
