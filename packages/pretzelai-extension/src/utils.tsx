@@ -560,7 +560,8 @@ export const generateAIStream = async ({
     azureApiKey,
     deploymentId,
     mistralApiKey,
-    mistralModel
+    mistralModel,
+    anthropicApiKey
   });
 };
 

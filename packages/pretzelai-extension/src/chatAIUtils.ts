@@ -182,7 +182,8 @@ export const chatAIStream = async ({
     setReferenceSource('');
     setIsAiGenerating(false);
   } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && messages) {
-    const stream = await streamAnthropicCompletion(anthropicApiKey, messagesWithInjection, aiChatModelString);
+    const filteredMessages = messagesWithInjection.filter((msg, index) => index !== 1);
+    const stream = await streamAnthropicCompletion(anthropicApiKey, filteredMessages, aiChatModelString);
 
     for await (const chunk of stream) {
       if (chunk.choices[0]?.delta?.content) {

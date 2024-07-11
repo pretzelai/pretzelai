@@ -143,25 +143,26 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           description: 'AI models from Anthropic.',
           models: {
             'claude-3-5-sonnet-20240620': {
-              displayName: 'Claude 3.5 Sonnet',
-              description: 'Latest Claude 3.5 Sonnet model.',
+              displayName: 'Claude-3.5 Sonnet',
+              description:
+                'The best model from Anthropic. Fast and highly capable, better than GPT-4 series of models.',
               canBeUsedForChat: true,
               canBeUsedForInlineCompletion: true
             },
             'claude-3-opus-20240229': {
-              displayName: 'Claude 3 Opus',
-              description: 'Most capable Claude model.',
+              displayName: 'Claude-3 Opus',
+              description: 'Slow but highly capable model from Anthropic.',
               canBeUsedForChat: true,
               canBeUsedForInlineCompletion: true
             },
             'claude-3-sonnet-20240229': {
-              displayName: 'Claude 3 Sonnet',
+              displayName: 'Claude-3 Sonnet',
               description: 'Balanced model for various tasks.',
               canBeUsedForChat: true,
               canBeUsedForInlineCompletion: true
             },
             'claude-3-haiku-20240307': {
-              displayName: 'Claude 3 Haiku',
+              displayName: 'Claude-3 Haiku',
               description: 'Fastest Claude model, good for simpler tasks.',
               canBeUsedForChat: true,
               canBeUsedForInlineCompletion: true
