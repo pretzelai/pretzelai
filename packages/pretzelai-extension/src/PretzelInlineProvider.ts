@@ -16,7 +16,7 @@ import {
 } from '@jupyterlab/completer';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { PLUGIN_ID } from './utils';
+import { PLUGIN_ID, streamAnthropicCompletion } from './utils';
 import OpenAI from 'openai';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import posthog from 'posthog-js';
@@ -197,11 +197,12 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     const mistralApiKey = mistralSettings?.apiKey?.value || '';
     const openAiSettings = providers['OpenAI']?.apiSettings || {};
     const openAiApiKey = openAiSettings?.apiKey?.value || '';
-
-    let azureSettings = providers['Azure']?.apiSettings || {};
-    let azureApiKey = azureSettings?.apiKey?.value || '';
-    let azureBaseUrl = azureSettings?.baseUrl?.value || '';
-    let azureDeploymentName = azureSettings?.deploymentName?.value || '';
+    const azureSettings = providers['Azure']?.apiSettings || {};
+    const azureApiKey = azureSettings?.apiKey?.value || '';
+    const azureBaseUrl = azureSettings?.baseUrl?.value || '';
+    const azureDeploymentName = azureSettings?.deploymentName?.value || '';
+    const anthropicSettings = providers['Anthropic']?.apiSettings || {};
+    const anthropicApiKey = anthropicSettings?.apiKey?.value || '';
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
@@ -324,6 +325,23 @@ ${prompt}[BLANK]${suffix}
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
             ]);
             completion = result.choices[0].text;
+          } else if (copilotProvider === 'Anthropic' && anthropicApiKey) {
+            const messages = [
+              {
+                role: 'user',
+                content: `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+              }
+            ];
+            const stream = await streamAnthropicCompletion(anthropicApiKey, messages, copilotModel, 500);
+            let completionContent = '';
+            for await (const chunk of stream) {
+              completionContent += chunk.choices[0].delta.content;
+            }
+            completion = completionContent.trim();
           } else {
             completion = '';
           }
