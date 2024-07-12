@@ -10,6 +10,7 @@ import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import { OpenAI } from 'openai';
 import { ChatCompletionMessage } from 'openai/resources';
 import MistralClient, { Message } from '@mistralai/mistralai';
+import { streamAnthropicCompletion } from './utils';
 
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
@@ -56,6 +57,7 @@ export const chatAIStream = async ({
   azureApiKey,
   deploymentId,
   mistralApiKey,
+  anthropicApiKey,
   renderChat,
   messages,
   topSimilarities,
@@ -73,6 +75,7 @@ export const chatAIStream = async ({
   azureApiKey?: string;
   deploymentId?: string;
   mistralApiKey?: string;
+  anthropicApiKey?: string;
   renderChat: (message: string) => void;
   messages: OpenAI.ChatCompletionMessage[];
   topSimilarities: string[];
@@ -173,6 +176,17 @@ export const chatAIStream = async ({
 
     for await (const chunk of chatStream) {
       if (chunk.choices[0].delta.content) {
+        renderChat(chunk.choices[0].delta.content);
+      }
+    }
+    setReferenceSource('');
+    setIsAiGenerating(false);
+  } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && messages) {
+    const filteredMessages = messagesWithInjection.filter((msg, index) => index !== 1);
+    const stream = await streamAnthropicCompletion(anthropicApiKey, filteredMessages, aiChatModelString);
+
+    for await (const chunk of stream) {
+      if (chunk.choices[0]?.delta?.content) {
         renderChat(chunk.choices[0].delta.content);
       }
     }

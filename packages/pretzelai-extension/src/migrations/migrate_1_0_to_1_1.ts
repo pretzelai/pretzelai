@@ -202,6 +202,42 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
               showSetting: true
             }
           }
+        },
+        Anthropic: {
+          name: 'Anthropic',
+          enabled: true,
+          showSettings: true,
+          apiSettings: {
+            apiKey: {
+              type: 'string',
+              required: true,
+              default: '',
+              value: '',
+              showSetting: true
+            }
+          },
+          models: {
+            'claude-3-5-sonnet-20240620': {
+              name: 'claude-3-5-sonnet-20240620',
+              enabled: true,
+              showSetting: true
+            },
+            'claude-3-opus-20240229': {
+              name: 'claude-3-opus-20240229',
+              enabled: true,
+              showSetting: true
+            },
+            'claude-3-sonnet-20240229': {
+              name: 'claude-3-sonnet-20240229',
+              enabled: true,
+              showSetting: true
+            },
+            'claude-3-haiku-20240307': {
+              name: 'claude-3-haiku-20240307',
+              enabled: true,
+              showSetting: true
+            }
+          }
         }
       }
     };
@@ -343,6 +379,42 @@ export function returnDefaults_1_1(): any {
           },
           'mistral-large-latest': {
             name: 'mistral-large-latest',
+            enabled: true,
+            showSetting: true
+          }
+        }
+      },
+      Anthropic: {
+        name: 'Anthropic',
+        enabled: true,
+        showSettings: true,
+        apiSettings: {
+          apiKey: {
+            type: 'string',
+            required: true,
+            default: '',
+            value: '',
+            showSetting: true
+          }
+        },
+        models: {
+          'claude-3-5-sonnet-20240620': {
+            name: 'claude-3-5-sonnet-20240620',
+            enabled: true,
+            showSetting: true
+          },
+          'claude-3-opus-20240229': {
+            name: 'claude-3-opus-20240229',
+            enabled: true,
+            showSetting: true
+          },
+          'claude-3-sonnet-20240229': {
+            name: 'claude-3-sonnet-20240229',
+            enabled: true,
+            showSetting: true
+          },
+          'claude-3-haiku-20240307': {
+            name: 'claude-3-haiku-20240307',
             enabled: true,
             showSetting: true
           }

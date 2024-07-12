@@ -2473,7 +2473,7 @@ __metadata:
 
 "@jupyterlab/application-extension@file:../packages/application-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.7
-  resolution: "@jupyterlab/application-extension@file:../packages/application-extension#../packages/application-extension::hash=6f23b7&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/application-extension@file:../packages/application-extension#../packages/application-extension::hash=9e81f2&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@jupyterlab/application": ^4.2.7
     "@jupyterlab/apputils": ^4.3.0
@@ -2490,7 +2490,7 @@ __metadata:
     "@lumino/disposable": ^2.1.2
     "@lumino/widgets": ^2.3.2
     react: ^18.2.0
-  checksum: 1d6fe027a3422a2652b503522bf718fb7f893134494be3966d83b659139c858cfd515092aabd865d78a234e91d87770bfccaa94f08b667466ec628b2341f2a1d
+  checksum: 5dfbcfd7b2b1fcfb95acb4dc5b662fe2fc2421a6cade53d940c784b452284e7fabe09506e3e849d9ae22eb1d82ae146d704edd05cff8d59b0fb451511ff80b48
   languageName: node
   linkType: hard
 
@@ -2609,7 +2609,7 @@ __metadata:
 
 "@jupyterlab/application@file:../packages/application::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.7
-  resolution: "@jupyterlab/application@file:../packages/application#../packages/application::hash=951b68&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/application@file:../packages/application#../packages/application::hash=470a5c&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@fortawesome/fontawesome-free": ^5.12.0
     "@jupyterlab/apputils": ^4.3.0
@@ -2631,7 +2631,7 @@ __metadata:
     "@lumino/properties": ^2.0.1
     "@lumino/signaling": ^2.1.2
     "@lumino/widgets": ^2.3.2
-  checksum: 5450d0419d59a77c51a1cefefc189708ca5db9bd50e7f936cef8950603b3d377d7c67355230d55b5fedeff2d8799d598672e8e466ca6c96609b75f8d208e1769
+  checksum: 4bec774cc58337d1f3158115499f3bad91b3466741c8f6ca8e5e23c47759f4de64fd3d99dbfd67f4670a2db2a07f3b66ced41fb881744ed612288b3a464c4233
   languageName: node
   linkType: hard
 
@@ -2669,7 +2669,7 @@ __metadata:
 
 "@jupyterlab/apputils-extension@file:../packages/apputils-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.0
-  resolution: "@jupyterlab/apputils-extension@file:../packages/apputils-extension#../packages/apputils-extension::hash=b8bab4&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/apputils-extension@file:../packages/apputils-extension#../packages/apputils-extension::hash=d68030&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@jupyterlab/application": ^4.2.7
     "@jupyterlab/apputils": ^4.3.0
@@ -2694,7 +2694,7 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
     react-toastify: ^9.0.8
-  checksum: 95cfb62ed7699b0f56ccbf593a6a148e369f29006f49f343e8cd7c065b931dd345dc7714ee9c514466136311ac8ecd4b8d7d6cf82eb3e42a1fb59118f5d13cac
+  checksum: 699cb8c41cfbedc1d5ce80d313282a3eb7b5f8c41e44579d7e2512d3ffcc6ba157c8ed9d64caf2efdbcc894402901c7b6013dbe5b11c2dd9b949fe4549b0cb93
   languageName: node
   linkType: hard
 
@@ -2986,7 +2986,7 @@ __metadata:
 
 "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.0
-  resolution: "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension#../packages/codemirror-extension::hash=45e964&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/codemirror-extension@file:../packages/codemirror-extension#../packages/codemirror-extension::hash=b68b91&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@codemirror/commands": ^6.3.3
     "@codemirror/lang-markdown": ^6.2.4
@@ -3007,7 +3007,7 @@ __metadata:
     "@rjsf/utils": ^5.13.4
     "@rjsf/validator-ajv8": ^5.13.4
     react: ^18.2.0
-  checksum: 5e37985bda55723de34e2c3f2431a87965fc7ed9ce50ead81e2a44d63ab71eb714828bdfca9616543abf577895e1217f0f8ff700ca2ddd9121497dcfb982574f
+  checksum: c49f8ce22eda027437f7ee640a525027d1611a9c7b14fb0c81a06454ed6868de294fe814fa2f89e2ea4fd802383a8799525dddb867f7504c4f7ba4f3f0e6a455
   languageName: node
   linkType: hard
 
@@ -3999,7 +3999,7 @@ __metadata:
 
 "@jupyterlab/help-extension@file:../packages/help-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.0
-  resolution: "@jupyterlab/help-extension@file:../packages/help-extension#../packages/help-extension::hash=fb1b82&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/help-extension@file:../packages/help-extension#../packages/help-extension::hash=8b33aa&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@jupyterlab/application": ^4.2.7
     "@jupyterlab/apputils": ^4.3.0
@@ -4013,7 +4013,7 @@ __metadata:
     "@lumino/virtualdom": ^2.0.1
     "@lumino/widgets": ^2.3.2
     react: ^18.2.0
-  checksum: ccbdb53c47f819ae15afdd5e30b2e5562567ace25edeb7afac564c18072766ec65982981c77c2d68f40fd1116a65e359aa43b107a5b673793381d20d7d9426d3
+  checksum: 2f6cc3254d5411bb54627163177bf566fd076050962f265693a28b2806376c62ec42bedbd3661c98287dc9007e28e048a6224c37761a4ebdfe3dc5021397c00c
   languageName: node
   linkType: hard
 
@@ -4917,13 +4917,15 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=acbdf7&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=474c21&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
     "@codemirror/language": ^6.10.1
     "@codemirror/state": ^6.4.1
     "@codemirror/view": ^6.26.0
+    "@emotion/react": ^11.11.4
+    "@emotion/styled": ^11.11.5
     "@jupyterlab/application": ^4.2.7
     "@jupyterlab/apputils": ^4.3.0
     "@jupyterlab/cells": ^4.2.0
@@ -4947,7 +4949,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: ae6531291a5eecf77bf2c3ccfc7efd861583cdc4c243a0c4698d18e433cd804b5981fed881f134f845f94f23c182bd5a1428ada60e39f14bd9b82b02b9bf43a1
+  checksum: 8238b6dac5c82aeceead41c80e563ebc36b96f3f52700ae4d2126dc24ab4cb3a28bf30c4d632f93f37f06a1fd89700de6b6cea8ef1ed72a1721890eb97d3a84d
   languageName: node
   linkType: hard
 
@@ -6139,13 +6141,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/core-downloads-tracker@npm:^5.15.19":
-  version: 5.15.19
-  resolution: "@mui/core-downloads-tracker@npm:5.15.19"
-  checksum: 32dd442d72a4cf4abea0e5c0a325707c3f8aba16b7b40ed674da2c068ed10d686f1941240e527407d685e00ed12931c331d99265e1ed570630c856ffbe291c23
-  languageName: node
-  linkType: hard
-
 "@mui/core-downloads-tracker@npm:^5.16.0":
   version: 5.16.0
   resolution: "@mui/core-downloads-tracker@npm:5.16.0"
@@ -6169,40 +6164,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/material@npm:^5.15.18":
-  version: 5.15.19
-  resolution: "@mui/material@npm:5.15.19"
-  dependencies:
-    "@babel/runtime": ^7.23.9
-    "@mui/base": 5.0.0-beta.40
-    "@mui/core-downloads-tracker": ^5.15.19
-    "@mui/system": ^5.15.15
-    "@mui/types": ^7.2.14
-    "@mui/utils": ^5.15.14
-    "@types/react-transition-group": ^4.4.10
-    clsx: ^2.1.0
-    csstype: ^3.1.3
-    prop-types: ^15.8.1
-    react-is: ^18.2.0
-    react-transition-group: ^4.4.5
-  peerDependencies:
-    "@emotion/react": ^11.5.0
-    "@emotion/styled": ^11.3.0
-    "@types/react": ^17.0.0 || ^18.0.0
-    react: ^17.0.0 || ^18.0.0
-    react-dom: ^17.0.0 || ^18.0.0
-  peerDependenciesMeta:
-    "@emotion/react":
-      optional: true
-    "@emotion/styled":
-      optional: true
-    "@types/react":
-      optional: true
-  checksum: 001095973c5d8581c97b05bca888d9aae51876684c9bcf7e1841635287c225ac9af94ca13a8baaa410f60b16b1ebb3003efa85a008d7338e23c12272cbf29ecb
-  languageName: node
-  linkType: hard
-
-"@mui/material@npm:^5.15.21":
+"@mui/material@npm:^5.15.18, @mui/material@npm:^5.15.21":
   version: 5.16.0
   resolution: "@mui/material@npm:5.16.0"
   dependencies:
@@ -6232,23 +6194,6 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 3ba69218e2cd02dae95e039bec8822b2f2ba1ad69b5add3035e490a489e3c81db41b3c5709ab7845f63642d2ea13f4039618a50a1696a132e5e69730f516aed2
-  languageName: node
-  linkType: hard
-
-"@mui/private-theming@npm:^5.15.14":
-  version: 5.15.14
-  resolution: "@mui/private-theming@npm:5.15.14"
-  dependencies:
-    "@babel/runtime": ^7.23.9
-    "@mui/utils": ^5.15.14
-    prop-types: ^15.8.1
-  peerDependencies:
-    "@types/react": ^17.0.0 || ^18.0.0
-    react: ^17.0.0 || ^18.0.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 1b1ef54e8281c9b13fcc58f4c39682efc610946a68402283c19fcfbce8a7d7a231d61b536d6df9bf7a59a1426591bd403a453a59eb8efb9689437fb58554dc8c
   languageName: node
   linkType: hard
 
@@ -6287,34 +6232,6 @@ __metadata:
     "@emotion/styled":
       optional: true
   checksum: 23b45c859a4f0d2b10933d06a6082c0ff093f7b6d8d32a2bfe3a6e515fe46d7a38ca9e7150d45c025a2e98d963bae9a5991d131cf4748b62670075ef0fa321ed
-  languageName: node
-  linkType: hard
-
-"@mui/system@npm:^5.15.15":
-  version: 5.15.15
-  resolution: "@mui/system@npm:5.15.15"
-  dependencies:
-    "@babel/runtime": ^7.23.9
-    "@mui/private-theming": ^5.15.14
-    "@mui/styled-engine": ^5.15.14
-    "@mui/types": ^7.2.14
-    "@mui/utils": ^5.15.14
-    clsx: ^2.1.0
-    csstype: ^3.1.3
-    prop-types: ^15.8.1
-  peerDependencies:
-    "@emotion/react": ^11.5.0
-    "@emotion/styled": ^11.3.0
-    "@types/react": ^17.0.0 || ^18.0.0
-    react: ^17.0.0 || ^18.0.0
-  peerDependenciesMeta:
-    "@emotion/react":
-      optional: true
-    "@emotion/styled":
-      optional: true
-    "@types/react":
-      optional: true
-  checksum: 9ca96d5f66b2a9d6471909cc98c671eea5ec0a6d58a7ec071073b9e5200b95c3f017f0ca5cc946abc7f83074bd11830ca18f5e30bc98e25cd6ca217bd1b3a26f
   languageName: node
   linkType: hard
 
@@ -6358,25 +6275,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^5.15.14":
-  version: 5.15.14
-  resolution: "@mui/utils@npm:5.15.14"
-  dependencies:
-    "@babel/runtime": ^7.23.9
-    "@types/prop-types": ^15.7.11
-    prop-types: ^15.8.1
-    react-is: ^18.2.0
-  peerDependencies:
-    "@types/react": ^17.0.0 || ^18.0.0
-    react: ^17.0.0 || ^18.0.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 36543ba7e3b65fb3219ed27e8f1455aff15b47a74c9b642c63e60774e22baa6492a196079e72bcfa5a570421dab32160398f892110bd444428bcf8b266b11893
-  languageName: node
-  linkType: hard
-
-"@mui/utils@npm:^5.16.0":
+"@mui/utils@npm:^5.15.14, @mui/utils@npm:^5.16.0":
   version: 5.16.0
   resolution: "@mui/utils@npm:5.16.0"
   dependencies:

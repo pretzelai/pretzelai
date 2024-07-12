@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /*
  * Copyright (c) Pretzel AI GmbH.
  * This file is part of the Pretzel project and is licensed under the
@@ -382,7 +383,8 @@ const setupStream = async ({
   azureApiKey,
   deploymentId,
   mistralApiKey,
-  mistralModel
+  mistralModel,
+  anthropicApiKey
 }: {
   aiChatModelProvider: string;
   aiChatModelString: string;
@@ -394,6 +396,7 @@ const setupStream = async ({
   deploymentId?: string;
   mistralApiKey?: string;
   mistralModel?: string;
+  anthropicApiKey?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
 
@@ -473,6 +476,11 @@ const setupStream = async ({
         }
       }
     };
+  } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && prompt) {
+    const messages = [{ role: 'user', content: prompt }];
+    const stream = await streamAnthropicCompletion(anthropicApiKey, messages, aiChatModelString);
+
+    return stream;
   } else {
     throw new Error('Invalid AI service');
   }
@@ -499,6 +507,7 @@ export const generateAIStream = async ({
   deploymentId,
   mistralApiKey,
   mistralModel,
+  anthropicApiKey,
   isInject
 }: {
   aiChatModelProvider: string;
@@ -519,6 +528,7 @@ export const generateAIStream = async ({
   deploymentId: string;
   mistralApiKey: string;
   mistralModel: string;
+  anthropicApiKey: string;
   isInject: boolean;
 }): Promise<AsyncIterable<any>> => {
   const { extractedCode } = getSelectedCode(notebookTracker);
@@ -550,7 +560,8 @@ export const generateAIStream = async ({
     azureApiKey,
     deploymentId,
     mistralApiKey,
-    mistralModel
+    mistralModel,
+    anthropicApiKey
   });
 };
 
@@ -615,4 +626,61 @@ export async function deleteExistingEmbeddings(app: JupyterFrontEnd, notebookTra
   } catch (error) {
     console.error('Error deleting embeddings files:', error);
   }
+}
+
+async function getCookie(name: string): Promise<string> {
+  const r = document.cookie.match('\\b' + name + '=([^;]*)\\b');
+  return r ? r[1] : '';
+}
+
+export async function streamAnthropicCompletion(
+  apiKey: string,
+  messages: any[],
+  model: string = 'claude-3-5-sonnet-20240620',
+  maxTokens: number = 4096
+): Promise<AsyncIterable<any>> {
+  const xsrfToken = await getCookie('_xsrf');
+
+  const response = await fetch('/anthropic/complete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-XSRFToken': xsrfToken
+    },
+    body: JSON.stringify({
+      api_key: apiKey,
+      messages: messages,
+      max_tokens: maxTokens,
+      model: model
+    })
+  });
+
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+
+  return {
+    async *[Symbol.asyncIterator]() {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const events = chunk.split('\n\n');
+
+        for (const event of events) {
+          if (event.trim() === '') continue;
+
+          const [eventType, eventData] = event.split('\n');
+          const type = eventType.replace('event: ', '');
+          const data = JSON.parse(eventData.replace('data: ', ''));
+
+          if (type === 'content_block_delta') {
+            yield { choices: [{ delta: { content: data.delta.text } }] };
+          } else if (type === 'message_stop') {
+            return;
+          }
+        }
+      }
+    }
+  };
 }

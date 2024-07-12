@@ -52,6 +52,7 @@ interface IChatProps {
   azureApiKey?: string;
   deploymentId?: string;
   mistralApiKey?: string;
+  anthropicApiKey?: string;
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
@@ -69,6 +70,7 @@ export function Chat({
   azureApiKey,
   deploymentId,
   mistralApiKey,
+  anthropicApiKey,
   notebookTracker,
   app,
   rmRegistry,
@@ -251,6 +253,7 @@ export function Chat({
       azureApiKey,
       deploymentId,
       mistralApiKey,
+      anthropicApiKey,
       renderChat,
       messages: formattedMessages as ChatCompletionMessage[],
       topSimilarities,

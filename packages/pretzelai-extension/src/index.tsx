@@ -111,6 +111,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     let mistralApiKey = '';
     let mistralModel = '';
 
+    let anthropicApiKey = '';
+
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
     let pretzelSettingsJSON: any = null;
 
@@ -137,6 +139,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       ) {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && mistralModel) {
+        isAIEnabled = true;
+      } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey) {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Pretzel AI') {
         isAIEnabled = true;
@@ -175,6 +179,10 @@ const extension: JupyterFrontEndPlugin<void> = {
         const mistralProvider = providers['Mistral'] || {};
         mistralApiKey = mistralProvider?.apiSettings?.apiKey?.value || '';
         mistralModel = aiChatSettings.modelString || 'mistral-tiny';
+
+        // Anthropic settings
+        const anthropicProvider = providers['Anthropic'] || {};
+        anthropicApiKey = anthropicProvider?.apiSettings?.apiKey?.value || '';
 
         // Posthog settings
         posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
@@ -424,6 +432,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           deploymentId={azureDeploymentName}
           mistralApiKey={mistralApiKey}
           mistralModel={mistralModel}
+          anthropicApiKey={anthropicApiKey}
           commands={commands}
           traceback={traceback}
           placeholderEnabled={placeholderEnabled}
@@ -481,6 +490,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               deploymentId={azureDeploymentName}
               mistralApiKey={mistralApiKey}
               mistralModel={mistralModel}
+              anthropicApiKey={anthropicApiKey}
               commands={commands}
               traceback={''}
               placeholderEnabled={placeholderEnabled}
@@ -511,6 +521,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         azureApiKey,
         deploymentId: azureDeploymentName,
         mistralApiKey,
+        anthropicApiKey,
         notebookTracker,
         app,
         rmRegistry,

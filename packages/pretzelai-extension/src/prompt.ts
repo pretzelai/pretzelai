@@ -251,6 +251,30 @@ export const openaiEmbeddings = async (
       input: source
     });
   } else {
-    throw new Error('Invalid AI service');
+    const response = await fetch('/embed', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        texts: [source]
+      })
+    });
+    const data = await response.json();
+    return {
+      data: [
+        {
+          embedding: data.embeddings[0],
+          index: 0,
+          object: 'embedding'
+        }
+      ],
+      model: 'local-jina-embeddings-v2-small-en',
+      object: 'list',
+      usage: {
+        prompt_tokens: source.split(' ').length,
+        total_tokens: source.split(' ').length
+      }
+    } as OpenAIEmbeddings;
   }
 };

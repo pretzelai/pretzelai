@@ -38,7 +38,7 @@ import { PLUGIN_ID } from '../utils';
 import { getProvidersInfo } from '../migrations/providerInfo';
 import { IProvidersInfo } from '../migrations/providerInfo';
 
-const AI_SERVICES_ORDER = ['OpenAI', 'Mistral', 'Azure'];
+const AI_SERVICES_ORDER = ['OpenAI', 'Mistral', 'Anthropic', 'Azure'];
 
 interface IPretzelSettingsProps {
   settingRegistry: ISettingRegistry;
@@ -375,6 +375,36 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       }
     };
 
+    const validateAnthropic = async () => {
+      const anthropicProvider = tempSettings.providers.Anthropic;
+      if (anthropicProvider?.enabled && anthropicProvider?.apiSettings?.apiKey?.value) {
+        try {
+          const response = await fetch('/anthropic/verify_key', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              // eslint-disable-next-line camelcase
+              api_key: anthropicProvider.apiSettings.apiKey.value
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.valid) {
+            return
+          } else {
+            errors['providers.Anthropic.apiSettings.apiKey'] = data.error || 'Invalid Anthropic API Key';
+          }
+        } catch (error) {
+          console.error('Error validating Anthropic API Key:', error);
+          errors['providers.Anthropic.apiSettings.apiKey'] =
+            'Error validating Anthropic API Key. Please check your internet connection.';
+        }
+      }
+    };
+
     const validateModelApiKey = (featurePath: string) => {
       const { provider } = selectedModels[featurePath];
       if (provider !== 'Pretzel AI') {
@@ -418,6 +448,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     await validateOpenAI();
     validateAzure();
     await validateMistral();
+    await validateAnthropic();
     validateCodeMatchThreshold();
 
     setValidationErrors(errors);

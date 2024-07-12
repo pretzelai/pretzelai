@@ -29,6 +29,7 @@ interface IAIAssistantComponentProps {
   deploymentId: string;
   mistralApiKey: string;
   mistralModel: string;
+  anthropicApiKey: string;
   commands: CommandRegistry;
   traceback: string;
   placeholderEnabled: string;
@@ -95,6 +96,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         deploymentId: props.deploymentId,
         mistralApiKey: props.mistralApiKey,
         mistralModel: props.mistralModel,
+        anthropicApiKey: props.anthropicApiKey,
         isInject: false
       });
 
@@ -153,6 +155,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           deploymentId: props.deploymentId,
           mistralApiKey: props.mistralApiKey,
           mistralModel: props.mistralModel,
+          anthropicApiKey: props.anthropicApiKey,
           isInject: isInject
         });
 
