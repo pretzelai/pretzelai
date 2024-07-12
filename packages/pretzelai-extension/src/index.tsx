@@ -113,6 +113,8 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let anthropicApiKey = '';
 
+    let ollamaUrl = '';
+
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
     let pretzelSettingsJSON: any = null;
 
@@ -146,6 +148,48 @@ const extension: JupyterFrontEndPlugin<void> = {
         isAIEnabled = true;
       } else {
         isAIEnabled = false;
+      }
+    }
+
+    async function ollamaLoad(): Promise<void> {
+      const ollamaProvider = pretzelSettingsJSON?.providers?.Ollama;
+      if (!ollamaProvider || !ollamaProvider.enabled) {
+        return;
+      }
+
+      const baseUrl = ollamaProvider.apiSettings?.baseUrl?.value || 'http://localhost:11434';
+
+      try {
+        const response = await fetch(`${baseUrl}/api/tags`);
+        if (!response.ok) {
+          console.log(
+            `Ollama not found at ${baseUrl}. If you have Ollama running, please change the URL in Pretzel AI Settings.`
+          );
+          return;
+        }
+
+        // Fetch Ollama models
+        ollamaUrl = baseUrl;
+        const data = await response.json();
+        if (Array.isArray(data.models) && data.models.length > 0) {
+          // Update Ollama models in settings
+          pretzelSettingsJSON.providers.Ollama.models = data.models.reduce((acc: any, model: any) => {
+            acc[model.model] = {
+              name: model.model,
+              enabled: true,
+              showSetting: true
+            };
+            return acc;
+          }, {});
+
+          // Save updated settings
+          const settings = await settingRegistry.load(PLUGIN_ID);
+          await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
+
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking Ollama availability:', error);
       }
     }
 
@@ -203,6 +247,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     async function migrateAndSetSettings(): Promise<void> {
       try {
+        // first migrate if needed
         const settings = await settingRegistry.load(PLUGIN_ID);
         let pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
         let pretzelSettingsJSONVersion = settings.get('pretzelSettingsJSONVersion').composite as string;
@@ -215,7 +260,9 @@ const extension: JupyterFrontEndPlugin<void> = {
           await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
         }
 
+        // then load settings at startup
         await loadSettings();
+        await ollamaLoad();
       } catch (error) {
         console.error('Error migrating and setting settings:', error);
       }
