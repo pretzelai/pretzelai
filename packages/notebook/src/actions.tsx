@@ -120,6 +120,16 @@ export class NotebookActions {
   }
 
   /**
+   * A signal emitted when cells are about to be deleted.
+   */
+  static get cellsDeleted(): ISignal<
+    any,
+    { notebook: Notebook; cells: Cell[] }
+  > {
+    return Private.cellsDeleted;
+  }
+
+  /**
    * A private constructor for the `NotebookActions` class.
    *
    * #### Notes
@@ -371,8 +381,17 @@ export namespace NotebookActions {
     }
 
     const state = Private.getState(notebook);
+    const toDelete: Cell[] = [];
+
+    notebook.widgets.forEach(cell => {
+      if (notebook.isSelectedOrActive(cell)) {
+        toDelete.push(cell);
+      }
+    });
 
     Private.deleteCells(notebook);
+    // Emit signal after deletion
+    Private.cellsDeleted.emit({ notebook, cells: toDelete });
     void Private.handleState(notebook, state, true);
   }
 
@@ -2283,6 +2302,14 @@ namespace Private {
   export const outputCleared = new Signal<
     any,
     { notebook: Notebook; cell: Cell }
+  >({});
+
+  /**
+   * A signal that emits whenever a cell execution is scheduled.
+   */
+  export const cellsDeleted = new Signal<
+    any,
+    { notebook: Notebook; cells: Cell[] }
   >({});
 
   /**

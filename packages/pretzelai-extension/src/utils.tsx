@@ -384,7 +384,8 @@ const setupStream = async ({
   deploymentId,
   mistralApiKey,
   mistralModel,
-  anthropicApiKey
+  anthropicApiKey,
+  ollamaBaseUrl
 }: {
   aiChatModelProvider: string;
   aiChatModelString: string;
@@ -397,6 +398,7 @@ const setupStream = async ({
   mistralApiKey?: string;
   mistralModel?: string;
   anthropicApiKey?: string;
+  ollamaBaseUrl?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
 
@@ -481,6 +483,41 @@ const setupStream = async ({
     const stream = await streamAnthropicCompletion(anthropicApiKey, messages, aiChatModelString);
 
     return stream;
+  } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl && aiChatModelString && prompt) {
+    const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: aiChatModelString,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true
+      })
+    });
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let isReading = true;
+
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        while (isReading) {
+          const { done, value } = await reader.read();
+          if (done) {
+            isReading = false;
+          } else {
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.trim() !== '') {
+                const jsonResponse = JSON.parse(line);
+                yield { choices: [{ delta: { content: jsonResponse.message?.content || '' } }] };
+              }
+            }
+          }
+        }
+      }
+    };
   } else {
     throw new Error('Invalid AI service');
   }
@@ -508,6 +545,7 @@ export const generateAIStream = async ({
   mistralApiKey,
   mistralModel,
   anthropicApiKey,
+  ollamaBaseUrl,
   isInject
 }: {
   aiChatModelProvider: string;
@@ -529,6 +567,7 @@ export const generateAIStream = async ({
   mistralApiKey: string;
   mistralModel: string;
   anthropicApiKey: string;
+  ollamaBaseUrl: string;
   isInject: boolean;
 }): Promise<AsyncIterable<any>> => {
   const { extractedCode } = getSelectedCode(notebookTracker);
@@ -561,7 +600,8 @@ export const generateAIStream = async ({
     deploymentId,
     mistralApiKey,
     mistralModel,
-    anthropicApiKey
+    anthropicApiKey,
+    ollamaBaseUrl
   });
 };
 

@@ -203,6 +203,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     const azureDeploymentName = azureSettings?.deploymentName?.value || '';
     const anthropicSettings = providers['Anthropic']?.apiSettings || {};
     const anthropicApiKey = anthropicSettings?.apiKey?.value || '';
+    const ollamaBaseUrl = providers['Ollama']?.apiSettings?.baseUrl?.value || '';
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
@@ -340,6 +341,48 @@ Fill in the blank to complete the code block. Your response should include only 
             let completionContent = '';
             for await (const chunk of stream) {
               completionContent += chunk.choices[0].delta.content;
+            }
+            completion = completionContent.trim();
+          } else if (copilotProvider === 'Ollama' && ollamaBaseUrl) {
+            const messages = [
+              {
+                role: 'user',
+                content: `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+              }
+            ];
+            const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: copilotModel,
+                messages: messages,
+                stream: true
+              })
+            });
+            const reader = response.body!.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let isReading = true;
+            let completionContent = '';
+            while (isReading) {
+              const { done, value } = await reader.read();
+              if (done) {
+                isReading = false;
+              } else {
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                for (const line of lines) {
+                  if (line.trim() !== '') {
+                    const jsonResponse = JSON.parse(line);
+                    completionContent += jsonResponse.message?.content || '';
+                  }
+                }
+              }
             }
             completion = completionContent.trim();
           } else {
