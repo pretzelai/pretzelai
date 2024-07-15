@@ -30,6 +30,7 @@ interface IAIAssistantComponentProps {
   mistralApiKey: string;
   mistralModel: string;
   anthropicApiKey: string;
+  ollamaBaseUrl: string;
   commands: CommandRegistry;
   traceback: string;
   placeholderEnabled: string;
@@ -97,6 +98,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         mistralApiKey: props.mistralApiKey,
         mistralModel: props.mistralModel,
         anthropicApiKey: props.anthropicApiKey,
+        ollamaBaseUrl: props.ollamaBaseUrl,
         isInject: false
       });
 
@@ -156,6 +158,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           mistralApiKey: props.mistralApiKey,
           mistralModel: props.mistralModel,
           anthropicApiKey: props.anthropicApiKey,
+          ollamaBaseUrl: props.ollamaBaseUrl,
           isInject: isInject
         });
 

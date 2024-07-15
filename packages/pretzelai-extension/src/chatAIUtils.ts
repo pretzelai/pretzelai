@@ -58,6 +58,7 @@ export const chatAIStream = async ({
   deploymentId,
   mistralApiKey,
   anthropicApiKey,
+  ollamaBaseUrl,
   renderChat,
   messages,
   topSimilarities,
@@ -76,6 +77,7 @@ export const chatAIStream = async ({
   deploymentId?: string;
   mistralApiKey?: string;
   anthropicApiKey?: string;
+  ollamaBaseUrl?: string;
   renderChat: (message: string) => void;
   messages: OpenAI.ChatCompletionMessage[];
   topSimilarities: string[];
@@ -192,6 +194,39 @@ export const chatAIStream = async ({
     }
     setReferenceSource('');
     setIsAiGenerating(false);
+  } else if (aiChatModelProvider === 'Ollama') {
+    const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: aiChatModelString,
+        messages: messagesWithInjection,
+        stream: true
+      }),
+      signal
+    });
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let isReading = true;
+    while (isReading) {
+      const { done, value } = await reader.read();
+      if (done) {
+        isReading = false;
+        setReferenceSource('');
+        setIsAiGenerating(false);
+      } else {
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.trim() !== '') {
+            const jsonResponse = JSON.parse(line);
+            renderChat(jsonResponse.message?.content || '');
+          }
+        }
+      }
+    }
   } else {
     renderChat('ERROR: No model provided. Fix your settings in Settings > Pretzel AI Settings');
     setReferenceSource('');

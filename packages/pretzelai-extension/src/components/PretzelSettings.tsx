@@ -170,9 +170,9 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       const updatedModels = {};
       for (const modelKey of Object.keys(ollamaModels)) {
         updatedModels[modelKey] = {
-          displayName: `Ollama Model ${modelKey}`,
+          displayName: `${modelKey}`,
           description:
-            "Model provided by Ollama. Please see documentation for the model online to understand it's capabilities.",
+            "Model provided by Ollama. Please see model documentation online to understand it's capabilities.",
           canBeUsedForChat: true,
           canBeUsedForInlineCompletion: true
         };
@@ -189,7 +189,15 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     if (tempSettings.providers?.Ollama?.models) {
       updateOllamaProviderInfo();
     }
-  }, [JSON.stringify(tempSettings.providers?.Ollama?.models)]);
+  }, [JSON.stringify(tempSettings?.providers?.Ollama?.models)]);
+
+  useEffect(() => {
+    const ollamaBaseUrl = tempSettings.providers?.Ollama?.apiSettings?.baseUrl?.value;
+    const ollamaEnabled = tempSettings.providers?.Ollama?.enabled;
+    if (ollamaBaseUrl && ollamaEnabled) {
+      fetchOllamaModels(ollamaBaseUrl);
+    }
+  }, [tempSettings.providers?.Ollama?.enabled]);
 
   const handleRestoreDefaults = async () => {
     const currentVersion = tempSettings.version || '1.1';
@@ -237,7 +245,8 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       <Select
         value={`${selectedModels[featurePath].provider}:${selectedModels[featurePath].model}`}
         onChange={e => {
-          const [provider, model] = e.target.value.split(':');
+          const [provider, ...modelParts] = e.target.value.split(':');
+          const model = modelParts.join(':'); // Join back the parts of the model name that may contain colons
           setSelectedModels(prev => ({
             ...prev,
             [featurePath]: { provider, model }
@@ -478,34 +487,36 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
     const validateOllama = async () => {
       const ollamaProvider = tempSettings.providers.Ollama;
-      if (ollamaProvider?.enabled && ollamaProvider?.apiSettings?.baseUrl?.value) {
-        try {
-          const response = await fetch(`${ollamaProvider.apiSettings.baseUrl.value}/api/tags`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
+      if (ollamaProvider?.enabled) {
+        const baseUrl = ollamaProvider?.apiSettings?.baseUrl?.value;
+        if (!baseUrl) {
+          errors['providers.Ollama.apiSettings.baseUrl'] = 'Ollama base URL is required';
+        } else {
+          try {
+            const response = await fetch(`${baseUrl}/api/tags`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
 
-          if (response.status === 200) {
-            return true; // Ollama API is valid
-          } else {
-            errors['providers.Ollama.apiSettings.baseUrl'] = `Unexpected response from Ollama API: ${response.status}`;
-            return false;
+            if (response.status !== 200) {
+              errors[
+                'providers.Ollama.apiSettings.baseUrl'
+              ] = `Unexpected response from Ollama API: ${response.status}`;
+            }
+          } catch (error) {
+            console.error('Error validating Ollama API:', error);
+            errors['providers.Ollama.apiSettings.baseUrl'] =
+              'Error validating Ollama API. Please check your internet connection and the provided base URL.';
           }
-        } catch (error) {
-          console.error('Error validating Ollama API:', error);
-          errors['providers.Ollama.apiSettings.baseUrl'] =
-            'Error validating Ollama API. Please check your internet connection and the provided base URL.';
-          return false;
         }
       }
-      return false; // Return false if Ollama is not enabled or base URL is not set
     };
 
     const validateModelApiKey = (featurePath: string) => {
       const { provider } = selectedModels[featurePath];
-      if (provider !== 'Pretzel AI') {
+      if (provider !== 'Pretzel AI' && provider !== 'Ollama') {
         const apiKey = tempSettings.providers[provider]?.apiSettings?.apiKey?.value;
         if (!apiKey) {
           errors[`providers.${provider}.apiSettings.apiKey`] = `${provider} API key is required for the selected model`;
@@ -547,32 +558,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     validateAzure();
     await validateMistral();
     await validateAnthropic();
-    const isOllamaAvaiable = await validateOllama();
-
-    if (isOllamaAvaiable) {
-      try {
-        const ollamaBaseUrl = tempSettings.providers.Ollama.apiSettings.baseUrl.value;
-        const response = await fetch(`${ollamaBaseUrl}/api/tags`);
-        if (response.ok) {
-          const models = await response.json();
-          // Update Ollama models in settings
-          const updatedOllamaModels = {};
-          models.models.forEach(model => {
-            updatedOllamaModels[model.name] = {
-              name: model.name,
-              enabled: true,
-              showSetting: true
-            };
-          });
-          handleChange('providers.Ollama.models', updatedOllamaModels);
-        } else {
-          errors['providers.Ollama.apiSettings.baseUrl'] = 'Failed to fetch Ollama models';
-        }
-      } catch (error) {
-        console.error('Error fetching Ollama models:', error);
-        errors['providers.Ollama.apiSettings.baseUrl'] = 'Error fetching Ollama models';
-      }
-    }
+    await validateOllama();
 
     validateCodeMatchThreshold();
 

@@ -36,6 +36,7 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 import { PretzelSettings } from './components/PretzelSettings';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { migrateSettings } from './migrations/migrations';
+import { NotebookActions } from '@jupyterlab/notebook';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -113,7 +114,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let anthropicApiKey = '';
 
-    let ollamaUrl = '';
+    let ollamaBaseUrl = '';
 
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
     let pretzelSettingsJSON: any = null;
@@ -144,6 +145,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey) {
         isAIEnabled = true;
+      } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl) {
+        isAIEnabled = true;
       } else if (aiChatModelProvider === 'Pretzel AI') {
         isAIEnabled = true;
       } else {
@@ -169,7 +172,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         }
 
         // Fetch Ollama models
-        ollamaUrl = baseUrl;
+        ollamaBaseUrl = baseUrl;
         const data = await response.json();
         if (Array.isArray(data.models) && data.models.length > 0) {
           // Update Ollama models in settings
@@ -227,6 +230,9 @@ const extension: JupyterFrontEndPlugin<void> = {
         // Anthropic settings
         const anthropicProvider = providers['Anthropic'] || {};
         anthropicApiKey = anthropicProvider?.apiSettings?.apiKey?.value || '';
+
+        // Ollama settings
+        ollamaBaseUrl = providers['Ollama']?.apiSettings?.baseUrl?.value || '';
 
         // Posthog settings
         posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
@@ -310,6 +316,11 @@ const extension: JupyterFrontEndPlugin<void> = {
           getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
         }, 2000);
       }
+    });
+
+    // re-create embeddings when cells are deleted
+    NotebookActions.cellsDeleted.connect((sender, args) => {
+      getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
     });
 
     let debounceTimeout: NodeJS.Timeout | null = null;
@@ -480,6 +491,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           mistralApiKey={mistralApiKey}
           mistralModel={mistralModel}
           anthropicApiKey={anthropicApiKey}
+          ollamaBaseUrl={ollamaBaseUrl}
           commands={commands}
           traceback={traceback}
           placeholderEnabled={placeholderEnabled}
@@ -538,6 +550,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               mistralApiKey={mistralApiKey}
               mistralModel={mistralModel}
               anthropicApiKey={anthropicApiKey}
+              ollamaBaseUrl={ollamaBaseUrl}
               commands={commands}
               traceback={''}
               placeholderEnabled={placeholderEnabled}
@@ -569,6 +582,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         deploymentId: azureDeploymentName,
         mistralApiKey,
         anthropicApiKey,
+        ollamaBaseUrl,
         notebookTracker,
         app,
         rmRegistry,
