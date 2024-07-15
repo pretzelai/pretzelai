@@ -279,7 +279,7 @@ Fill in the blank to complete the code block. Your response should include only 
                   Authorization: `Bearer ${mistralApiKey}`
                 },
                 body: JSON.stringify({
-                  copilotModel,
+                  model: copilotModel,
                   prompt,
                   suffix,
                   stop: stops,
