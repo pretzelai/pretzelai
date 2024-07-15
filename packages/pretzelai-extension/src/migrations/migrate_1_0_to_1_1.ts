@@ -12,6 +12,7 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
 export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): Promise<any> {
   const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+  console.log('🚀 ~ migrate_1_0_to_1_1 ~ pretzelSettingsJSON:', pretzelSettingsJSON);
 
   if (Object.keys(pretzelSettingsJSON).length === 0) {
     const openAiSettings = settings.get('openAiSettings').composite as any;
@@ -21,11 +22,11 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
     const codeMatchThreshold = settings.get('codeMatchThreshold').composite as number;
     const inlineCopilotSettings = settings.get('inlineCopilotSettings').composite as any;
 
-    const inlineCopilotEnabled = inlineCopilotSettings?.enabled || false;
-    const inlineCopilotProvider = inlineCopilotSettings?.provider || 'Pretzel AI';
-    const mistralApiKey = inlineCopilotSettings?.mistralApiKey || '';
+    const inlineCopilotEnabled = !!inlineCopilotSettings?.enabled;
+    const inlineCopilotProvider = (inlineCopilotSettings?.provider as string) || 'Pretzel AI';
+    const mistralApiKey = (inlineCopilotSettings?.mistralApiKey as string) || '';
 
-    const posthogPromptTelemetry = settings.get('posthogPromptTelemetry').composite as boolean;
+    const posthogPromptTelemetry = !!settings.get('posthogPromptTelemetry').composite;
 
     const inlineCopilotModelString = (() => {
       switch (inlineCopilotProvider) {
@@ -66,187 +67,28 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
       }
     })();
 
-    const newSettings = {
-      version: '1.1',
-      features: {
-        inlineCompletion: {
-          enabled: inlineCopilotEnabled,
-          modelProvider: inlineCopilotProvider,
-          modelString: inlineCopilotModelString
-        },
-        aiChat: {
-          enabled: true,
-          modelProvider: aiChatModelProvider,
-          modelString: aiCompletionModelString,
-          codeMatchThreshold: codeMatchThreshold
-        },
-        posthogTelemetry: {
-          posthogPromptTelemetry: {
-            enabled: posthogPromptTelemetry
-          }
-        }
-      },
-      providers: {
-        'Pretzel AI': {
-          name: 'Pretzel AI',
-          enabled: true,
-          showSettings: false,
-          apiSettings: {},
-          models: {
-            pretzelai: { name: 'pretzelai', enabled: true }
-          }
-        },
-        OpenAI: {
-          name: 'OpenAI',
-          enabled: true,
-          showSettings: true,
-          apiSettings: {
-            apiKey: {
-              type: 'string',
-              required: true,
-              default: '',
-              value: openAiSettings?.openAiApiKey,
-              showSetting: true
-            },
-            baseUrl: {
-              type: 'string',
-              required: false,
-              default: '',
-              value: openAiSettings?.openAiBaseUrl,
-              showSetting: false
-            }
-          },
-          models: {
-            'gpt-4-turbo': {
-              name: 'gpt-4-turbo',
-              enabled: true,
-              showSetting: true,
-              settings: { maxTokens: { type: 'number', default: 2048, showSetting: false, required: false } }
-            },
-            'gpt-4o': {
-              name: 'gpt-4o',
-              enabled: true,
-              showSetting: true,
-              settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
-            },
-            'gpt-3.5-turbo': {
-              name: 'gpt-3.5-turbo',
-              enabled: true,
-              showSetting: true,
-              settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
-            }
-          }
-        },
-        Azure: {
-          name: 'Azure',
-          enabled: false,
-          showSettings: true,
-          apiSettings: {
-            apiKey: {
-              type: 'string',
-              required: true,
-              default: '',
-              value: azureSettings?.azureApiKey || '',
-              showSetting: true
-            },
-            baseUrl: {
-              type: 'string',
-              required: true,
-              default: '',
-              value: azureSettings?.azureBaseUrl || '',
-              showSetting: true
-            },
-            deploymentName: {
-              type: 'string',
-              required: true,
-              default: '',
-              value: azureSettings?.azureDeploymentName || '',
-              showSetting: true
-            }
-          },
-          models: {
-            'gpt-4': {
-              name: 'gpt-4',
-              enabled: true,
-              showSetting: true
-            },
-            'gpt-35-turbo': {
-              name: 'gpt-35-turbo',
-              enabled: true,
-              showSetting: true
-            }
-          }
-        },
-        Mistral: {
-          name: 'Mistral',
-          enabled: true,
-          showSettings: true,
-          apiSettings: {
-            apiKey: {
-              type: 'string',
-              required: true,
-              default: '',
-              value: mistralApiKey,
-              showSetting: true
-            }
-          },
-          models: {
-            'codestral-latest': {
-              name: 'codestral-latest',
-              enabled: true,
-              showSetting: true
-            },
-            'mistral-large-latest': {
-              name: 'mistral-large-latest',
-              enabled: true,
-              showSetting: true
-            }
-          }
-        },
-        Anthropic: {
-          name: 'Anthropic',
-          enabled: true,
-          showSettings: true,
-          apiSettings: {
-            apiKey: {
-              type: 'string',
-              required: true,
-              default: '',
-              value: '',
-              showSetting: true
-            }
-          },
-          models: {
-            'claude-3-5-sonnet-20240620': {
-              name: 'claude-3-5-sonnet-20240620',
-              enabled: true,
-              showSetting: true
-            },
-            'claude-3-opus-20240229': {
-              name: 'claude-3-opus-20240229',
-              enabled: true,
-              showSetting: true
-            },
-            'claude-3-sonnet-20240229': {
-              name: 'claude-3-sonnet-20240229',
-              enabled: true,
-              showSetting: true
-            },
-            'claude-3-haiku-20240307': {
-              name: 'claude-3-haiku-20240307',
-              enabled: true,
-              showSetting: true
-            }
-          }
-        }
-      }
-    };
+    const newSettings = returnDefaults_1_1();
+    newSettings.features.inlineCompletion.enabled = inlineCopilotEnabled;
+    newSettings.features.inlineCompletion.modelProvider = inlineCopilotProvider;
+    newSettings.features.inlineCompletion.modelString = inlineCopilotModelString;
+    newSettings.features.aiChat.enabled = true;
+    newSettings.features.aiChat.modelProvider = aiChatModelProvider;
+    newSettings.features.aiChat.modelString = aiCompletionModelString;
+    newSettings.features.aiChat.codeMatchThreshold = codeMatchThreshold;
+    newSettings.features.posthogTelemetry.posthogPromptTelemetry.enabled = posthogPromptTelemetry;
+    newSettings.providers.OpenAI.apiSettings.apiKey.value = openAiSettings?.openAiApiKey;
+    newSettings.providers.OpenAI.apiSettings.baseUrl.value = openAiSettings?.openAiBaseUrl;
+    newSettings.providers.Mistral.apiSettings.apiKey.value = mistralApiKey;
+    newSettings.providers.Azure.apiSettings.apiKey.value = azureSettings?.azureApiKey || '';
+    newSettings.providers.Azure.apiSettings.baseUrl.value = azureSettings?.azureBaseUrl || '';
+    newSettings.providers.Azure.apiSettings.deploymentName.value = azureSettings?.azureDeploymentName || '';
+    console.log(newSettings);
     return newSettings;
   }
   return pretzelSettingsJSON;
 }
 
-export function returnDefaults_1_1(): any {
+export function returnDefaults_1_1() {
   return {
     version: '1.1',
     features: {
