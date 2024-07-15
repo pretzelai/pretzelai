@@ -363,7 +363,8 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           if (response.status === 200) {
             // API key is valid
           } else if (response.status === 401) {
-            errors['providers.Mistral.apiSettings.apiKey'] = 'Invalid Mistral API Key';
+            errors['providers.Mistral.apiSettings.apiKey'] =
+              'Invalid Mistral API Key (Note: new Mistral keys take ~2min to start working)';
           } else {
             errors['providers.Mistral.apiSettings.apiKey'] = `Unexpected response from Mistral API: ${response.status}`;
           }
@@ -393,7 +394,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           const data = await response.json();
 
           if (data.valid) {
-            return
+            return;
           } else {
             errors['providers.Anthropic.apiSettings.apiKey'] = data.error || 'Invalid Anthropic API Key';
           }
@@ -445,10 +446,8 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         }
       }
     };
-    await validateOpenAI();
+    await Promise.allSettled([validateOpenAI(), validateMistral(), validateAnthropic()]);
     validateAzure();
-    await validateMistral();
-    await validateAnthropic();
     validateCodeMatchThreshold();
 
     setValidationErrors(errors);
