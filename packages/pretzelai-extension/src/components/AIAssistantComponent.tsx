@@ -165,9 +165,9 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         setStream(stream);
         setStatusElementText('Generating code...');
         setShowDiffContainer(true);
-      } catch (error) {
+      } catch (error: any) {
         props.handleRemove();
-        throw new Error('Error generating prompt');
+        throw new Error(`Error generating prompt: ${error}`);
       }
     }
   };

@@ -1,12 +1,12 @@
 {
   "title": "Pretzel AI Settings",
-  "description": "Configure the settings for Pretzel: The AI extension for JupyterLab. Select the AI service you want to use (OpenAI API key, Use Pretzel AI Server or Use Azure API). Then, provide the necessary API keys and URLs based on the AI service you choose to use.",
+  "description": "DO NOT USE THIS SETTINGS PAGE! Instead go to Menubar > Settings > Pretzel AI Settings to change these settings. This page is for internal use only.",
   "type": "object",
   "properties": {
     "aiService": {
       "type": "string",
       "title": "AI Service",
-      "description": "Select the AI service to use for AI operations.",
+      "description": "",
       "enum": [
         "OpenAI API key",
         "Use Pretzel AI Server",
@@ -26,13 +26,13 @@
         "openAiBaseUrl": {
           "type": "string",
           "title": "Base URL",
-          "description": "(Optional) If your company uses OpenAI Enterprise, enter the URL for your company's OpenAI service (e.g., https://api.openai.com/v1/).",
+          "description": "",
           "default": ""
         },
         "openAiModel": {
           "type": "string",
           "title": "OpenAI Model",
-          "description": "Select the OpenAI model to be used for AI completions. Only works with your OpenAI API key.",
+          "description": "",
           "enum": [
             "gpt-4o",
             "gpt-4-turbo",
@@ -44,16 +44,16 @@
     },
     "inlineCopilotSettings": {
       "type": "object",
-      "title": "Inline AI Copilot auto-complete",
+      "title": "Inline Copilot Settings",
       "properties": {
         "enabled": {
           "type": "boolean",
-          "title": "Enable inline AI Copilot auto-complete"
+          "title": "Enabled"
         },
         "provider": {
           "type": "string",
-          "title": "Which AI model provider to use",
-          "description": "Recommended: Pretzel AI (no API key required) or Mistral (API key required)",
+          "title": "Provider",
+          "description": "",
           "enum": [
             "Pretzel AI",
             "Mistral",
@@ -63,7 +63,7 @@
         "mistralApiKey": {
           "type": "string",
           "title": "Mistral API Key",
-          "description": "Go to https://console.mistral.ai/api-keys/ to create an API Key"
+          "description": ""
         }
       },
       "default": {
@@ -96,7 +96,7 @@
     "codeMatchThreshold": {
       "type": "number",
       "title": "Code Match Threshold",
-      "description": "The threshold for code similarity matching, between 0 and 100. High values result in only highly similar code being matched.",
+      "description": "",
       "minimum": 0,
       "maximum": 100,
       "default": 20
