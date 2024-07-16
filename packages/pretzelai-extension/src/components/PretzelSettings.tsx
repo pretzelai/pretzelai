@@ -619,53 +619,165 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   return (
     <SettingsContainer>
-      <Typography variant="h5" gutterBottom>
-        Pretzel Settings
-      </Typography>
-      <Fade in={showErrorBox} timeout={1000}>
-        <ErrorContainer sx={{ display: showErrorBox ? 'block' : 'none' }}>
-          <Stack spacing={1}>
-            {Object.entries(validationErrors).map(([key, error]) => (
-              <ErrorBox key={key}>
-                <Typography variant="body2">{error}</Typography>
-                <IconButton
+      <Box sx={{ height: '80vh', overflowY: 'auto', paddingBottom: '80px' }}>
+        <Typography variant="h5" gutterBottom>
+          Pretzel Settings
+        </Typography>
+        <Fade in={showErrorBox} timeout={1000}>
+          <ErrorContainer sx={{ display: showErrorBox ? 'block' : 'none' }}>
+            <Stack spacing={1}>
+              {Object.entries(validationErrors).map(([key, error]) => (
+                <ErrorBox key={key}>
+                  <Typography variant="body2">{error}</Typography>
+                  <IconButton
+                    size="small"
+                    aria-label="close"
+                    onClick={() => {
+                      const newErrors = { ...validationErrors };
+                      delete newErrors[key];
+                      setValidationErrors(newErrors);
+                      if (Object.keys(newErrors).length === 0) {
+                        setShowErrorBox(false);
+                      }
+                    }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </ErrorBox>
+              ))}
+            </Stack>
+          </ErrorContainer>
+        </Fade>
+        {renderAIChatSettings()}
+        <Divider sx={{ my: 2 }} />
+        {renderInlineCopilotSettings()}
+        <SectionDivider sx={{ my: 2 }} />
+        <SectionTitle variant="h6">Configure AI Services</SectionTitle>
+        {AI_SERVICES_ORDER.map(providerName => {
+          const provider = tempSettings.providers[providerName];
+          const providerInfo = providersInfo[providerName];
+          if (!provider || !providerInfo) return null;
+          return (
+            <React.Fragment key={providerName}>
+              <ProviderSection>{renderProviderSettings(providerName)}</ProviderSection>
+              {providerName !== AI_SERVICES_ORDER[AI_SERVICES_ORDER.length - 1] && <Divider sx={{ my: 2 }} />}
+            </React.Fragment>
+          );
+        })}{' '}
+        <SectionTitle variant="h6">Connections</SectionTitle>
+        <Box sx={{ mb: 2 }}>
+          <CompactGrid container spacing={1} alignItems="center">
+            <Grid item xs={6}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem', fontWeight: 'bold' }}>
+                PostgreSQL
+              </InputLabel>
+            </Grid>
+            <Grid item xs={6}>
+              <Switch
+                size="small"
+                checked={tempSettings.features.connections.postgres.enabled}
+                onChange={e => handleChange('features.connections.postgres.enabled', e.target.checked)}
+              />
+            </Grid>
+          </CompactGrid>
+          {tempSettings.features.connections.postgres.enabled && (
+            <CompactGrid container spacing={1} alignItems="center" sx={{ mt: 1 }}>
+              <Grid item xs={6}>
+                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Host</InputLabel>
+              </Grid>
+              <Grid item xs={6}>
+                <CompactTextField
+                  fullWidth
+                  variant="outlined"
                   size="small"
-                  aria-label="close"
-                  onClick={() => {
-                    const newErrors = { ...validationErrors };
-                    delete newErrors[key];
-                    setValidationErrors(newErrors);
-                    if (Object.keys(newErrors).length === 0) {
-                      setShowErrorBox(false);
-                    }
-                  }}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </ErrorBox>
-            ))}
-          </Stack>
-        </ErrorContainer>
-      </Fade>
-      {renderAIChatSettings()}
-      <Divider sx={{ my: 2 }} />
-      {renderInlineCopilotSettings()}
-      <SectionDivider sx={{ my: 2 }} />
-      <SectionTitle variant="h6">Configure AI Services</SectionTitle>
-      {AI_SERVICES_ORDER.map(providerName => {
-        const provider = tempSettings.providers[providerName];
-        const providerInfo = providersInfo[providerName];
-        if (!provider || !providerInfo) return null;
-        return (
-          <React.Fragment key={providerName}>
-            <ProviderSection>{renderProviderSettings(providerName)}</ProviderSection>
-            {providerName !== AI_SERVICES_ORDER[AI_SERVICES_ORDER.length - 1] && <Divider sx={{ my: 2 }} />}
-          </React.Fragment>
-        );
-      })}{' '}
-      <SectionDivider sx={{ my: 2 }} />
-      {renderOtherSettings()}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                  type="text"
+                  value={tempSettings.features.connections.postgres.host}
+                  onChange={e => handleChange('features.connections.postgres.host', e.target.value)}
+                  error={!!validationErrors['features.connections.postgres.host']}
+                  helperText={validationErrors['features.connections.postgres.host']}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Port</InputLabel>
+              </Grid>
+              <Grid item xs={6}>
+                <CompactTextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  type="text"
+                  value={tempSettings.features.connections.postgres.port}
+                  onChange={e => handleChange('features.connections.postgres.port', Number(e.target.value))}
+                  error={!!validationErrors['features.connections.postgres.port']}
+                  helperText={validationErrors['features.connections.postgres.port']}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Database</InputLabel>
+              </Grid>
+              <Grid item xs={6}>
+                <CompactTextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  type="text"
+                  value={tempSettings.features.connections.postgres.database}
+                  onChange={e => handleChange('features.connections.postgres.database', e.target.value)}
+                  error={!!validationErrors['features.connections.postgres.database']}
+                  helperText={validationErrors['features.connections.postgres.database']}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Username</InputLabel>
+              </Grid>
+              <Grid item xs={6}>
+                <CompactTextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  type="text"
+                  value={tempSettings.features.connections.postgres.username}
+                  onChange={e => handleChange('features.connections.postgres.username', e.target.value)}
+                  error={!!validationErrors['features.connections.postgres.username']}
+                  helperText={validationErrors['features.connections.postgres.username']}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Password</InputLabel>
+              </Grid>
+              <Grid item xs={6}>
+                <CompactTextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  type="password"
+                  value={tempSettings.features.connections.postgres.password}
+                  onChange={e => handleChange('features.connections.postgres.password', e.target.value)}
+                  error={!!validationErrors['features.connections.postgres.password']}
+                  helperText={validationErrors['features.connections.postgres.password']}
+                />
+              </Grid>
+            </CompactGrid>
+          )}
+        </Box>
+        <SectionDivider sx={{ my: 2 }} />
+        {renderOtherSettings()}
+      </Box>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '16px',
+          backgroundColor: 'var(--jp-layout-color1)',
+          borderTop: '1px solid var(--jp-border-color1)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          width: '100%',
+          maxWidth: '800px'
+        }}
+      >
         <Button variant="outlined" color="secondary" onClick={handleRestoreDefaults}>
           Restore Defaults
         </Button>

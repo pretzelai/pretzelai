@@ -107,6 +107,16 @@ export function returnDefaults_1_1() {
         posthogPromptTelemetry: {
           enabled: true
         }
+      },
+      connections: {
+        postgres: {
+          enabled: false,
+          host: '',
+          port: 5432,
+          database: 'postgres',
+          username: '',
+          password: ''
+        }
       }
     },
     providers: {
