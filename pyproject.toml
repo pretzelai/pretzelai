@@ -46,6 +46,14 @@ dependencies = [
     "tornado>=6.2.0",
     "traitlets",
     "pretzelai-server>=0.1.0",
+    "jupysql",
+    "duckdb-engine",
+    "duckdb",
+    "pyarrow",
+    "psycopg2-binary",
+    "polars",
+    "snowflake-sqlalchemy>=1.4.0",
+    "sqlalchemy>=1.4.0,<2.0.0",
 ]
 dynamic = ["version"]
 
