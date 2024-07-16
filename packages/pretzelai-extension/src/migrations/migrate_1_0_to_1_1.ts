@@ -12,7 +12,6 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
 export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): Promise<any> {
   const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
-  console.log('🚀 ~ migrate_1_0_to_1_1 ~ pretzelSettingsJSON:', pretzelSettingsJSON);
 
   if (Object.keys(pretzelSettingsJSON).length === 0) {
     const openAiSettings = settings.get('openAiSettings').composite as any;
@@ -82,7 +81,6 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
     newSettings.providers.Azure.apiSettings.apiKey.value = azureSettings?.azureApiKey || '';
     newSettings.providers.Azure.apiSettings.baseUrl.value = azureSettings?.azureBaseUrl || '';
     newSettings.providers.Azure.apiSettings.deploymentName.value = azureSettings?.azureDeploymentName || '';
-    console.log(newSettings);
     return newSettings;
   }
   return pretzelSettingsJSON;
