@@ -118,7 +118,9 @@ const extension: JupyterFrontEndPlugin<void> = {
     let ollamaBaseUrl = '';
 
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
-    let pretzelSettingsJSON: ReturnType<typeof getDefaultSettings> | null = null;
+
+    type PretzelSettings = ReturnType<typeof getDefaultSettings>;
+    let pretzelSettingsJSON: PretzelSettings | null = null;
 
     let posthogPromptTelemetry: boolean = true;
     let isAIEnabled: boolean = false;
@@ -174,46 +176,48 @@ const extension: JupyterFrontEndPlugin<void> = {
         }
       }
     };
-      
+
     async function ollamaLoad(): Promise<void> {
-      const ollamaProvider = pretzelSettingsJSON?.providers?.Ollama;
-      if (!ollamaProvider || !ollamaProvider.enabled) {
-        return;
-      }
-
-      const baseUrl = ollamaProvider.apiSettings?.baseUrl?.value || 'http://localhost:11434';
-
-      try {
-        const response = await fetch(`${baseUrl}/api/tags`);
-        if (!response.ok) {
-          console.log(
-            `Ollama not found at ${baseUrl}. If you have Ollama running, please change the URL in Pretzel AI Settings.`
-          );
+      if (pretzelSettingsJSON) {
+        const ollamaProvider = pretzelSettingsJSON.providers.Ollama;
+        if (!ollamaProvider.enabled) {
           return;
         }
 
-        // Fetch Ollama models
-        ollamaBaseUrl = baseUrl;
-        const data = await response.json();
-        if (Array.isArray(data.models) && data.models.length > 0) {
-          // Update Ollama models in settings
-          pretzelSettingsJSON.providers.Ollama.models = data.models.reduce((acc: any, model: any) => {
-            acc[model.model] = {
-              name: model.model,
-              enabled: true,
-              showSetting: true
-            };
-            return acc;
-          }, {});
+        const baseUrl = ollamaProvider.apiSettings.baseUrl.value || 'http://localhost:11434';
 
-          // Save updated settings
-          const settings = await settingRegistry.load(PLUGIN_ID);
-          await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
+        try {
+          const response = await fetch(`${baseUrl}/api/tags`);
+          if (!response.ok) {
+            console.log(
+              `Ollama not found at ${baseUrl}. If you have Ollama running, please change the URL in Pretzel AI Settings.`
+            );
+            return;
+          }
 
-          return;
+          // Fetch Ollama models
+          ollamaBaseUrl = baseUrl;
+          const data = await response.json();
+          if (Array.isArray(data.models) && data.models.length > 0) {
+            // Update Ollama models in settings
+            pretzelSettingsJSON.providers.Ollama.models = data.models.reduce((acc: any, model: any) => {
+              acc[model.model] = {
+                name: model.model,
+                enabled: true,
+                showSetting: true
+              };
+              return acc;
+            }, {});
+
+            // Save updated settings
+            const settings = await settingRegistry.load(PLUGIN_ID);
+            await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
+
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking Ollama availability:', error);
         }
-      } catch (error) {
-        console.error('Error checking Ollama availability:', error);
       }
     }
 
@@ -253,7 +257,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           // Anthropic settings
           const anthropicProvider = providers['Anthropic'];
           anthropicApiKey = anthropicProvider.apiSettings.apiKey.value;
-              
+
           // Ollama settings
           ollamaBaseUrl = providers['Ollama'].apiSettings.baseUrl.value;
 
@@ -279,13 +283,15 @@ const extension: JupyterFrontEndPlugin<void> = {
       try {
         // first migrate if needed
         const settings = await settingRegistry.load(PLUGIN_ID);
-        let pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+        if (Object.keys(settings.get('pretzelSettingsJSON').composite as any).length) {
+          pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as PretzelSettings;
+        }
         let pretzelSettingsJSONVersion = settings.get('pretzelSettingsJSONVersion').composite as string;
 
         const currentVersion = pretzelSettingsJSON?.version || '1.0';
         const targetVersion = pretzelSettingsJSONVersion;
 
-        if (Object.keys(pretzelSettingsJSON).length === 0 || currentVersion !== targetVersion) {
+        if (!pretzelSettingsJSON || currentVersion !== targetVersion) {
           pretzelSettingsJSON = await migrateSettings(settings, currentVersion, targetVersion);
           await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
         }
