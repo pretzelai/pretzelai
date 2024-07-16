@@ -269,6 +269,21 @@ export function returnDefaults_1_1() {
             showSetting: true
           }
         }
+      },
+      Ollama: {
+        name: 'Ollama',
+        enabled: false,
+        showSettings: true,
+        apiSettings: {
+          baseUrl: {
+            type: 'string',
+            required: true,
+            default: 'http://localhost:11434',
+            value: 'http://localhost:11434',
+            showSetting: true
+          }
+        },
+        models: {}
       }
     }
   };

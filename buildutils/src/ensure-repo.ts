@@ -49,7 +49,8 @@ const LOCAL_PACKAGES: Dict<string> = {
   '@jupyterlab/help-extension': 'help-extension',
   '@jupyterlab/pretzelai-extension': 'pretzelai-extension',
   '@jupyterlab/application': 'application',
-  '@jupyterlab/application-extension': 'application-extension'
+  '@jupyterlab/application-extension': 'application-extension',
+  '@jupyterlab/notebook': 'notebook'
 };
 
 // Data to ignore.

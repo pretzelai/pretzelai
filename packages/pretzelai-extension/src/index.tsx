@@ -37,6 +37,7 @@ import { PretzelSettings } from './components/PretzelSettings';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { migrateSettings } from './migrations/migrations';
 import { getDefaultSettings } from './migrations/defaultSettings';
+import { NotebookActions } from '@jupyterlab/notebook';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -114,6 +115,8 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let anthropicApiKey = '';
 
+    let ollamaBaseUrl = '';
+
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
     let pretzelSettingsJSON: ReturnType<typeof getDefaultSettings> | null = null;
 
@@ -143,6 +146,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey) {
         isAIEnabled = true;
+      } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl) {
+        isAIEnabled = true;
       } else if (aiChatModelProvider === 'Pretzel AI') {
         isAIEnabled = true;
       } else {
@@ -169,6 +174,48 @@ const extension: JupyterFrontEndPlugin<void> = {
         }
       }
     };
+      
+    async function ollamaLoad(): Promise<void> {
+      const ollamaProvider = pretzelSettingsJSON?.providers?.Ollama;
+      if (!ollamaProvider || !ollamaProvider.enabled) {
+        return;
+      }
+
+      const baseUrl = ollamaProvider.apiSettings?.baseUrl?.value || 'http://localhost:11434';
+
+      try {
+        const response = await fetch(`${baseUrl}/api/tags`);
+        if (!response.ok) {
+          console.log(
+            `Ollama not found at ${baseUrl}. If you have Ollama running, please change the URL in Pretzel AI Settings.`
+          );
+          return;
+        }
+
+        // Fetch Ollama models
+        ollamaBaseUrl = baseUrl;
+        const data = await response.json();
+        if (Array.isArray(data.models) && data.models.length > 0) {
+          // Update Ollama models in settings
+          pretzelSettingsJSON.providers.Ollama.models = data.models.reduce((acc: any, model: any) => {
+            acc[model.model] = {
+              name: model.model,
+              enabled: true,
+              showSetting: true
+            };
+            return acc;
+          }, {});
+
+          // Save updated settings
+          const settings = await settingRegistry.load(PLUGIN_ID);
+          await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
+
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking Ollama availability:', error);
+      }
+    }
 
     async function loadSettings(updateFunc?: () => void) {
       try {
@@ -206,6 +253,9 @@ const extension: JupyterFrontEndPlugin<void> = {
           // Anthropic settings
           const anthropicProvider = providers['Anthropic'];
           anthropicApiKey = anthropicProvider.apiSettings.apiKey.value;
+              
+          // Ollama settings
+          ollamaBaseUrl = providers['Ollama'].apiSettings.baseUrl.value;
 
           // Posthog settings
           posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
@@ -227,6 +277,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     async function migrateAndSetSettings(): Promise<void> {
       try {
+        // first migrate if needed
         const settings = await settingRegistry.load(PLUGIN_ID);
         let pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
         let pretzelSettingsJSONVersion = settings.get('pretzelSettingsJSONVersion').composite as string;
@@ -239,7 +290,9 @@ const extension: JupyterFrontEndPlugin<void> = {
           await settings.set('pretzelSettingsJSON', pretzelSettingsJSON);
         }
 
+        // then load settings at startup
         await loadSettings();
+        await ollamaLoad();
       } catch (error) {
         console.error('Error migrating and setting settings:', error);
       }
@@ -305,6 +358,11 @@ const extension: JupyterFrontEndPlugin<void> = {
           getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
         }, 2000);
       }
+    });
+
+    // re-create embeddings when cells are deleted
+    NotebookActions.cellsDeleted.connect((sender, args) => {
+      getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
     });
 
     let debounceTimeout: NodeJS.Timeout | null = null;
@@ -475,6 +533,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           mistralApiKey={mistralApiKey}
           mistralModel={mistralModel}
           anthropicApiKey={anthropicApiKey}
+          ollamaBaseUrl={ollamaBaseUrl}
           commands={commands}
           traceback={traceback}
           placeholderEnabled={placeholderEnabled}
@@ -533,6 +592,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               mistralApiKey={mistralApiKey}
               mistralModel={mistralModel}
               anthropicApiKey={anthropicApiKey}
+              ollamaBaseUrl={ollamaBaseUrl}
               commands={commands}
               traceback={''}
               placeholderEnabled={placeholderEnabled}
@@ -564,6 +624,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         deploymentId: azureDeploymentName,
         mistralApiKey,
         anthropicApiKey,
+        ollamaBaseUrl,
         notebookTracker,
         app,
         rmRegistry,

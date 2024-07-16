@@ -53,6 +53,7 @@ interface IChatProps {
   deploymentId?: string;
   mistralApiKey?: string;
   anthropicApiKey?: string;
+  ollamaBaseUrl?: string;
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
@@ -71,6 +72,7 @@ export function Chat({
   deploymentId,
   mistralApiKey,
   anthropicApiKey,
+  ollamaBaseUrl,
   notebookTracker,
   app,
   rmRegistry,
@@ -175,17 +177,6 @@ export function Chat({
   useEffect(() => {
     // Triggers when AI generation finishes
     if (!isAiGenerating) {
-      // // clean up the message received from AI
-      // const lastMessage = messages[messages.length - 1];
-      // if (lastMessage.role === 'assistant') {
-      //   // clean this by replacing ```python with ```
-      //   const cleanedMessage = lastMessage.content.replace('```python', '```');
-      //   setMessages(prevMessages => {
-      //     const updatedMessages = [...prevMessages];
-      //     updatedMessages[updatedMessages.length - 1].content = cleanedMessage;
-      //     return updatedMessages;
-      //   });
-      // }
       saveMessages();
     }
   }, [isAiGenerating]);
@@ -254,6 +245,7 @@ export function Chat({
       deploymentId,
       mistralApiKey,
       anthropicApiKey,
+      ollamaBaseUrl,
       renderChat,
       messages: formattedMessages as ChatCompletionMessage[],
       topSimilarities,

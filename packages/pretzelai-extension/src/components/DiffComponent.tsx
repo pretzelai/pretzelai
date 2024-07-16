@@ -11,6 +11,7 @@ import * as React from 'react';
 import * as monaco from 'monaco-editor';
 import { useEffect, useRef, useState } from 'react';
 import { ButtonsContainer } from './DiffButtonsComponent';
+import { fixCode } from '../postprocessing';
 
 export interface IStreamingDiffEditorProps {
   stream: AsyncIterable<any>;
@@ -69,21 +70,7 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
   const renderFinallyFixedEditorHeight = () => {
     // handle the occasional backticks
     const modifiedModel = editorRef.current!.getModel()!.modified;
-    let finalNewCode = modifiedModel.getValue();
-    if (finalNewCode.startsWith('```') || finalNewCode.endsWith('```')) {
-      if (finalNewCode.startsWith('```python')) {
-        // remove the starting ```python
-        finalNewCode = finalNewCode.slice(9).trim();
-      }
-      if (finalNewCode.startsWith('```')) {
-        // remove the starting ```
-        finalNewCode = finalNewCode.slice(3).trim();
-      }
-      if (finalNewCode.endsWith('```')) {
-        // remove the ending ```
-        finalNewCode = finalNewCode.slice(0, -3).trim();
-      }
-    }
+    const finalNewCode = fixCode(modifiedModel.getValue());
     // set fixed code in editor via modified model
     modifiedModel.setValue(finalNewCode);
 

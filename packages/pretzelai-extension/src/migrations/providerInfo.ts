@@ -174,6 +174,17 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               description: 'Your Anthropic API key'
             }
           }
+        },
+        Ollama: {
+          displayName: 'Ollama',
+          description: 'Run open-source AI models locally.',
+          models: {},
+          apiSettings: {
+            baseUrl: {
+              displayName: 'Base URL',
+              description: 'The base URL for your Ollama instance'
+            }
+          }
         }
       };
     default:
