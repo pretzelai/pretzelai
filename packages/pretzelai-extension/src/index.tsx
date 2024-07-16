@@ -36,6 +36,7 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 import { PretzelSettings } from './components/PretzelSettings';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { migrateSettings } from './migrations/migrations';
+import { getDefaultSettings } from './migrations/defaultSettings';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -114,7 +115,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     let anthropicApiKey = '';
 
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
-    let pretzelSettingsJSON: any = null;
+    let pretzelSettingsJSON: ReturnType<typeof getDefaultSettings> | null = null;
 
     let posthogPromptTelemetry: boolean = true;
     let isAIEnabled: boolean = false;
@@ -149,53 +150,76 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     }
 
+    const kernelExecute = async (code: string) => {
+      const path = notebookTracker.currentWidget?.context.path;
+      if (path) {
+        const sessionManager = app.serviceManager.sessions;
+        // @ts-expect-error not typed
+        const models = Array.from(sessionManager._models.entries());
+        // @ts-expect-error not typed
+        const currentModel = models.find(model => model[1].path === path)[1];
+        const session = await sessionManager.connectTo({ model: currentModel });
+        try {
+          // @ts-expect-error not typed
+          session._kernel.requestExecute({
+            code
+          });
+        } catch (error) {
+          console.error('Error executing SQL extension:', error);
+        }
+      }
+    };
+
     async function loadSettings(updateFunc?: () => void) {
       try {
         const settings = await settingRegistry.load(PLUGIN_ID);
-        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as ReturnType<
+          typeof getDefaultSettings
+        > | null;
 
-        // Extract settings from pretzelSettingsJSON
-        const features = pretzelSettingsJSON.features || {};
-        const providers = pretzelSettingsJSON.providers || {};
+        if (pretzelSettingsJSON) {
+          // Extract settings from pretzelSettingsJSON
+          const { features, providers } = pretzelSettingsJSON;
 
-        // AI Chat settings
-        const aiChatSettings = features?.aiChat || {};
-        aiChatModelProvider = aiChatSettings.modelProvider || 'Pretzel AI';
-        aiChatModelString = aiChatSettings.modelString || 'gpt-4o';
-        codeMatchThreshold = (aiChatSettings.codeMatchThreshold ?? 20) / 100;
+          // AI Chat settings
+          const aiChatSettings = features.aiChat;
+          aiChatModelProvider = aiChatSettings.modelProvider;
+          aiChatModelString = aiChatSettings.modelString;
+          codeMatchThreshold = (aiChatSettings.codeMatchThreshold ?? 20) / 100;
 
-        // OpenAI settings
-        const openAiProvider = providers['OpenAI'] || {};
-        openAiApiKey = openAiProvider?.apiSettings?.apiKey?.value || '';
-        openAiBaseUrl = openAiProvider?.apiSettings?.baseUrl?.value || '';
+          // OpenAI settings
+          const openAiProvider = providers['OpenAI'];
+          openAiApiKey = openAiProvider.apiSettings.apiKey.value;
+          openAiBaseUrl = openAiProvider.apiSettings.baseUrl.value;
 
-        // Azure settings
-        const azureProvider = providers['Azure'] || {};
-        azureBaseUrl = azureProvider?.apiSettings?.baseUrl?.value || '';
-        azureDeploymentName = azureProvider?.apiSettings?.deploymentName?.value || '';
-        azureApiKey = azureProvider?.apiSettings?.apiKey?.value || '';
+          // Azure settings
+          const azureProvider = providers['Azure'];
+          azureBaseUrl = azureProvider.apiSettings.baseUrl.value;
+          azureDeploymentName = azureProvider.apiSettings.deploymentName.value;
+          azureApiKey = azureProvider.apiSettings.apiKey.value;
 
-        // Mistral settings
-        const mistralProvider = providers['Mistral'] || {};
-        mistralApiKey = mistralProvider?.apiSettings?.apiKey?.value || '';
-        mistralModel = aiChatSettings.modelString || 'mistral-tiny';
+          // Mistral settings
+          const mistralProvider = providers['Mistral'];
+          mistralApiKey = mistralProvider.apiSettings.apiKey.value;
+          mistralModel = aiChatSettings.modelString;
 
-        // Anthropic settings
-        const anthropicProvider = providers['Anthropic'] || {};
-        anthropicApiKey = anthropicProvider?.apiSettings?.apiKey?.value || '';
+          // Anthropic settings
+          const anthropicProvider = providers['Anthropic'];
+          anthropicApiKey = anthropicProvider.apiSettings.apiKey.value;
 
-        // Posthog settings
-        posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
+          // Posthog settings
+          posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
 
-        const cookieSettings = await settingRegistry.load('@jupyterlab/apputils-extension:notification');
-        const posthogCookieConsent = cookieSettings.get('posthogCookieConsent').composite as string;
+          const cookieSettings = await settingRegistry.load('@jupyterlab/apputils-extension:notification');
+          const posthogCookieConsent = cookieSettings.get('posthogCookieConsent').composite as string;
 
-        initializePosthog(posthogCookieConsent === 'Yes');
-        setAIEnabled();
-        updateFunc?.();
-        loadAIClient();
-        initSidePanel();
-        showSplashScreen(posthogCookieConsent);
+          initializePosthog(posthogCookieConsent === 'Yes');
+          setAIEnabled();
+          updateFunc?.();
+          loadAIClient();
+          initSidePanel();
+          showSplashScreen(posthogCookieConsent);
+        }
       } catch (reason) {
         console.error('Failed to load settings for Pretzel', reason);
       }
@@ -225,56 +249,49 @@ const extension: JupyterFrontEndPlugin<void> = {
     // FIXME: this is only used for embeddings. We need to standardize this to work
     // when embedding model is not present to use local embddings
     function loadAIClient() {
-      const aiChatSettings = pretzelSettingsJSON.features.aiChat;
-      const aiChatModelProvider = aiChatSettings.modelProvider;
-      const providers = pretzelSettingsJSON.providers;
+      if (pretzelSettingsJSON) {
+        const aiChatSettings = pretzelSettingsJSON.features.aiChat;
+        const aiChatModelProvider = aiChatSettings.modelProvider;
+        const providers = pretzelSettingsJSON.providers;
 
-      if (aiChatModelProvider === 'OpenAI') {
-        const openAIProvider = providers.OpenAI;
-        aiClient = new OpenAI({
-          apiKey: openAIProvider.apiSettings.apiKey.value,
-          dangerouslyAllowBrowser: true,
-          baseURL: openAIProvider.apiSettings.baseUrl.value || undefined
-        });
-      } else if (aiChatModelProvider === 'Azure') {
-        const azureProvider = providers.Azure;
-        aiClient = new OpenAIClient(
-          azureProvider.apiSettings.baseUrl.value,
-          new AzureKeyCredential(azureProvider.apiSettings.apiKey.value)
-        );
-      } else if (aiChatModelProvider === 'Mistral') {
-        const mistralProvider = providers.Mistral;
-        aiClient = new MistralClient(mistralProvider.apiSettings.apiKey.value);
-      } else {
-        aiClient = null;
+        if (aiChatModelProvider === 'OpenAI') {
+          const openAIProvider = providers.OpenAI;
+          aiClient = new OpenAI({
+            apiKey: openAIProvider.apiSettings.apiKey.value,
+            dangerouslyAllowBrowser: true,
+            baseURL: openAIProvider.apiSettings.baseUrl.value || undefined
+          });
+        } else if (aiChatModelProvider === 'Azure') {
+          const azureProvider = providers.Azure;
+          aiClient = new OpenAIClient(
+            azureProvider.apiSettings.baseUrl.value,
+            new AzureKeyCredential(azureProvider.apiSettings.apiKey.value)
+          );
+        } else if (aiChatModelProvider === 'Mistral') {
+          const mistralProvider = providers.Mistral;
+          aiClient = new MistralClient(mistralProvider.apiSettings.apiKey.value);
+        } else {
+          aiClient = null;
+        }
       }
     }
     loadAIClient(); // first time load, later settings will trigger this
 
-    const getKernel = async () => {
-      const path = notebookTracker.currentWidget?.context.path;
-      if (path) {
-        const sessionManager = app.serviceManager.sessions;
-        // @ts-expect-error typescript weird
-        const models = Array.from(sessionManager._models.entries());
-        // @ts-expect-error typescript weird
-        const currentModel = models.find(model => model[1].path === path)[1];
-        const session = await sessionManager.connectTo({ model: currentModel });
-        const code = '%load_ext sql';
-        try {
-          // @ts-expect-error typescript weird
-          session._kernel.requestExecute({
-            code
-          });
-        } catch (error) {
-          console.error('Error executing SQL extension:', error);
-        }
-      }
-    };
     notebookTracker.currentChanged.connect(() => {
       getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
       try {
-        getKernel();
+        let isConnected = false;
+        if (pretzelSettingsJSON) {
+          const { enabled, host, port, database, username, password } =
+            pretzelSettingsJSON.features.connections.postgres;
+          if (enabled && host && port && database && username && password) {
+            kernelExecute(`%load_ext sql\n%sql postgresql://${username}:${password}@${host}:${port}/${database}`);
+            isConnected = true;
+          }
+        }
+        if (!isConnected) {
+          kernelExecute('%load_ext sql');
+        }
       } catch (error) {
         console.error('Error initializing session context or executing SQL extension:', error);
       }
