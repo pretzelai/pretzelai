@@ -188,11 +188,13 @@ export function getProvidersInfo(version: string): IProvidersInfo {
         },
         Groq: {
           displayName: 'Groq',
-          description: 'Incredibly fast AI models based on open source models.',
+          description:
+            'Incredibly fast AI models based on open source models. Some models are not available for general use - please make sure you have access',
           models: {
             'llama-3.1-405b-reasoning': {
               displayName: 'LLaMA 3.1 405B Reasoning',
-              description: 'GPT-4 Turbo class open source LLM from Meta.',
+              description:
+                'GPT-4 Turbo class open source LLM from Meta. NOTE! Please make sure you have access to this model in Groq.',
               canBeUsedForChat: true,
               canBeUsedForInlineCompletion: true
             },

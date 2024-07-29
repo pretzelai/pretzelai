@@ -527,7 +527,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             const groq = new Groq({ apiKey: apiKey, dangerouslyAllowBrowser: true });
 
             const chatCompletion = await groq.chat.completions.create({
-              messages: [{ role: 'user', content: 'Hello' }],
+              messages: [{ role: 'user', content: 'Hi' }],
               model: 'llama-3.1-8b-instant'
             });
 
