@@ -84,7 +84,7 @@
     "@jupyterlab/metapackage": "~4.2.0",
     "@jupyterlab/nbconvert-css": "~4.2.0",
     "@jupyterlab/nbformat": "~4.2.0",
-    "@jupyterlab/notebook": "~4.2.0",
+    "@jupyterlab/notebook": "file:../packages/notebook",
     "@jupyterlab/notebook-extension": "~4.2.0",
     "@jupyterlab/observables": "~5.2.0",
     "@jupyterlab/outputarea": "~4.2.0",

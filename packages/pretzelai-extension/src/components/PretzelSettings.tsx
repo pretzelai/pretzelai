@@ -38,8 +38,9 @@ import { PLUGIN_ID } from '../utils';
 import { getProvidersInfo } from '../migrations/providerInfo';
 import { IProvidersInfo } from '../migrations/providerInfo';
 import debounce from 'lodash/debounce';
+import Groq from 'groq-sdk';
 
-const AI_SERVICES_ORDER = ['OpenAI', 'Mistral', 'Anthropic', 'Ollama', 'Azure'];
+const AI_SERVICES_ORDER = ['OpenAI', 'Anthropic', 'Mistral', 'Groq', 'Ollama', 'Azure'];
 
 interface IPretzelSettingsProps {
   settingRegistry: ISettingRegistry;
@@ -515,6 +516,36 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       }
     };
 
+    const validateGroq = async () => {
+      const groqProvider = tempSettings.providers.Groq;
+      if (groqProvider?.enabled) {
+        const apiKey = groqProvider?.apiSettings?.apiKey?.value;
+        if (!apiKey) {
+          errors['providers.Groq.apiSettings.apiKey'] = 'Groq API key is required';
+        } else {
+          try {
+            const groq = new Groq({ apiKey: apiKey, dangerouslyAllowBrowser: true });
+
+            const chatCompletion = await groq.chat.completions.create({
+              messages: [{ role: 'user', content: 'Hello' }],
+              model: 'llama-3.1-8b-instant'
+            });
+
+            if (chatCompletion.choices[0].message.content) {
+              // If we get a response, the API key is valid
+              return;
+            } else {
+              errors['providers.Groq.apiSettings.apiKey'] = 'Invalid Groq API Key';
+            }
+          } catch (error) {
+            console.error('Error validating Groq API Key:', error);
+            errors['providers.Groq.apiSettings.apiKey'] =
+              'Error validating Groq API Key. Please check your internet connection.';
+          }
+        }
+      }
+    };
+
     const validateModelApiKey = (featurePath: string) => {
       const { provider } = selectedModels[featurePath];
       if (provider !== 'Pretzel AI' && provider !== 'Ollama') {
@@ -555,7 +586,13 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         }
       }
     };
-    await Promise.allSettled([validateOpenAI(), validateMistral(), validateAnthropic(), validateOllama()]);
+    await Promise.allSettled([
+      validateOpenAI(),
+      validateMistral(),
+      validateAnthropic(),
+      validateOllama(),
+      validateGroq()
+    ]);
     validateAzure();
     validateCodeMatchThreshold();
 

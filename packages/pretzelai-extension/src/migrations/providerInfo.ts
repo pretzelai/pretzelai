@@ -62,9 +62,9 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               canBeUsedForChat: true,
               canBeUsedForInlineCompletion: true
             },
-            'gpt-3.5-turbo': {
-              displayName: 'GPT-3.5 Turbo',
-              description: 'Faster and more cost-effective model for many tasks. Good for simple tasks.',
+            'gpt-4o-mini': {
+              displayName: 'GPT-4o Mini',
+              description: 'Fast and cost-effective model for simpler tasks. Good balance of speed and capability.',
               canBeUsedForChat: true,
               canBeUsedForInlineCompletion: true
             }
@@ -183,6 +183,42 @@ export function getProvidersInfo(version: string): IProvidersInfo {
             baseUrl: {
               displayName: 'Base URL',
               description: 'The base URL for your Ollama instance'
+            }
+          }
+        },
+        Groq: {
+          displayName: 'Groq',
+          description: 'Incredibly fast AI models based on open source models.',
+          models: {
+            'llama-3.1-405b-reasoning': {
+              displayName: 'LLaMA 3.1 405B Reasoning',
+              description: 'GPT-4 Turbo class open source LLM from Meta.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
+            },
+            'llama-3.1-70b-versatile': {
+              displayName: 'LLaMA 3.1 70B Versatile',
+              description: 'GPT-4o class model from Meta',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
+            },
+            'llama-3.1-8b-instant': {
+              displayName: 'LLaMA 3.1 8B Instant',
+              description: 'Small GPT-3.5 class model from Meta. Instant completions',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
+            },
+            'gemma2-9b-it': {
+              displayName: 'Gemma2 9B IT',
+              description: 'Small open-source language model from Google, optimized for instruction-following tasks.',
+              canBeUsedForChat: true,
+              canBeUsedForInlineCompletion: true
+            }
+          },
+          apiSettings: {
+            apiKey: {
+              displayName: 'API Key',
+              description: 'Your Groq API key'
             }
           }
         }
