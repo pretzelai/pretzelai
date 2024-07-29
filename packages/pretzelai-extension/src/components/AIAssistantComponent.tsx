@@ -18,6 +18,7 @@ import { OpenAIClient } from '@azure/openai';
 import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import MistralClient from '@mistralai/mistralai';
+import { showErrorMessage } from '@jupyterlab/apputils';
 
 interface IAIAssistantComponentProps {
   aiChatModelProvider: string;
@@ -31,6 +32,7 @@ interface IAIAssistantComponentProps {
   mistralModel: string;
   anthropicApiKey: string;
   ollamaBaseUrl: string;
+  groqApiKey: string;
   commands: CommandRegistry;
   traceback: string;
   placeholderEnabled: string;
@@ -99,6 +101,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         mistralModel: props.mistralModel,
         anthropicApiKey: props.anthropicApiKey,
         ollamaBaseUrl: props.ollamaBaseUrl,
+        groqApiKey: props.groqApiKey,
         isInject: false
       });
 
@@ -159,6 +162,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           mistralModel: props.mistralModel,
           anthropicApiKey: props.anthropicApiKey,
           ollamaBaseUrl: props.ollamaBaseUrl,
+          groqApiKey: props.groqApiKey,
           isInject: isInject
         });
 
@@ -167,7 +171,9 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         setShowDiffContainer(true);
       } catch (error: any) {
         props.handleRemove();
-        throw new Error(`Error generating prompt: ${error}`);
+        const errorMessage = error.message || 'An unknown error occurred';
+        showErrorMessage('Error Generating Prompt', errorMessage);
+        throw new Error(`Error generating prompt: ${errorMessage}`);
       }
     }
   };

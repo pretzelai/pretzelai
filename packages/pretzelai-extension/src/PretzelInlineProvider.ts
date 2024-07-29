@@ -23,6 +23,7 @@ import posthog from 'posthog-js';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import MistralClient from '@mistralai/mistralai';
 import { fixInlineCompletion } from './postprocessing';
+import Groq from 'groq-sdk';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(
@@ -139,6 +140,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     const anthropicSettings = providers['Anthropic']?.apiSettings || {};
     const anthropicApiKey = anthropicSettings?.apiKey?.value || '';
     const ollamaBaseUrl = providers['Ollama']?.apiSettings?.baseUrl?.value || '';
+    const groqApiKey = providers['Groq']?.apiSettings?.apiKey?.value || '';
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
@@ -320,6 +322,28 @@ Fill in the blank to complete the code block. Your response should include only 
               }
             }
             completion = completionContent.trim();
+          } else if (copilotProvider === 'Groq' && groqApiKey) {
+            const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
+            const groqResponse = await groq.chat.completions.create({
+              model: copilotModel,
+              stop: stops,
+              max_tokens: this._isMultiLine(prompt) ? 500 : 100,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a staff software engineer'
+                },
+                {
+                  role: 'user',
+                  content: `\`\`\`python
+${prompt}[BLANK]${suffix}
+\`\`\`
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+                }
+              ]
+            });
+            completion = groqResponse.choices[0].message.content;
           } else {
             completion = '';
           }

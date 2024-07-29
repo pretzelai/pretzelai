@@ -117,6 +117,8 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let ollamaBaseUrl = '';
 
+    let groqApiKey = '';
+
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
 
     type PretzelSettings = ReturnType<typeof getDefaultSettings>;
@@ -152,30 +154,32 @@ const extension: JupyterFrontEndPlugin<void> = {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Pretzel AI') {
         isAIEnabled = true;
+      } else if (aiChatModelProvider === 'Groq' && groqApiKey) {
+        isAIEnabled = true;
       } else {
         isAIEnabled = false;
       }
     }
 
-    const kernelExecute = async (code: string) => {
-      const path = notebookTracker.currentWidget?.context.path;
-      if (path) {
-        const sessionManager = app.serviceManager.sessions;
-        // @ts-expect-error not typed
-        const models = Array.from(sessionManager._models.entries());
-        // @ts-expect-error not typed
-        const currentModel = models.find(model => model[1].path === path)[1];
-        const session = await sessionManager.connectTo({ model: currentModel });
-        try {
-          // @ts-expect-error not typed
-          session._kernel.requestExecute({
-            code
-          });
-        } catch (error) {
-          console.error('Error executing SQL extension:', error);
-        }
-      }
-    };
+    // const kernelExecute = async (code: string) => {
+    //   const path = notebookTracker.currentWidget?.context.path;
+    //   if (path) {
+    //     const sessionManager = app.serviceManager.sessions;
+    //     // @ts-expect-error not typed
+    //     const models = Array.from(sessionManager._models.entries());
+    //     // @ts-expect-error not typed
+    //     const currentModel = models.find(model => model[1].path === path)[1];
+    //     const session = await sessionManager.connectTo({ model: currentModel });
+    //     try {
+    //       // @ts-expect-error not typed
+    //       session._kernel.requestExecute({
+    //         code
+    //       });
+    //     } catch (error) {
+    //       console.error('Error executing SQL extension:', error);
+    //     }
+    //   }
+    // };
 
     async function ollamaLoad(): Promise<void> {
       if (pretzelSettingsJSON) {
@@ -261,6 +265,10 @@ const extension: JupyterFrontEndPlugin<void> = {
           // Ollama settings
           ollamaBaseUrl = providers['Ollama'].apiSettings.baseUrl.value;
 
+          // Groq settings
+          const groqProvider = providers['Groq'];
+          groqApiKey = groqProvider.apiSettings.apiKey.value;
+
           // Posthog settings
           posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
 
@@ -338,22 +346,22 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     notebookTracker.currentChanged.connect(() => {
       getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
-      try {
-        let isConnected = false;
-        if (pretzelSettingsJSON) {
-          const { enabled, host, port, database, username, password } =
-            pretzelSettingsJSON.features.connections.postgres;
-          if (enabled && host && port && database && username && password) {
-            kernelExecute(`%load_ext sql\n%sql postgresql://${username}:${password}@${host}:${port}/${database}`);
-            isConnected = true;
-          }
-        }
-        if (!isConnected) {
-          kernelExecute('%load_ext sql');
-        }
-      } catch (error) {
-        console.error('Error initializing session context or executing SQL extension:', error);
-      }
+      // try {
+      //   let isConnected = false;
+      //   if (pretzelSettingsJSON) {
+      //     const { enabled, host, port, database, username, password } =
+      //       pretzelSettingsJSON.features.connections.postgres;
+      //     if (enabled && host && port && database && username && password) {
+      //       kernelExecute(`%load_ext sql\n%sql postgresql://${username}:${password}@${host}:${port}/${database}`);
+      //       isConnected = true;
+      //     }
+      //   }
+      //   if (!isConnected) {
+      //     kernelExecute('%load_ext sql');
+      //   }
+      // } catch (error) {
+      //   console.error('Error initializing session context or executing SQL extension:', error);
+      // }
     });
 
     // getEmbeddings when a file is renamed
@@ -410,17 +418,21 @@ const extension: JupyterFrontEndPlugin<void> = {
     notebookTracker.activeCellChanged.connect((sender, cell) => {
       if (cell && cell.model.type === 'code') {
         const codeCellModel = cell.model as CodeCellModel;
-        codeCellModel.outputs.changed.connect(() => {
-          const outputs = codeCellModel.outputs as OutputAreaModel;
-          const errorOutput = findErrorOutput(outputs);
-          if (errorOutput) {
-            addFixErrorButton(
-              cell.node.querySelector('.jp-RenderedText.jp-mod-trusted.jp-OutputArea-output') as HTMLElement,
-              codeCellModel
-            );
-          }
-        });
-        addAskAIButton(cell.node);
+        if (codeCellModel.outputs) {
+          codeCellModel.outputs.changed.connect(() => {
+            const outputs = codeCellModel.outputs as OutputAreaModel;
+            const errorOutput = findErrorOutput(outputs);
+            if (errorOutput) {
+              const outputElement = cell.node.querySelector('.jp-RenderedText.jp-mod-trusted.jp-OutputArea-output');
+              if (outputElement) {
+                addFixErrorButton(outputElement as HTMLElement, codeCellModel);
+              }
+            }
+          });
+        }
+        if (cell.node) {
+          addAskAIButton(cell.node);
+        }
       }
     });
 
@@ -540,6 +552,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           mistralModel={mistralModel}
           anthropicApiKey={anthropicApiKey}
           ollamaBaseUrl={ollamaBaseUrl}
+          groqApiKey={groqApiKey}
           commands={commands}
           traceback={traceback}
           placeholderEnabled={placeholderEnabled}
@@ -599,6 +612,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               mistralModel={mistralModel}
               anthropicApiKey={anthropicApiKey}
               ollamaBaseUrl={ollamaBaseUrl}
+              groqApiKey={groqApiKey}
               commands={commands}
               traceback={''}
               placeholderEnabled={placeholderEnabled}
@@ -631,6 +645,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         mistralApiKey,
         anthropicApiKey,
         ollamaBaseUrl,
+        groqApiKey,
         notebookTracker,
         app,
         rmRegistry,

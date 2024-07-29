@@ -369,3 +369,55 @@ div.pretzelInputField > .cm-editor {
   visibility: visible;
   opacity: 1;
 }
+
+/* hacky fix for the background color of the <ul> element */
+/* Fix for dropdown background color */
+.MuiPaper-root .MuiList-root {
+  background-color: var(--jp-layout-color1) !important; /* Match the background color of the list */
+}
+
+/* Ensure selected item retains its background color */
+.MuiPaper-root .MuiList-root .Mui-selected {
+  background-color: var(--jp-brand-color1) !important; /* Background color for selected item */
+  color: var(--jp-ui-inverse-font-color0) !important; /* Text color for selected item */
+}
+
+/* Ensure hover state retains its background color */
+.MuiPaper-root .MuiList-root .MuiMenuItem-root:hover {
+  background-color: var(--jp-layout-color2) !important; /* Background color on hover */
+}
+
+/* Ensure hover state of selected item retains its background color */
+.MuiPaper-root .MuiList-root .Mui-selected:hover {
+  background-color: var(--jp-brand-color1) !important; /* Background color for selected item on hover */
+  color: var(--jp-ui-inverse-font-color0) !important; /* Text color for selected item on hover */
+}
+
+.MuiSwitch-root {
+  .MuiSwitch-switchBase {
+    color: var(--jp-layout-color3);
+  }
+  .Mui-checked {
+    color: var(--jp-brand-color1);
+  }
+  .MuiSwitch-track {
+    background-color: var(--jp-layout-color3);
+    opacity: 0.5;
+  }
+  .Mui-checked + .MuiSwitch-track {
+    background-color: var(--jp-brand-color1);
+    opacity: 0.8;
+  }
+}
+
+/* Additional styles for dark mode */
+@media (prefers-color-scheme: dark) {
+  .MuiSwitch-root {
+    .MuiSwitch-switchBase {
+      color: var(--jp-layout-color4);
+    }
+    .MuiSwitch-track {
+      background-color: var(--jp-layout-color4);
+    }
+  }
+}

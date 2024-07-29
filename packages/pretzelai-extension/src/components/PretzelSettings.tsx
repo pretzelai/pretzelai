@@ -38,8 +38,9 @@ import { PLUGIN_ID } from '../utils';
 import { getProvidersInfo } from '../migrations/providerInfo';
 import { IProvidersInfo } from '../migrations/providerInfo';
 import debounce from 'lodash/debounce';
+import Groq from 'groq-sdk';
 
-const AI_SERVICES_ORDER = ['OpenAI', 'Mistral', 'Anthropic', 'Ollama', 'Azure'];
+const AI_SERVICES_ORDER = ['OpenAI', 'Anthropic', 'Mistral', 'Groq', 'Ollama', 'Azure'];
 
 interface IPretzelSettingsProps {
   settingRegistry: ISettingRegistry;
@@ -67,19 +68,54 @@ const InfoIconStyled = styled(InfoIcon)(({ theme }) => ({
 
 const CompactTextField = styled(TextField)(({ theme }) => ({
   '& .MuiInputBase-input': {
-    padding: '8px 12px'
+    padding: '8px 12px',
+    color: 'var(--jp-ui-font-color0)' // Light text color
   },
   '& .MuiOutlinedInput-root': {
-    height: '36px'
+    height: '36px',
+    borderColor: 'var(--jp-border-color1)', // Light border color
+    '& fieldset': {
+      borderColor: 'var(--jp-border-color1)' // Light border color
+    },
+    '&:hover fieldset': {
+      borderColor: 'var(--jp-border-color2)' // Light border color on hover
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: 'var(--jp-brand-color1)' // Light border color when focused
+    }
   },
   '& .Mui-error': {
     borderColor: theme.palette.error.main
   }
 }));
 
+const CustomSelect = styled(Select)(({ theme }) => ({
+  '& .MuiSelect-select': {
+    color: 'var(--jp-ui-font-color0)' // Light text color
+  },
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'var(--jp-border-color1)' // Light border color
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'var(--jp-border-color2)' // Light border color on hover
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: 'var(--jp-brand-color1)' // Light border color when focused
+  },
+  '& .MuiList-padding': {
+    backgroundColor: 'var(--jp-layout-color1)' // Match the background color of the list
+  },
+  '& .MuiSvgIcon-root': {
+    color: 'var(--jp-ui-font-color0)' // Light icon color
+  },
+  // Add this rule to fix the background color of the <ul> element
+  '& .MuiList-root': {
+    backgroundColor: 'var(--jp-layout-color1)' // Match the background color of the list
+  }
+}));
+
 const SettingsContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2),
-  backgroundColor: 'var(--jp-layout-color1)',
   color: 'var(--jp-ui-font-color0)',
   maxWidth: '800px',
   margin: '0 auto',
@@ -242,9 +278,10 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   const renderModelSelect = (featurePath: string) => (
     <FormControl fullWidth size="small" error={!!validationErrors[`features.${featurePath}.model`]}>
-      <Select
+      <CustomSelect
         value={`${selectedModels[featurePath].provider}:${selectedModels[featurePath].model}`}
         onChange={e => {
+          // @ts-expect-error ignoring the type issues here
           const [provider, ...modelParts] = e.target.value.split(':');
           const model = modelParts.join(':'); // Join back the parts of the model name that may contain colons
           setSelectedModels(prev => ({
@@ -258,7 +295,13 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         {Object.entries(providersInfo).map(([providerName, providerInfo]) => {
           if (tempSettings.providers[providerName]?.enabled) {
             return [
-              <ListSubheader key={providerName}>
+              <ListSubheader
+                key={providerName}
+                style={{
+                  backgroundColor: 'var(--jp-layout-color1)', // Dark background color
+                  color: 'var(--jp-ui-font-color2)' // Lighter text color for distinction
+                }}
+              >
                 {providerInfo.displayName}
                 {providerInfo.description && (
                   <Tooltip title={providerInfo.description} placement="right">
@@ -272,7 +315,27 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                   (featurePath === 'inlineCompletion' && modelInfo.canBeUsedForInlineCompletion)
                 ) {
                   return (
-                    <MenuItem key={`${providerName}:${modelName}`} value={`${providerName}:${modelName}`}>
+                    <MenuItem
+                      key={`${providerName}:${modelName}`}
+                      value={`${providerName}:${modelName}`}
+                      sx={{
+                        backgroundColor: 'var(--jp-layout-color1)',
+                        color: 'var(--jp-ui-font-color0)',
+                        '&:hover': {
+                          backgroundColor: 'var(--jp-layout-color2)'
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: 'var(--jp-brand-color1)',
+                          color: 'var(--jp-ui-inverse-font-color0)',
+                          '&:hover': {
+                            backgroundColor: 'var(--jp-brand-color2)'
+                          }
+                        },
+                        '& .MuiList-padding': {
+                          backgroundColor: 'var(--jp-layout-color1)'
+                        }
+                      }}
+                    >
                       <Tooltip title={modelInfo.description} placement="right">
                         <span>{modelInfo.displayName}</span>
                       </Tooltip>
@@ -285,13 +348,12 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           }
           return null;
         })}
-      </Select>
+      </CustomSelect>
       {validationErrors[`features.${featurePath}.model`] && (
         <FormHelperText>{validationErrors[`features.${featurePath}.model`]}</FormHelperText>
       )}
     </FormControl>
   );
-
   const fetchOllamaModels = useCallback(async (baseUrl: string) => {
     try {
       const response = await fetch(`${baseUrl}/api/tags`);
@@ -515,6 +577,28 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       }
     };
 
+    const validateGroq = async () => {
+      const groqProvider = tempSettings.providers.Groq;
+      if (groqProvider?.enabled && groqProvider?.apiSettings?.apiKey?.value) {
+        try {
+          const groq = new Groq({ apiKey: groqProvider.apiSettings.apiKey.value, dangerouslyAllowBrowser: true });
+
+          const chatCompletion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: 'Hi' }],
+            model: 'llama-3.1-8b-instant'
+          });
+
+          if (!chatCompletion.choices[0].message.content) {
+            errors['providers.Groq.apiSettings.apiKey'] = 'Invalid Groq API Key';
+          }
+        } catch (error) {
+          console.error('Error validating Groq API Key:', error);
+          errors['providers.Groq.apiSettings.apiKey'] =
+            'Error validating Groq API Key. Please check your internet connection.';
+        }
+      }
+    };
+
     const validateModelApiKey = (featurePath: string) => {
       const { provider } = selectedModels[featurePath];
       if (provider !== 'Pretzel AI' && provider !== 'Ollama') {
@@ -555,7 +639,13 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         }
       }
     };
-    await Promise.allSettled([validateOpenAI(), validateMistral(), validateAnthropic(), validateOllama()]);
+    await Promise.allSettled([
+      validateOpenAI(),
+      validateMistral(),
+      validateAnthropic(),
+      validateOllama(),
+      validateGroq()
+    ]);
     validateAzure();
     validateCodeMatchThreshold();
 
@@ -779,7 +869,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             </React.Fragment>
           );
         })}{' '}
-        <SectionTitle variant="h6">Connections</SectionTitle>
+        {/* <SectionTitle variant="h6">Connections</SectionTitle>
         <Box sx={{ mb: 2 }}>
           <CompactGrid container spacing={1} alignItems="center">
             <Grid item xs={6}>
@@ -874,7 +964,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
               </Grid>
             </CompactGrid>
           )}
-        </Box>
+        </Box> */}
         <SectionDivider sx={{ my: 2 }} />
         {renderOtherSettings()}
       </Box>

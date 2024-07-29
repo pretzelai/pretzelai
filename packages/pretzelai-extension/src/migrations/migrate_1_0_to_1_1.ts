@@ -160,8 +160,8 @@ export function returnDefaults_1_1() {
             showSetting: true,
             settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
           },
-          'gpt-3.5-turbo': {
-            name: 'gpt-3.5-turbo',
+          'gpt-4o-mini': {
+            name: 'gpt-4o-mini',
             enabled: true,
             showSetting: true,
             settings: { maxTokens: { type: 'number', default: 4096, showSetting: false, required: false } }
@@ -284,6 +284,42 @@ export function returnDefaults_1_1() {
           }
         },
         models: {}
+      },
+      Groq: {
+        name: 'Groq',
+        enabled: true,
+        showSettings: true,
+        apiSettings: {
+          apiKey: {
+            type: 'string',
+            required: true,
+            default: '',
+            value: '',
+            showSetting: true
+          }
+        },
+        models: {
+          'llama-3.1-405b-reasoning': {
+            name: 'llama-3.1-405b-reasoning',
+            enabled: true,
+            showSetting: true
+          },
+          'llama-3.1-70b-versatile': {
+            name: 'llama-3.1-70b-versatile',
+            enabled: true,
+            showSetting: true
+          },
+          'llama-3.1-8b-instant': {
+            name: 'llama-3.1-8b-instant',
+            enabled: true,
+            showSetting: true
+          },
+          'gemma2-9b-it': {
+            name: 'gemma2-9b-it',
+            enabled: true,
+            showSetting: true
+          }
+        }
       }
     }
   };

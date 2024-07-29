@@ -19,6 +19,7 @@ import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
 import { showErrorDialog } from './components/ErrorDialog';
 import MistralClient from '@mistralai/mistralai';
+import Groq from 'groq-sdk';
 
 export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
@@ -385,7 +386,8 @@ const setupStream = async ({
   mistralApiKey,
   mistralModel,
   anthropicApiKey,
-  ollamaBaseUrl
+  ollamaBaseUrl,
+  groqApiKey
 }: {
   aiChatModelProvider: string;
   aiChatModelString: string;
@@ -399,6 +401,7 @@ const setupStream = async ({
   mistralModel?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
+  groqApiKey?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
 
@@ -518,6 +521,21 @@ const setupStream = async ({
         }
       }
     };
+  } else if (aiChatModelProvider === 'Groq' && groqApiKey && aiChatModelString && prompt) {
+    const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
+    const chatStream = await groq.chat.completions.create({
+      model: aiChatModelString,
+      messages: [{ role: 'user', content: prompt }],
+      stream: true
+    });
+
+    stream = {
+      async *[Symbol.asyncIterator]() {
+        for await (const chunk of chatStream) {
+          yield { choices: [{ delta: { content: chunk.choices[0]?.delta?.content || '' } }] };
+        }
+      }
+    };
   } else {
     throw new Error('Invalid AI service');
   }
@@ -546,6 +564,7 @@ export const generateAIStream = async ({
   mistralModel,
   anthropicApiKey,
   ollamaBaseUrl,
+  groqApiKey,
   isInject
 }: {
   aiChatModelProvider: string;
@@ -568,6 +587,7 @@ export const generateAIStream = async ({
   mistralModel: string;
   anthropicApiKey: string;
   ollamaBaseUrl: string;
+  groqApiKey: string;
   isInject: boolean;
 }): Promise<AsyncIterable<any>> => {
   const { extractedCode } = getSelectedCode(notebookTracker);
@@ -601,7 +621,8 @@ export const generateAIStream = async ({
     mistralApiKey,
     mistralModel,
     anthropicApiKey,
-    ollamaBaseUrl
+    ollamaBaseUrl,
+    groqApiKey
   });
 };
 

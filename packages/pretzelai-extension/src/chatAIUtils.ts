@@ -11,6 +11,8 @@ import { OpenAI } from 'openai';
 import { ChatCompletionMessage } from 'openai/resources';
 import MistralClient, { Message } from '@mistralai/mistralai';
 import { streamAnthropicCompletion } from './utils';
+import Groq from 'groq-sdk';
+import { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
 
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
@@ -59,6 +61,7 @@ export const chatAIStream = async ({
   mistralApiKey,
   anthropicApiKey,
   ollamaBaseUrl,
+  groqApiKey,
   renderChat,
   messages,
   topSimilarities,
@@ -78,6 +81,7 @@ export const chatAIStream = async ({
   mistralApiKey?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
+  groqApiKey?: string;
   renderChat: (message: string) => void;
   messages: OpenAI.ChatCompletionMessage[];
   topSimilarities: string[];
@@ -227,6 +231,21 @@ export const chatAIStream = async ({
         }
       }
     }
+  } else if (aiChatModelProvider === 'Groq' && aiChatModelString && messages) {
+    const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
+    const stream = await groq.chat.completions.create({
+      model: aiChatModelString,
+      messages: messagesWithInjection as ChatCompletionMessageParam[],
+      stream: true
+    });
+
+    for await (const chunk of stream) {
+      if (chunk.choices[0]?.delta?.content) {
+        renderChat(chunk.choices[0].delta.content);
+      }
+    }
+    setReferenceSource('');
+    setIsAiGenerating(false);
   } else {
     renderChat('ERROR: No model provided. Fix your settings in Settings > Pretzel AI Settings');
     setReferenceSource('');

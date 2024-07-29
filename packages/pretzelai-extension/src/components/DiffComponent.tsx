@@ -93,12 +93,19 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
 
   useEffect(() => {
     const accumulate = async () => {
-      for await (const chunk of stream) {
-        setNewCode(prevCode => prevCode + (chunk.choices[0]?.delta?.content || ''));
+      try {
+        for await (const chunk of stream) {
+          setNewCode(prevCode => prevCode + (chunk.choices[0]?.delta?.content || ''));
+        }
+        onStreamingDone();
+        // the editor takes some time to calculate the changes correctly, so we need to wait a bit
+        setTimeout(renderFinallyFixedEditorHeight, 500);
+      } catch (error) {
+        // FIXME: We're doing this to ignore the  following error
+        // "Cannot iterate over a consumed stream, use `.tee()` to split the stream."
+        // This should be fixed properly by checking if the steam is consumed.
+        onStreamingDone();
       }
-      onStreamingDone();
-      // the editor takes some time to calculate the changes correctly, so we need to wait a bit
-      setTimeout(renderFinallyFixedEditorHeight, 500);
     };
     accumulate();
   }, [stream, onStreamingDone]);

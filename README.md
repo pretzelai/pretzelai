@@ -37,7 +37,7 @@ Switching to Pretzel from Jupyter is extremely easy **since it's simply an impro
 - Simply start typing in a cell to get inline tab completions
 - In any Jupyter cell, click “**Ask AI**” or press Cmd+K (Mac) / Ctrl+K (Linux/Windows) to prompt AI
 - Use the **AI Sidebar** with Ctrl+Cmd+B (Mac) or Ctrl+Alt+B (Linux/Windows) to chat with AI, generate code, and ask questions
-- To switch to your own OpenAI API key, see the [Configuration](#configuration) section
+- To use your own model (OpenAI, Anthropic/Claude, Ollama or Groq), see the [Configuration](#configuration) section
 
 ![](assets/main.png)
 
@@ -70,7 +70,7 @@ pretzel lab
 
 Just as with Jupyter, you should see a URL to access the Pretzel interface.
 
-To use your own OpenAI API key, see the [Configuration](#configuration) section.
+To use your own AI model, see the [Configuration](#configuration) section.
 
 **Bleeding Edge Version**
 
@@ -89,8 +89,10 @@ pip install .
 
 #### Inline Tab Completion
 
-- Start typing in a cell to get inline tab completions with [Mistral's Codestral](https://mistral.ai/news/codestral/)
+- Start typing in a cell to get inline tab completions
 - Wait for 1 second to trigger completions
+
+The default Pretzel AI Server uses [Mistral's Codestral](https://mistral.ai/news/codestral/) but you can switch the inline completion model in Pretzel AI Settings. See the [configuration](#configuration) section.
 
 #### Generating and editing code in notebook cells
 
@@ -107,13 +109,13 @@ pip install .
 - Use **`Ctrl+Cmd+B` (Mac) / `Ctrl+Alt+B` (Linux/Windows)** or the [Pretzel Icon on the right sidebar](assets/pretzel-icon-finder.png) to activate the AI Sidebar
 - You can ask questions, generate code, or search for existing code
 - The AI always **uses the code in the active cell as context**. If you highlight some code in the active cell, only the highlighted code will be used as context
-- Mention `@notebook` to send additional relevant code in the current notebook as context to the AI
+- We automatically send relevant code in the current notebook as context to the AI
 
 _Example uses of AI Sidebar_:
 
-- "Modify the function `my_function` in @notebook to be more efficient" ← _this will search for the function `my_function` in the whole notebook and modify it_
-- "Where is the code in @notebook that removes outliers"? ← _this will search for code that removes outliers in the whole notebook_
-- "Can you explain what this code does?" ← _this will explain the code **in the current cell**_
+- "Modify the function `my_function` to be more efficient" ← _this will find the function `my_function` in the whole notebook and modify it_
+- "Where is the code that removes outliers"? ← _this will search the notebook for code that removes outliers and show it to you_
+- _(While cursor is in a cell with some code)_ "Can you explain what this code does?" ← _this will explain the code **in the current cell**_
 
 #### Adding code in the middle of existing code
 
@@ -127,22 +129,24 @@ _Example uses of AI Sidebar_:
 
 ## Configuration
 
-**Pretzel works out-of-the-box, no configuration needed.**
+**Pretzel works out-of-the-box, no configuration needed.** We **DO NOT** store any code or data you send to the Pretzel AI Server.
 
-Pretzel uses our free AI server by default. You can **configure it to use your own OpenAI/Azure API key** instead.
+Still, if you want to use a different AI model, you can configure Pretzel to **use AI models from multiple different vendors, including local models.** In this case, the AI request goes directly from your computer to the AI service (OpenAI, Anthropic etc).
 
-**OpenAI Support**
+- Open the `Settings` menu in the top menubar, then click `Pretzel AI Settings`
+- Under **AI Settings** you can pick which AI models to use for chat and for inline completion (see screenshot below)
+  - We recommend using GPT-4 class models (e.g., GPT-4 Turbo, GPT-4o, Claude-3.5 Sonnet, Claude-3 Opus and Llama-3.1 405B) for the best performance
 
-- Open the `Settings` menu in the top menubar, then click `Settings Editor`
-- Search for `Pretzel` and select `Pretzel AI Settings` on the left bar
-- From the `AI Service` dropdown, select `OpenAI API Key` and fill out your API key under `OpenAI Settings > API Key`.
-- If your company uses OpenAI Enterprise, then you can also enter the base URL for OpenAI call under `OpenAI Settings`
-- We use `GPT-4o` as the default model. You can change this with the `OpenAI Model` dropdown.
+Under the section **Configure AI Services**, you can
 
-![help image here](assets/settings-openai-key.png)
+- Enable or disable certain AI services (for eg, Azure and Ollama are disabled by default but can be enabled)
+- Enter your API key or URL as needed for each service
 
-**Azure Support**
-Just as with OpenAI settings, you can also use Azure hosted models if you select `Use Azure API` in the `AI Service` dropdown. _We haven't tested this yet so there may be bugs._
+Remember to save your settings after making changes. Pretzel will validate your configuration to ensure everything is set up correctly.
+
+![help image here](assets/pretzel-settings.png)
+
+Please note: We haven't tested _Azure Enterprise OpenAI_ models yet. If you find any bugs, please report them in [GitHub issues](https://github.com/pretzelai/pretzelai/issues) and we'll fix them ASAP.
 
 ## Feedback, bugs and docs
 

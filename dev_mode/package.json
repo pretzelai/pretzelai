@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab/application-top",
-  "version": "4.2.7",
+  "version": "4.2.8",
   "private": true,
   "license": "BSD-3-Clause",
   "scripts": {
@@ -84,7 +84,7 @@
     "@jupyterlab/metapackage": "~4.2.0",
     "@jupyterlab/nbconvert-css": "~4.2.0",
     "@jupyterlab/nbformat": "~4.2.0",
-    "@jupyterlab/notebook": "~4.2.0",
+    "@jupyterlab/notebook": "file:../packages/notebook",
     "@jupyterlab/notebook-extension": "~4.2.0",
     "@jupyterlab/observables": "~5.2.0",
     "@jupyterlab/outputarea": "~4.2.0",
@@ -228,7 +228,7 @@
   },
   "jupyterlab": {
     "name": "JupyterLab",
-    "version": "4.2.7",
+    "version": "4.2.8",
     "extensions": {
       "@jupyterlab/application-extension": "",
       "@jupyterlab/apputils-extension": "",

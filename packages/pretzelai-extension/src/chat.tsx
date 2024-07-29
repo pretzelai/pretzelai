@@ -54,6 +54,7 @@ interface IChatProps {
   mistralApiKey?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
+  groqApiKey?: string;
   notebookTracker: INotebookTracker;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
@@ -73,6 +74,7 @@ export function Chat({
   mistralApiKey,
   anthropicApiKey,
   ollamaBaseUrl,
+  groqApiKey,
   notebookTracker,
   app,
   rmRegistry,
@@ -246,6 +248,7 @@ export function Chat({
       mistralApiKey,
       anthropicApiKey,
       ollamaBaseUrl,
+      groqApiKey,
       renderChat,
       messages: formattedMessages as ChatCompletionMessage[],
       topSimilarities,
