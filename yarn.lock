@@ -1489,9 +1489,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codemirror/autocomplete@npm:^6.0.0, @codemirror/autocomplete@npm:^6.15.0, @codemirror/autocomplete@npm:^6.3.2, @codemirror/autocomplete@npm:^6.7.1":
-  version: 6.16.2
-  resolution: "@codemirror/autocomplete@npm:6.16.2"
+"@codemirror/autocomplete@npm:^6.0.0, @codemirror/autocomplete@npm:^6.11.0, @codemirror/autocomplete@npm:^6.15.0, @codemirror/autocomplete@npm:^6.3.2, @codemirror/autocomplete@npm:^6.7.1":
+  version: 6.17.0
+  resolution: "@codemirror/autocomplete@npm:6.17.0"
   dependencies:
     "@codemirror/language": ^6.0.0
     "@codemirror/state": ^6.0.0
@@ -1502,7 +1502,7 @@ __metadata:
     "@codemirror/state": ^6.0.0
     "@codemirror/view": ^6.0.0
     "@lezer/common": ^1.0.0
-  checksum: ece600c23503879c490665de01631d6c03097b77c244b091f01ba39fde9d0429059bdcb97c280806366b33be4a7eb6eb60358245b9ab6c12ae23331dfb27217c
+  checksum: b41a9c57ec7fa83a97c027ba90f10b28b3bb4c5c248778f984c101412909ce32cfb1fc970eabc6d65a5d4f37dbe4b5e521b5c8d856cdc2b43511130f3fefdfe5
   languageName: node
   linkType: hard
 
@@ -4863,6 +4863,7 @@ __metadata:
   resolution: "@jupyterlab/pretzelai-extension@workspace:packages/pretzelai-extension"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
+    "@codemirror/autocomplete": ^6.11.0
     "@codemirror/commands": ^6.3.3
     "@codemirror/language": ^6.10.1
     "@codemirror/state": ^6.4.1
@@ -4919,9 +4920,10 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=ae99b0&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=4b0d06&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
+    "@codemirror/autocomplete": ^6.11.0
     "@codemirror/commands": ^6.3.3
     "@codemirror/language": ^6.10.1
     "@codemirror/state": ^6.4.1
@@ -4953,7 +4955,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: a98399bc2c827ee67e2d47938d7847330b6d5c52084ec2bc93f1b1fa612b380e1caa22b02ff3ede5c8eef3902e25fb82afc8f63aa211a89dd592a159f869ee06
+  checksum: 084095fdbf7c7f096b18ccb0a81b6855c22ca7a9be04172f79b2a09070852ccfade0de13a24c9ebdc0e0c822a5dd04bf1b42855079005b52218f216d45bbdf47
   languageName: node
   linkType: hard
 

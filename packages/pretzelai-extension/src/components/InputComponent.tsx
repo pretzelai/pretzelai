@@ -206,13 +206,27 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         doc: initialPrompt,
         extensions: [
           history({ newGroupDelay: 50 }),
-          keymap.of(historyKeymap),
+          // keymap.of(historyKeymap),
           isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
           EditorView.lineWrapping,
           EditorView.editable.of(isAIEnabled),
           syntaxHighlighting(defaultHighlightStyle),
           drawSelection(),
-          autocompleteExtension
+          autocompleteExtension,
+          EditorView.updateListener.of(update => {
+            if (update.docChanged) {
+              console.log('Document changed:', update.state.doc.toString());
+            }
+            if (update.selectionSet) {
+              console.log('Selection changed:', update.state.selection);
+            }
+            const autocompleteContainer = document.querySelector('.cm-tooltip-autocomplete');
+            if (autocompleteContainer) {
+              console.log('Autocomplete suggestions are in the DOM:', autocompleteContainer.innerHTML);
+            } else {
+              console.log('Autocomplete suggestions are not found in the DOM');
+            }
+          })
         ]
       });
 
@@ -310,10 +324,10 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             });
           }
         }
+        console.log('Key pressed:', event.key);
       });
 
       inputViewRef.current = inputView;
-      // remove?
       setInputView(inputView);
       inputView.focus();
       console.log('EditorView focused');
