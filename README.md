@@ -110,12 +110,15 @@ The default Pretzel AI Server uses [Mistral's Codestral](https://mistral.ai/news
 - You can ask questions, generate code, or search for existing code
 - The AI always **uses the code in the active cell as context**. If you highlight some code in the active cell, only the highlighted code will be used as context
 - We automatically send relevant code in the current notebook as context to the AI
+- You can also use the `@` syntax to refer to variables and dataframes in memory, similar to the notebook cells
 
 _Example uses of AI Sidebar_:
 
 - "Modify the function `my_function` to be more efficient" ← _this will find the function `my_function` in the whole notebook and modify it_
 - "Where is the code that removes outliers"? ← _this will search the notebook for code that removes outliers and show it to you_
 - _(While cursor is in a cell with some code)_ "Can you explain what this code does?" ← _this will explain the code **in the current cell**_
+- "Plot a histogram of @df for age" ← _this will generate code to plot a histogram of the 'age' column from the dataframe named 'df'_
+- "Calculate the mean revenue in @sales*data for each product type" ← \_this will generate code to calculate mean revenue by product type using the `sales_data` dataframe*
 
 #### Adding code in the middle of existing code
 
