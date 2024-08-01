@@ -13,18 +13,34 @@ import MistralClient, { Message } from '@mistralai/mistralai';
 import { streamAnthropicCompletion } from './utils';
 import Groq from 'groq-sdk';
 import { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
+import { processVariables } from './utils';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
 
-export const generateChatPrompt = (
+export const generateChatPrompt = async (
   lastContent: string,
   setReferenceSource: (source: string) => void,
+  notebookTracker: INotebookTracker,
   topSimilarities?: string[],
   activeCellCode?: string,
   selectedCode?: string
 ) => {
-  let output = `${lastContent}\n`;
+  const { processedInput, varValues } = await processVariables(lastContent, notebookTracker);
+
+  let output = `${processedInput}\n`;
+
+  if (!selectedCode && !activeCellCode && (!topSimilarities || topSimilarities.length === 0)) {
+    setReferenceSource('No specific code context');
+    output += `My main question is the above. Your goal is to answer my question briefly and don't mention the code unless necessary.\n`;
+  }
+
+  if (varValues) {
+    output += `\n*ADDITIONAL CONTEXT*\n`;
+    output += `\n${varValues}\n`;
+    output += `\n*END ADDITIONAL CONTEXT*\n`;
+  }
 
   if (selectedCode || activeCellCode) {
     setReferenceSource(selectedCode ? 'Selected code' : 'Current cell code');
@@ -40,11 +56,6 @@ ${selectedCode || activeCellCode}
 \`\`\`python
 ${topSimilarities.join('\n```\n```python\n')}
 \`\`\`\n`;
-  }
-
-  if (!selectedCode && !activeCellCode && (!topSimilarities || topSimilarities.length === 0)) {
-    setReferenceSource('No specific code context');
-    output += `My main question is the above. Your goal is to answer my question briefly and don't mention the code unless necessary.\n`;
   }
 
   return output;
@@ -69,7 +80,8 @@ export const chatAIStream = async ({
   selectedCode,
   setReferenceSource,
   setIsAiGenerating,
-  signal
+  signal,
+  notebookTracker
 }: {
   aiChatModelProvider: string;
   aiChatModelString: string;
@@ -90,11 +102,13 @@ export const chatAIStream = async ({
   setReferenceSource: (source: string) => void;
   setIsAiGenerating: (isGenerating: boolean) => void;
   signal: AbortSignal;
+  notebookTracker: INotebookTracker;
 }): Promise<void> => {
   const lastContent = messages[messages.length - 1].content as string;
-  const lastContentWithInjection = generateChatPrompt(
+  const lastContentWithInjection = await generateChatPrompt(
     lastContent,
     setReferenceSource,
+    notebookTracker,
     topSimilarities,
     activeCellCode,
     selectedCode

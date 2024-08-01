@@ -116,32 +116,37 @@ export async function getVariableValue(
 }
 
 export async function processTaggedVariables(userInput: string, notebookTracker: INotebookTracker): Promise<string> {
+  const { processedInput, varValues } = await processVariables(userInput, notebookTracker);
+  const importsCode = processImports(notebookTracker);
+
+  const modifiedUserInput = '*USER INSTRUCTION START*\n' + processedInput + '\n*USER INSTRUCTION END*\n\n';
+
+  let result = modifiedUserInput;
+
+  if (importsCode || varValues) {
+    result += `*ADDITIONAL CONTEXT*\n\n`;
+    if (importsCode) {
+      result += `The following imports are already present in *OTHER CELLS* the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
+    }
+    if (varValues) {
+      result += `\n${varValues}\n`;
+    }
+    result += `\n*END ADDITIONAL CONTEXT*\n`;
+  }
+
+  return result;
+}
+
+export async function processVariables(
+  userInput: string,
+  notebookTracker: INotebookTracker
+): Promise<{ processedInput: string; varValues: string }> {
   const variablePattern = / @([a-zA-Z_][a-zA-Z0-9_]*(\[[^\]]+\]|(\.[a-zA-Z_][a-zA-Z0-9_]*)?)*)[\s,\-]?/g;
   let match;
-  let modifiedUserInput = '*USER INSTRUCTION START*\n' + userInput + '\n*USER INSTRUCTION END*\n\n';
-
-  // add context of imports and existing variables in the notebook
-  const imports = notebookTracker.currentWidget!.model!.sharedModel.cells.filter(
-    cell =>
-      cell.id !== notebookTracker.currentWidget!.content.activeCell!.model.id &&
-      cell.source.split('\n').some(line => line.includes('import'))
-  );
-  const importsCode = imports
-    .map(cell =>
-      cell.source
-        .split('\n')
-        .filter(line => line.trim().includes('import'))
-        .join('\n')
-    )
-    .join('\n');
-
-  // call getVariableValue to get the list of globals() from python
-  // TODO: I suspect that this ends up removing variables on edit (in code). Look at it later, removing for now
-  // const getVarsCode = `[var for var in globals() if not var.startswith('_') and not callable(globals()[var]) and var not in ['In', 'Out']]`;
-  // const globalVars = await getVariableValue(getVarsCode, notebookTracker);
-
+  let processedInput = userInput;
   let variablesProcessed: string[] = [];
   let varValues = '';
+
   while ((match = variablePattern.exec(userInput)) !== null) {
     const variableName = match[1];
     if (variablesProcessed.includes(variableName)) {
@@ -149,40 +154,38 @@ export async function processTaggedVariables(userInput: string, notebookTracker:
     }
     variablesProcessed.push(variableName);
     try {
-      // get value of var using the getVariableValue function
       const variableType = await getVariableValue(`type(${variableName})`, notebookTracker);
 
-      // check if variableType is dataframe
-      // if it is, get columns and add to modifiedUserInput
       if (variableType?.includes('DataFrame')) {
         const variableColumns = await getVariableValue(`${variableName}.columns`, notebookTracker);
-        varValues += `\n\`${variableName}\` is a dataframe with the following columns: \`${variableColumns}\`\n`;
+        varValues += `\n\`${variableName}\` is a DataFrame with the following columns: \`${variableColumns}\`\n`;
       } else if (variableType) {
         const variableValue = await getVariableValue(variableName, notebookTracker);
-        varValues += `\nPrinting \`${variableName}\` in Python returns \`${variableValue}\`\n`;
+        varValues += `\n\`${variableName}\` is a Python variable of type \`${variableType}\` with value \`${variableValue}\`\n`;
       }
-      // replace the @variable in userInput with `variable`
-      modifiedUserInput = modifiedUserInput.replace(`@${variableName}`, `\`${variableName}\``);
+      processedInput = processedInput.replace(`@${variableName}`, `\`${variableName}\``);
     } catch (error) {
       console.error(`Error accessing variable ${variableName}:`, error);
     }
   }
 
-  if (importsCode || varValues) {
-    modifiedUserInput += `*ADDITIONAL CONTEXT*\n\n`;
-    if (importsCode) {
-      modifiedUserInput += `The following imports are already present in *OTHER CELLS* the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
-    }
-    // if (globalVars) {
-    //   modifiedUserInput += `The following variables exist in memory of the notebook kernel:\n\`\`\`\n${globalVars}\n\`\`\`\n`;
-    // }
-    if (varValues) {
-      modifiedUserInput += `\n${varValues}\n`;
-    }
-    modifiedUserInput += `\n*END ADDITIONAL CONTEXT*\n`;
-  }
+  return { processedInput, varValues };
+}
 
-  return modifiedUserInput;
+export function processImports(notebookTracker: INotebookTracker): string {
+  const imports = notebookTracker.currentWidget!.model!.sharedModel.cells.filter(
+    cell =>
+      cell.id !== notebookTracker.currentWidget!.content.activeCell!.model.id &&
+      cell.source.split('\n').some(line => line.includes('import'))
+  );
+  return imports
+    .map(cell =>
+      cell.source
+        .split('\n')
+        .filter(line => line.trim().includes('import'))
+        .join('\n')
+    )
+    .join('\n');
 }
 
 export const PRETZEL_FOLDER = '.pretzel';

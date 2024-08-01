@@ -137,11 +137,15 @@ export function Chat({
         const file = await app.serviceManager.contents.get(chatHistoryPath);
         try {
           const chatHistoryJson = JSON.parse(file.content);
-          let lastChat: IMessage[] = chatHistoryJson[chatHistoryJson.length - 1];
-          if (
-            lastChat.every(m => messages.some(m2 => m2.content === m.content && m2.role === m.role && m2.id === m.id))
-          ) {
-            chatHistoryJson[chatHistoryJson.length - 1] = messages;
+          if (chatHistoryJson.length > 0) {
+            let lastChat: IMessage[] = chatHistoryJson[chatHistoryJson.length - 1];
+            if (
+              lastChat.every(m => messages.some(m2 => m2.content === m.content && m2.role === m.role && m2.id === m.id))
+            ) {
+              chatHistoryJson[chatHistoryJson.length - 1] = messages;
+            } else {
+              chatHistoryJson.push(messages);
+            }
           } else {
             chatHistoryJson.push(messages);
           }
@@ -166,7 +170,7 @@ export function Chat({
           content: JSON.stringify(messagesToSave)
         });
         setChatHistory(messagesToSave);
-        setChatIndex(1);
+        setChatIndex(messagesToSave.length);
       }
     }
   };
@@ -256,7 +260,8 @@ export function Chat({
       selectedCode,
       setReferenceSource,
       setIsAiGenerating,
-      signal
+      signal,
+      notebookTracker
     });
   };
 

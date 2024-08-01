@@ -13,10 +13,6 @@ import { OpenAIClient } from '@azure/openai';
 import MistralClient, { EmbeddingResponse as MistralEmbeddings } from '@mistralai/mistralai';
 import { CreateEmbeddingResponse as OpenAIEmbeddings } from 'openai/resources/embeddings';
 
-export const EMBEDDING_MODEL = 'text-embedding-3-large';
-
-// export type AiService = 'OpenAI API key' | 'Use Pretzel AI Server' | 'Use Azure API';
-
 export type Embedding = {
   id: string;
   source: string;
@@ -240,7 +236,7 @@ export const openaiEmbeddings = async (
     ).json()) as OpenAIEmbeddings;
   } else if (aiChatModelProvider === 'OpenAI') {
     return await (aiClient as OpenAI).embeddings.create({
-      model: EMBEDDING_MODEL,
+      model: 'text-embedding-3-large',
       input: source
     });
   } else if (aiChatModelProvider === 'Azure') {
