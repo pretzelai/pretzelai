@@ -4839,6 +4839,7 @@ __metadata:
     "@lumino/commands": ^2.3.0
     "@lumino/widgets": ^2.3.2
     "@mistralai/mistralai": ^0.5.0
+    "@monaco-editor/react": ~4.6.0
     "@mui/icons-material": ~5.15.18
     "@mui/material": ^5.15.21
     "@types/jest": ^29.2.0
@@ -4872,7 +4873,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=b91eb2&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=888bf6&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/autocomplete": ^6.15.0
@@ -4898,6 +4899,7 @@ __metadata:
     "@lumino/commands": ^2.3.0
     "@lumino/widgets": ^2.3.2
     "@mistralai/mistralai": ^0.5.0
+    "@monaco-editor/react": ~4.6.0
     "@mui/icons-material": ~5.15.18
     "@mui/material": ^5.15.21
     codemirror: ^6.0.1
@@ -4908,7 +4910,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: dfb1abe992f14ebf11d229ac86dedbbc6065f4991b7e664c2919aa3d1a1e4b62a902366ca1aa3526436cb89f0ac811a0260cf33114b6d3b6cd5bf30bf18ae399
+  checksum: f3bf33c516b0b58ad55d864a3bc69eec905caec3eca43d7a87b8e2230fcbaff84ad9dfd746c541ad1f3ff11d1d37c74249719fa7646c2cffaee5427608639396
   languageName: node
   linkType: hard
 
@@ -6084,7 +6086,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@monaco-editor/react@npm:^4.6.0":
+"@monaco-editor/react@npm:^4.6.0, @monaco-editor/react@npm:~4.6.0":
   version: 4.6.0
   resolution: "@monaco-editor/react@npm:4.6.0"
   dependencies:

@@ -15,6 +15,7 @@ import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
+import 'monaco-editor/min/vs/editor/editor.main.css';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
@@ -148,6 +149,91 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
     setInputView(editor);
+
+    // Add event listeners
+    editor.onKeyDown((event: any) => {
+      if (event.code === 'Escape') {
+        posthog.capture('Back to Cell via Escape', {
+          event_type: 'keypress',
+          event_value: 'esc',
+          method: 'back_to_cell'
+        });
+        event.preventDefault();
+        if (activeCell && activeCell.editor) {
+          activeCell.editor.focus();
+        }
+      }
+
+      if (event.code === 'Enter') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          editor.trigger('keyboard', 'type', { text: '\n' });
+        } else {
+          posthog.capture('Submit via Enter', {
+            event_type: 'keypress',
+            event_value: 'enter',
+            method: 'submit'
+          });
+          const currentPrompt = editor.getValue();
+          promptHistoryStack.push(currentPrompt);
+          handleSubmit(currentPrompt);
+        }
+      }
+
+      if (event.code === 'ArrowUp') {
+        const model = editor.getModel();
+        const position = editor.getPosition();
+        if (position.lineNumber === 1 && position.column === 1) {
+          event.preventDefault();
+          posthog.capture('Prompt History Back via Shortcut', {
+            event_type: 'keypress',
+            event_value: 'up_arrow',
+            method: 'prompt_history'
+          });
+          setPromptHistoryIndex(prevIndex => {
+            let finalIndex: number;
+            if (prevIndex + 1 >= promptHistoryStack.length) {
+              finalIndex = promptHistoryStack.length - 1;
+            } else {
+              finalIndex = prevIndex + 1;
+            }
+            handlePromptHistory(finalIndex);
+            const currentPrompt = editor.getValue();
+            if (currentPrompt && prevIndex === 0) {
+              promptHistoryStack.push(currentPrompt);
+              finalIndex += 1;
+            }
+            return finalIndex;
+          });
+        }
+      }
+
+      if (event.code === 'ArrowDown') {
+        const model = editor.getModel();
+        const position = editor.getPosition();
+        const lastLineNumber = model.getLineCount();
+        if (position.lineNumber === lastLineNumber) {
+          event.preventDefault();
+          posthog.capture('Prompt History Forward via Shortcut', {
+            event_type: 'keypress',
+            event_value: 'down_arrow',
+            method: 'prompt_history'
+          });
+          setPromptHistoryIndex(prevIndex => {
+            let finalIndex: number;
+            if (prevIndex - 1 < 0) {
+              finalIndex = 0;
+            } else {
+              finalIndex = prevIndex - 1;
+            }
+            handlePromptHistory(finalIndex);
+            return finalIndex;
+          });
+        }
+      }
+    });
+
+    editor.focus();
   };
 
   const handleEditorChange = (value: string | undefined) => {
@@ -192,6 +278,11 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         options={{
           minimap: { enabled: false },
           lineNumbers: 'off',
+          scrollbar: {
+            vertical: 'hidden',
+            horizontal: 'hidden',
+            handleMouseWheel: false
+          },
           folding: false,
           wordWrap: 'on',
           wrappingIndent: 'same',
