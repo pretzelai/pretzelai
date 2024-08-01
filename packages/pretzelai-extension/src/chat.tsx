@@ -25,6 +25,7 @@ import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import posthog from 'posthog-js';
 import MistralClient from '@mistralai/mistralai';
+// import { globalState } from './globalState';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',

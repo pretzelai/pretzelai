@@ -20,6 +20,7 @@ import posthog from 'posthog-js';
 import { showErrorDialog } from './components/ErrorDialog';
 import MistralClient from '@mistralai/mistralai';
 import Groq from 'groq-sdk';
+import { IKernelConnection } from '@jupyterlab/services/src/kernel/kernel';
 
 export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
@@ -69,6 +70,31 @@ export const getSelectedCode = (notebookTracker: INotebookTracker) => {
   return { extractedCode: extractedCode.trimEnd(), selection };
 };
 
+export async function executeCode(kernel: IKernelConnection, code: string): Promise<string | null> {
+  const executeRequest = kernel.requestExecute({ code });
+  let variableValue: string | null = null;
+
+  kernel.registerMessageHook(executeRequest.msg.header.msg_id, (msg: IIOPubMessage) => {
+    if (
+      msg.header.msg_type === 'stream' &&
+      // @ts-expect-error tserror
+      msg.content.name === 'stdout'
+    ) {
+      // @ts-expect-error tserror
+      variableValue = msg.content.text.trim();
+    }
+    return true;
+  });
+
+  const reply = await executeRequest.done;
+  if (reply && reply.content.status === 'ok') {
+    return variableValue;
+  } else {
+    console.error('Failed to retrieve variable value');
+    return null;
+  }
+}
+
 export async function getVariableValue(
   variableName: string,
   notebookTracker: INotebookTracker
@@ -77,34 +103,7 @@ export async function getVariableValue(
   if (notebook && notebook.sessionContext.session?.kernel) {
     const kernel = notebook.sessionContext.session.kernel;
     try {
-      // get the type - if dataframe, we get columns
-      // if other, we get the string representation
-      const executeRequest = kernel.requestExecute({
-        code: `print(${variableName})`
-      });
-      let variableValue: string | null = null;
-
-      // Registering a message hook to intercept messages
-      kernel.registerMessageHook(executeRequest.msg.header.msg_id, (msg: IIOPubMessage) => {
-        if (
-          msg.header.msg_type === 'stream' &&
-          // @ts-expect-error tserror
-          msg.content.name === 'stdout'
-        ) {
-          // @ts-expect-error tserror
-          variableValue = msg.content.text.trim();
-        }
-        return true;
-      });
-
-      // Await the completion of the execute request
-      const reply = await executeRequest.done;
-      if (reply && reply.content.status === 'ok') {
-        return variableValue;
-      } else {
-        console.error('Failed to retrieve variable value');
-        return null;
-      }
+      return await executeCode(kernel, `print(${variableName})`);
     } catch (error) {
       console.error('Error retrieving variable value:', error);
       return null;
@@ -187,6 +186,31 @@ export function processImports(notebookTracker: INotebookTracker): string {
     )
     .join('\n');
 }
+
+export const getAvailableVariables = async (notebookTracker: INotebookTracker): Promise<string[]> => {
+  const code = `from IPython import get_ipython;ipython = get_ipython();print(ipython.run_line_magic('who_ls', ''))`;
+  const varsToIgnore = ['get_ipython', 'ipython'];
+  const kernel = notebookTracker!.currentWidget!.sessionContext!.session!.kernel!;
+  try {
+    const output = await executeCode(kernel, code);
+    if (output) {
+      try {
+        let variablesArray = JSON.parse(output.replace(/'/g, '"')) as string[];
+        variablesArray = variablesArray.filter(variable => !varsToIgnore.includes(variable));
+        return variablesArray;
+      } catch (error) {
+        console.error('Error parsing output:', error);
+        return [];
+      }
+    } else {
+      console.warn('No output received from kernel');
+      return [];
+    }
+  } catch (error) {
+    console.error('Error executing code:', error);
+    return [];
+  }
+};
 
 export const PRETZEL_FOLDER = '.pretzel';
 

@@ -19,6 +19,7 @@ import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import MistralClient from '@mistralai/mistralai';
 import { showErrorMessage } from '@jupyterlab/apputils';
+import { globalState } from '../globalState';
 
 interface IAIAssistantComponentProps {
   aiChatModelProvider: string;

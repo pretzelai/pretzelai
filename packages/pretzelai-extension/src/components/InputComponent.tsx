@@ -15,6 +15,8 @@ import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/comm
 import { Cell, ICellModel } from '@jupyterlab/cells';
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
+import { globalState } from '../globalState';
+import { autocompletion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
@@ -179,8 +181,27 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     });
   }, [activeCell]);
 
+  const autocompleteExtension = autocompletion({
+    override: [
+      async (context: CompletionContext): Promise<CompletionResult | null> => {
+        console.log('Autocomplete function called');
+        let word = context.matchBefore(/@\w*/);
+        if (!word || (word.from == word.to && !context.explicit)) return null;
+        let options = globalState.availableVariables;
+        console.log('Autocomplete options:', options);
+        return {
+          from: word.from,
+          options: options.map(option => ({ label: option, type: 'variable' }))
+        };
+      }
+    ],
+    activateOnTyping: true,
+    defaultKeymap: true
+  });
+
   useEffect(() => {
     if (inputFieldRef.current) {
+      console.log('Creating EditorView');
       const state = EditorState.create({
         doc: initialPrompt,
         extensions: [
@@ -190,7 +211,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           EditorView.lineWrapping,
           EditorView.editable.of(isAIEnabled),
           syntaxHighlighting(defaultHighlightStyle),
-          drawSelection()
+          drawSelection(),
+          autocompleteExtension
         ]
       });
 
@@ -198,11 +220,13 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         state,
         parent: inputFieldRef.current
       });
+      console.log('EditorView created');
       setInputView(inputView);
 
       inputView.dispatch({
         selection: { anchor: state.doc.length, head: state.doc.length }
       });
+      console.log('EditorView dispatch completed');
 
       inputView.dom.addEventListener('keydown', event => {
         if (event.key === 'Escape') {
@@ -292,6 +316,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       // remove?
       setInputView(inputView);
       inputView.focus();
+      console.log('EditorView focused');
     }
 
     return () => {
