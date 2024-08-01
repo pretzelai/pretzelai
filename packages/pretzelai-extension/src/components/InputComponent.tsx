@@ -9,16 +9,10 @@
  * the root of the project) are licensed under AGPLv3.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { EditorState } from '@codemirror/state';
-import { drawSelection, EditorView, keymap, placeholder, tooltips } from '@codemirror/view';
-import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
+import { Editor } from '@monaco-editor/react';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
-import { globalState } from '../globalState';
-import { autocompletion, CompletionContext, CompletionResult, startCompletion } from '@codemirror/autocomplete';
-
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
 
@@ -130,10 +124,11 @@ interface IInputComponentProps {
   handleSubmit: (input: string) => void;
   handleRemove: () => void;
   promptHistoryStack: FixedSizeStack<string>;
-  setInputView: (view: EditorView) => void;
+  setInputView: (view: any) => void;
   initialPrompt: string;
   activeCell: Cell<ICellModel>;
 }
+
 const InputComponent: React.FC<IInputComponentProps> = ({
   isAIEnabled,
   placeholderEnabled,
@@ -145,22 +140,27 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   initialPrompt,
   activeCell
 }) => {
-  const inputFieldRef = useRef<HTMLDivElement>(null);
-  const inputViewRef = useRef<EditorView | null>(null);
+  const [editorValue, setEditorValue] = useState(initialPrompt);
   const [submitButtonText, setSubmitButtonText] = useState('Generate');
-  const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0); // how many items to skip
+  const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0);
+  const editorRef = useRef<any>(null);
+
+  const handleEditorDidMount = (editor: any, monaco: any) => {
+    editorRef.current = editor;
+    setInputView(editor);
+  };
+
+  const handleEditorChange = (value: string | undefined) => {
+    if (value !== undefined) {
+      setEditorValue(value);
+    }
+  };
 
   const handlePromptHistory = (promptHistoryIndex: number = 0) => {
-    let oldPrompt = '';
     if (promptHistoryIndex >= 0 && promptHistoryIndex < promptHistoryStack.length) {
-      oldPrompt = promptHistoryStack.get(promptHistoryIndex);
-      inputViewRef.current!.dispatch({
-        changes: { from: 0, to: inputViewRef.current!.state.doc.length, insert: oldPrompt }
-      });
-      inputViewRef.current!.dispatch({
-        selection: { anchor: inputViewRef.current!.state.doc.length }
-      });
-      inputViewRef.current!.focus();
+      const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
+      setEditorValue(oldPrompt);
+      editorRef.current?.focus();
     }
   };
 
@@ -173,195 +173,32 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
     };
 
-    // Call the function initially
     updateSubmitButtonText();
 
-    // Listen to the stateChanged signal
     activeCell?.model.contentChanged.connect(() => {
       updateSubmitButtonText();
     });
   }, [activeCell]);
 
-  const autocompleteExtension = autocompletion({
-    override: [
-      async (context: CompletionContext): Promise<CompletionResult | null> => {
-        console.log('Autocomplete function called');
-        let word = context.matchBefore(/@\w*/);
-        if (!word || (word.from == word.to && !context.explicit)) return null;
-        let options = globalState.availableVariables;
-        console.log('Autocomplete options:', options);
-
-        // Manually create and append tooltip
-        // const tooltip = document.createElement('div');
-        // tooltip.className = 'cm-tooltip-autocomplete';
-        // tooltip.style.position = 'absolute';
-        // tooltip.style.zIndex = '1000';
-        // options.forEach(option => {
-        //   const item = document.createElement('div');
-        //   item.textContent = option;
-        //   tooltip.appendChild(item);
-        // });
-
-        // // Position the tooltip
-        // // @ts-expect-error tserror
-        // const cursor = context.view.coordsAtPos(context.pos);
-        // if (cursor) {
-        //   tooltip.style.left = `${cursor.left}px`;
-        //   tooltip.style.top = `${cursor.bottom}px`;
-        // }
-
-        // document.body.appendChild(tooltip);
-
-        return {
-          from: word.from,
-          options: options.map(option => ({ label: option, type: 'variable' }))
-        };
-      }
-    ]
-  });
-
-  useEffect(() => {
-    if (inputFieldRef.current) {
-      console.log('Creating EditorView');
-      const state = EditorState.create({
-        doc: initialPrompt,
-        extensions: [
-          history({ newGroupDelay: 50 }),
-          keymap.of(historyKeymap),
-          isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
-          EditorView.lineWrapping,
-          EditorView.editable.of(isAIEnabled),
-          syntaxHighlighting(defaultHighlightStyle),
-          drawSelection(),
-          autocompleteExtension,
-          EditorView.updateListener.of(update => {
-            if (update.docChanged) {
-              console.log('Document changed:', update.state.doc.toString());
-            }
-            if (update.selectionSet) {
-              console.log('Selection changed:', update.state.selection);
-            }
-            const autocompleteContainer = document.querySelector('.cm-tooltip-autocomplete');
-            if (autocompleteContainer) {
-              console.log('Autocomplete suggestions are in the DOM:', autocompleteContainer.innerHTML);
-            } else {
-              console.log('Autocomplete suggestions are not found in the DOM');
-            }
-          })
-        ]
-      });
-
-      const inputView = new EditorView({
-        state,
-        parent: inputFieldRef.current
-      });
-      console.log('EditorView created');
-      setInputView(inputView);
-
-      inputView.dispatch({
-        selection: { anchor: state.doc.length, head: state.doc.length }
-      });
-      console.log('EditorView dispatch completed');
-
-      // inputView.dom.addEventListener('keydown', event => {
-      //   if (event.key === 'Escape') {
-      //     posthog.capture('Back to Cell via Escape', {
-      //       event_type: 'keypress',
-      //       event_value: 'esc',
-      //       method: 'back_to_cell'
-      //     });
-      //     event.preventDefault();
-      //     if (activeCell && activeCell.editor) {
-      //       activeCell.editor.focus();
-      //     }
-      //   }
-      //   if (event.key === 'Enter') {
-      //     event.preventDefault();
-      //     if (event.shiftKey) {
-      //       insertNewlineAndIndent({ state: inputView.state, dispatch: inputView.dispatch });
-      //     } else {
-      //       posthog.capture('Submit via Enter', {
-      //         event_type: 'keypress',
-      //         event_value: 'enter',
-      //         method: 'submit'
-      //       });
-      //       const currentPrompt = inputView.state.doc.toString();
-      //       promptHistoryStack.push(currentPrompt);
-      //       handleSubmit(currentPrompt);
-      //     }
-      //   }
-      //   if (event.key === 'ArrowUp') {
-      //     const { state } = inputViewRef.current!;
-      //     const firstLine = state.doc.lineAt(0);
-      //     const cursorPos = state.selection.main.head;
-
-      //     if (cursorPos <= firstLine.to) {
-      //       const currentPrompt = state.doc.toString();
-      //       event.preventDefault();
-      //       posthog.capture('Prompt History Back via Shortcut', {
-      //         event_type: 'keypress',
-      //         event_value: 'up_arrow',
-      //         method: 'prompt_history'
-      //       });
-      //       setPromptHistoryIndex(prevIndex => {
-      //         let finalIndex: number;
-      //         if (prevIndex + 1 >= promptHistoryStack.length) {
-      //           finalIndex = promptHistoryStack.length - 1;
-      //         } else {
-      //           finalIndex = prevIndex + 1;
-      //         }
-      //         handlePromptHistory(finalIndex);
-      //         if (currentPrompt && prevIndex == 0) {
-      //           promptHistoryStack.push(currentPrompt);
-      //           finalIndex += 1;
-      //         }
-      //         return finalIndex;
-      //       });
-      //     }
-      //   }
-
-      //   if (event.key === 'ArrowDown') {
-      //     const { state } = inputViewRef.current!;
-      //     const firstLine = state.doc.lineAt(0);
-      //     const lastLine = state.doc.lineAt(state.doc.length);
-      //     const cursorPos = state.selection.main.head;
-
-      //     if (cursorPos >= lastLine.from || cursorPos === firstLine.to) {
-      //       event.preventDefault();
-      //       posthog.capture('Prompt History Forward via Shortcut', {
-      //         event_type: 'keypress',
-      //         event_value: 'down_arrow',
-      //         method: 'prompt_history'
-      //       });
-      //       setPromptHistoryIndex(prevIndex => {
-      //         let finalIndex: number;
-      //         if (prevIndex - 1 < 0) {
-      //           finalIndex = 0;
-      //         } else {
-      //           finalIndex = prevIndex - 1;
-      //         }
-      //         handlePromptHistory(finalIndex);
-      //         return finalIndex;
-      //       });
-      //     }
-      //   }
-      //   console.log('Key pressed:', event.key);
-      // });
-
-      inputViewRef.current = inputView;
-      setInputView(inputView);
-      inputView.focus();
-      console.log('EditorView focused');
-    }
-
-    return () => {
-      inputViewRef.current?.destroy();
-    };
-  }, [isAIEnabled, handleSubmit, handleRemove, setInputView, activeCell]);
-
   return (
     <div className="input-container">
-      <div className="pretzelInputField" ref={inputFieldRef}></div>
+      <Editor
+        height="200px"
+        defaultLanguage="markdown"
+        defaultValue={initialPrompt}
+        value={editorValue}
+        onChange={handleEditorChange}
+        onMount={handleEditorDidMount}
+        options={{
+          minimap: { enabled: false },
+          lineNumbers: 'off',
+          folding: false,
+          wordWrap: 'on',
+          wrappingIndent: 'same',
+          automaticLayout: true,
+          readOnly: !isAIEnabled
+        }}
+      />
       <div className="input-field-buttons-container">
         <SubmitButton
           handleClick={() => {
@@ -369,41 +206,19 @@ const InputComponent: React.FC<IInputComponentProps> = ({
               event_type: 'click',
               method: 'submit'
             });
-            handleSubmit(inputViewRef.current?.state.doc.toString() || '');
+            handleSubmit(editorValue);
           }}
           isDisabled={!isAIEnabled}
           buttonText={submitButtonText}
         />
-        <RemoveButton
-          handleClick={() => {
-            posthog.capture('Remove via Click', {
-              event_type: 'click',
-              method: 'remove'
-            });
-            handleRemove();
-          }}
-        />
+        <RemoveButton handleClick={handleRemove} />
         <PromptHistoryButton
-          handleClick={(promptHistoryIndex: number) => {
-            posthog.capture('Prompt History via Click', {
-              event_type: 'click',
-              method: 'prompt_history'
-            });
-            const currentPrompt = inputViewRef.current?.state.doc.toString();
-            setPromptHistoryIndex(prevIndex => {
-              let finalIndex: number;
-              if (prevIndex + 1 >= promptHistoryStack.length) {
-                finalIndex = promptHistoryStack.length - 1;
-              } else {
-                finalIndex = prevIndex + 1;
-              }
-              handlePromptHistory(finalIndex);
-              if (currentPrompt && prevIndex == 0) {
-                promptHistoryStack.push(currentPrompt);
-                finalIndex += 1;
-              }
-              return finalIndex;
-            });
+          handleClick={index => {
+            if (index >= 0 && index < promptHistoryStack.length) {
+              const oldPrompt = promptHistoryStack.get(index);
+              setEditorValue(oldPrompt);
+              editorRef.current?.focus();
+            }
           }}
           promptHistoryIndex={promptHistoryIndex}
         />
