@@ -206,7 +206,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         doc: initialPrompt,
         extensions: [
           history({ newGroupDelay: 50 }),
-          // keymap.of(historyKeymap),
+          keymap.of(historyKeymap),
           isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
           EditorView.lineWrapping,
           EditorView.editable.of(isAIEnabled),
