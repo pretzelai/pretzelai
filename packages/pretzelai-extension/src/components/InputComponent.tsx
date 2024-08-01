@@ -9,14 +9,14 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { EditorState } from '@codemirror/state';
-import { drawSelection, EditorView, keymap, placeholder } from '@codemirror/view';
+import { drawSelection, EditorView, keymap, placeholder, tooltips } from '@codemirror/view';
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
 import { globalState } from '../globalState';
-import { autocompletion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+import { autocompletion, CompletionContext, CompletionResult, startCompletion } from '@codemirror/autocomplete';
 
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
@@ -189,14 +189,34 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         if (!word || (word.from == word.to && !context.explicit)) return null;
         let options = globalState.availableVariables;
         console.log('Autocomplete options:', options);
+
+        // Manually create and append tooltip
+        // const tooltip = document.createElement('div');
+        // tooltip.className = 'cm-tooltip-autocomplete';
+        // tooltip.style.position = 'absolute';
+        // tooltip.style.zIndex = '1000';
+        // options.forEach(option => {
+        //   const item = document.createElement('div');
+        //   item.textContent = option;
+        //   tooltip.appendChild(item);
+        // });
+
+        // // Position the tooltip
+        // // @ts-expect-error tserror
+        // const cursor = context.view.coordsAtPos(context.pos);
+        // if (cursor) {
+        //   tooltip.style.left = `${cursor.left}px`;
+        //   tooltip.style.top = `${cursor.bottom}px`;
+        // }
+
+        // document.body.appendChild(tooltip);
+
         return {
           from: word.from,
           options: options.map(option => ({ label: option, type: 'variable' }))
         };
       }
-    ],
-    activateOnTyping: true,
-    defaultKeymap: true
+    ]
   });
 
   useEffect(() => {
@@ -242,90 +262,90 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       });
       console.log('EditorView dispatch completed');
 
-      inputView.dom.addEventListener('keydown', event => {
-        if (event.key === 'Escape') {
-          posthog.capture('Back to Cell via Escape', {
-            event_type: 'keypress',
-            event_value: 'esc',
-            method: 'back_to_cell'
-          });
-          event.preventDefault();
-          if (activeCell && activeCell.editor) {
-            activeCell.editor.focus();
-          }
-        }
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          if (event.shiftKey) {
-            insertNewlineAndIndent({ state: inputView.state, dispatch: inputView.dispatch });
-          } else {
-            posthog.capture('Submit via Enter', {
-              event_type: 'keypress',
-              event_value: 'enter',
-              method: 'submit'
-            });
-            const currentPrompt = inputView.state.doc.toString();
-            promptHistoryStack.push(currentPrompt);
-            handleSubmit(currentPrompt);
-          }
-        }
-        if (event.key === 'ArrowUp') {
-          const { state } = inputViewRef.current!;
-          const firstLine = state.doc.lineAt(0);
-          const cursorPos = state.selection.main.head;
+      // inputView.dom.addEventListener('keydown', event => {
+      //   if (event.key === 'Escape') {
+      //     posthog.capture('Back to Cell via Escape', {
+      //       event_type: 'keypress',
+      //       event_value: 'esc',
+      //       method: 'back_to_cell'
+      //     });
+      //     event.preventDefault();
+      //     if (activeCell && activeCell.editor) {
+      //       activeCell.editor.focus();
+      //     }
+      //   }
+      //   if (event.key === 'Enter') {
+      //     event.preventDefault();
+      //     if (event.shiftKey) {
+      //       insertNewlineAndIndent({ state: inputView.state, dispatch: inputView.dispatch });
+      //     } else {
+      //       posthog.capture('Submit via Enter', {
+      //         event_type: 'keypress',
+      //         event_value: 'enter',
+      //         method: 'submit'
+      //       });
+      //       const currentPrompt = inputView.state.doc.toString();
+      //       promptHistoryStack.push(currentPrompt);
+      //       handleSubmit(currentPrompt);
+      //     }
+      //   }
+      //   if (event.key === 'ArrowUp') {
+      //     const { state } = inputViewRef.current!;
+      //     const firstLine = state.doc.lineAt(0);
+      //     const cursorPos = state.selection.main.head;
 
-          if (cursorPos <= firstLine.to) {
-            const currentPrompt = state.doc.toString();
-            event.preventDefault();
-            posthog.capture('Prompt History Back via Shortcut', {
-              event_type: 'keypress',
-              event_value: 'up_arrow',
-              method: 'prompt_history'
-            });
-            setPromptHistoryIndex(prevIndex => {
-              let finalIndex: number;
-              if (prevIndex + 1 >= promptHistoryStack.length) {
-                finalIndex = promptHistoryStack.length - 1;
-              } else {
-                finalIndex = prevIndex + 1;
-              }
-              handlePromptHistory(finalIndex);
-              if (currentPrompt && prevIndex == 0) {
-                promptHistoryStack.push(currentPrompt);
-                finalIndex += 1;
-              }
-              return finalIndex;
-            });
-          }
-        }
+      //     if (cursorPos <= firstLine.to) {
+      //       const currentPrompt = state.doc.toString();
+      //       event.preventDefault();
+      //       posthog.capture('Prompt History Back via Shortcut', {
+      //         event_type: 'keypress',
+      //         event_value: 'up_arrow',
+      //         method: 'prompt_history'
+      //       });
+      //       setPromptHistoryIndex(prevIndex => {
+      //         let finalIndex: number;
+      //         if (prevIndex + 1 >= promptHistoryStack.length) {
+      //           finalIndex = promptHistoryStack.length - 1;
+      //         } else {
+      //           finalIndex = prevIndex + 1;
+      //         }
+      //         handlePromptHistory(finalIndex);
+      //         if (currentPrompt && prevIndex == 0) {
+      //           promptHistoryStack.push(currentPrompt);
+      //           finalIndex += 1;
+      //         }
+      //         return finalIndex;
+      //       });
+      //     }
+      //   }
 
-        if (event.key === 'ArrowDown') {
-          const { state } = inputViewRef.current!;
-          const firstLine = state.doc.lineAt(0);
-          const lastLine = state.doc.lineAt(state.doc.length);
-          const cursorPos = state.selection.main.head;
+      //   if (event.key === 'ArrowDown') {
+      //     const { state } = inputViewRef.current!;
+      //     const firstLine = state.doc.lineAt(0);
+      //     const lastLine = state.doc.lineAt(state.doc.length);
+      //     const cursorPos = state.selection.main.head;
 
-          if (cursorPos >= lastLine.from || cursorPos === firstLine.to) {
-            event.preventDefault();
-            posthog.capture('Prompt History Forward via Shortcut', {
-              event_type: 'keypress',
-              event_value: 'down_arrow',
-              method: 'prompt_history'
-            });
-            setPromptHistoryIndex(prevIndex => {
-              let finalIndex: number;
-              if (prevIndex - 1 < 0) {
-                finalIndex = 0;
-              } else {
-                finalIndex = prevIndex - 1;
-              }
-              handlePromptHistory(finalIndex);
-              return finalIndex;
-            });
-          }
-        }
-        console.log('Key pressed:', event.key);
-      });
+      //     if (cursorPos >= lastLine.from || cursorPos === firstLine.to) {
+      //       event.preventDefault();
+      //       posthog.capture('Prompt History Forward via Shortcut', {
+      //         event_type: 'keypress',
+      //         event_value: 'down_arrow',
+      //         method: 'prompt_history'
+      //       });
+      //       setPromptHistoryIndex(prevIndex => {
+      //         let finalIndex: number;
+      //         if (prevIndex - 1 < 0) {
+      //           finalIndex = 0;
+      //         } else {
+      //           finalIndex = prevIndex - 1;
+      //         }
+      //         handlePromptHistory(finalIndex);
+      //         return finalIndex;
+      //       });
+      //     }
+      //   }
+      //   console.log('Key pressed:', event.key);
+      // });
 
       inputViewRef.current = inputView;
       setInputView(inputView);

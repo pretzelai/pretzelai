@@ -1489,7 +1489,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codemirror/autocomplete@npm:^6.0.0, @codemirror/autocomplete@npm:^6.11.0, @codemirror/autocomplete@npm:^6.15.0, @codemirror/autocomplete@npm:^6.17.0, @codemirror/autocomplete@npm:^6.3.2, @codemirror/autocomplete@npm:^6.7.1":
+"@codemirror/autocomplete@npm:^6.0.0, @codemirror/autocomplete@npm:^6.15.0, @codemirror/autocomplete@npm:^6.3.2, @codemirror/autocomplete@npm:^6.7.1":
   version: 6.17.0
   resolution: "@codemirror/autocomplete@npm:6.17.0"
   dependencies:
@@ -4863,7 +4863,7 @@ __metadata:
   resolution: "@jupyterlab/pretzelai-extension@workspace:packages/pretzelai-extension"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
-    "@codemirror/autocomplete": ^6.17.0
+    "@codemirror/autocomplete": ^6.15.0
     "@codemirror/commands": ^6.3.3
     "@codemirror/language": ^6.10.1
     "@codemirror/state": ^6.4.1
@@ -4921,10 +4921,10 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=afe25f&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=18c207&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
-    "@codemirror/autocomplete": ^6.11.0
+    "@codemirror/autocomplete": ^6.15.0
     "@codemirror/commands": ^6.3.3
     "@codemirror/language": ^6.10.1
     "@codemirror/state": ^6.4.1
@@ -4957,7 +4957,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 390a6e9b3a789d8a4fc9c4c0c26c00e4c90e6528ec5480579b6f05acd5ccbbf2bef5d0657ee66df1ede4b08d6a28c9f01b64b8b786d9e1502bdfcbd199176b77
+  checksum: 2f96db676d74f1937b82945b98af7207b39fdfd8fc6a4d7f0eb608a65786655891a121526b6760e695875d09b7494e0b47d4be9cff26a30d70d43e4ee937d93f
   languageName: node
   linkType: hard
 

@@ -423,8 +423,8 @@ div.pretzelInputField > .cm-editor {
 }
 
 .cm-tooltip-autocomplete {
-  z-index: 1000;
-  background-color: white;
-  border: 1px solid #ccc;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10000 !important;
+  background-color: white !important;
+  border: 1px solid #ccc !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
 }
