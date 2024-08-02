@@ -229,9 +229,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       editor
     );
 
-    const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
-    monaco.editor.setTheme(currentTheme);
-
     if (!globalState.isMonacoRegistered) {
       // Register the completion provider for Markdown
       monaco.languages.registerCompletionItemProvider('markdown', {
@@ -244,6 +241,9 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
         command: null
       });
+
+      const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
+      monaco.editor.setTheme(currentTheme);
 
       globalState.isMonacoRegistered = true;
     }
