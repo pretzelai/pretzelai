@@ -9,6 +9,8 @@
 
 export const globalState: {
   availableVariables: string[];
+  isMonacoRegistered: boolean;
 } = {
-  availableVariables: []
+  availableVariables: [],
+  isMonacoRegistered: false
 };

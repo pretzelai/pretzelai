@@ -11,12 +11,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import pretzelSvg from '../style/icons/pretzel.svg';
-import { Box, TextField, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { getSelectedCode, getTopSimilarities, PRETZEL_FOLDER, readEmbeddings } from './utils';
+import {
+  completionFunctionProvider,
+  getSelectedCode,
+  getTopSimilarities,
+  PRETZEL_FOLDER,
+  readEmbeddings
+} from './utils';
 import { RendermimeMarkdown } from './components/rendermime-markdown';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { OpenAI } from 'openai';
@@ -25,7 +31,9 @@ import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import posthog from 'posthog-js';
 import MistralClient from '@mistralai/mistralai';
-// import { globalState } from './globalState';
+import { Editor, Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
+import { globalState } from './globalState';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -91,6 +99,8 @@ export function Chat({
   const [referenceSource, setReferenceSource] = useState('');
   const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const [editorValue, setEditorValue] = useState('');
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   const fetchChatHistory = async () => {
     const notebook = notebookTracker.currentWidget;
@@ -197,12 +207,12 @@ export function Chat({
   }, [messages]);
 
   const onSend = async () => {
-    if (input.trim() === '' || isAiGenerating) {
+    if (editorValue.trim() === '' || isAiGenerating) {
       return;
     }
     setIsAiGenerating(true);
-    posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? input : 'no_telemetry' });
-    const inputMarkdown = input.replace(/\n/g, '  \n');
+    posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? editorValue : 'no_telemetry' });
+    const inputMarkdown = editorValue.replace(/\n/g, '  \n');
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
     const embeddings = await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
     const selectedCode = getSelectedCode(notebookTracker).extractedCode;
@@ -216,7 +226,7 @@ export function Chat({
         role: msg.role,
         content: msg.content
       })),
-      { role: 'user', content: input }
+      { role: 'user', content: editorValue }
     ];
 
     const newMessage = {
@@ -226,10 +236,10 @@ export function Chat({
     };
 
     setMessages(prevMessages => [...prevMessages, newMessage as IMessage]);
-    setInput('');
+    setEditorValue('');
 
     const topSimilarities = await getTopSimilarities(
-      input,
+      editorValue,
       embeddings,
       5,
       aiClient,
@@ -273,41 +283,41 @@ export function Chat({
     setReferenceSource('');
   };
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      onSend();
-      event.stopPropagation();
-      event.preventDefault();
-    }
-    if (event.key === 'Escape') {
-      if (isAiGenerating) {
-        cancelGeneration();
-      } else {
-        notebookTracker?.activeCell?.editor?.focus();
-      }
-    }
-    // Cmd + Esc should clear the chat
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Escape' && !isAiGenerating) {
-      clearChat();
-    }
-    // Navigate chat history with Cmd+Shift+, and Cmd+Shift+. (or Ctrl+Shift on Windows)
-    if (
-      (event.metaKey || event.ctrlKey) &&
-      event.shiftKey &&
-      (event.key === ',' || event.key === '<') &&
-      !isAiGenerating
-    ) {
-      restoreChat(-1);
-    }
-    if (
-      (event.metaKey || event.ctrlKey) &&
-      event.shiftKey &&
-      (event.key === '.' || event.key === '>') &&
-      !isAiGenerating
-    ) {
-      restoreChat(1);
-    }
-  }
+  // function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+  //   if (event.key === 'Enter' && !event.shiftKey) {
+  //     onSend();
+  //     event.stopPropagation();
+  //     event.preventDefault();
+  //   }
+  //   if (event.key === 'Escape') {
+  //     if (isAiGenerating) {
+  //       cancelGeneration();
+  //     } else {
+  //       notebookTracker?.activeCell?.editor?.focus();
+  //     }
+  //   }
+  //   // Cmd + Esc should clear the chat
+  //   if ((event.metaKey || event.ctrlKey) && event.key === 'Escape' && !isAiGenerating) {
+  //     clearChat();
+  //   }
+  //   // Navigate chat history with Cmd+Shift+, and Cmd+Shift+. (or Ctrl+Shift on Windows)
+  //   if (
+  //     (event.metaKey || event.ctrlKey) &&
+  //     event.shiftKey &&
+  //     (event.key === ',' || event.key === '<') &&
+  //     !isAiGenerating
+  //   ) {
+  //     restoreChat(-1);
+  //   }
+  //   if (
+  //     (event.metaKey || event.ctrlKey) &&
+  //     event.shiftKey &&
+  //     (event.key === '.' || event.key === '>') &&
+  //     !isAiGenerating
+  //   ) {
+  //     restoreChat(1);
+  //   }
+  // }
 
   const renderChat = (chunk: string) => {
     setMessages(prevMessages => {
@@ -346,6 +356,43 @@ export function Chat({
     posthog.capture('Chat Cleared', {
       chatLength: messages.length
     });
+  };
+
+  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    editorRef.current = editor;
+
+    const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
+    monaco.editor.setTheme(currentTheme);
+
+    if (!globalState.isMonacoRegistered) {
+      // Register the completion provider for Markdown
+      monaco.languages.registerCompletionItemProvider('markdown', {
+        triggerCharacters: ['@'],
+        provideCompletionItems: completionFunctionProvider
+      });
+
+      // remove cmd+k shortcut
+      monaco.editor.addKeybindingRule({
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+        command: null
+      });
+
+      globalState.isMonacoRegistered = true;
+    }
+
+    editor.onKeyDown((event: monaco.IKeyboardEvent) => {
+      if (event.keyCode === monaco.KeyCode.Enter && !event.shiftKey) {
+        event.preventDefault();
+        onSend();
+      }
+      // fixme ... add other key handlers as needed ...
+    });
+  };
+
+  const handleEditorChange = (value: string | undefined) => {
+    if (value !== undefined) {
+      setEditorValue(value);
+    }
   };
 
   return (
@@ -388,33 +435,44 @@ export function Chat({
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <TextField
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            fullWidth={true}
-            multiline={true}
-            rows={6}
-            variant={'filled'}
-            InputProps={{
-              style: {
-                fontSize: 14,
-                padding: '10px'
-              }
-            }}
-            placeholder={
-              `Ask AI (toggle with: ${keyCombination}).\n` +
-              `Use Esc to jump back to cell. Shift + Enter for newline.\n` +
-              `Current cell and other relevant cells are available as context to the AI.`
-            }
-            autoComplete="off"
-            sx={{
-              color: 'var(--jp-ui-font-color1)',
-              '& .MuiInputBase-input': {
-                color: 'var(--jp-ui-font-color1)'
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '6px',
+            border: '1px solid var(--jp-border-color1)',
+            background: 'var(--vscode-editor-background)'
+          }}
+        >
+          <Editor
+            height="100px"
+            defaultLanguage="markdown"
+            value={editorValue}
+            onChange={handleEditorChange}
+            onMount={handleEditorDidMount}
+            options={{
+              minimap: { enabled: false },
+              suggestOnTriggerCharacters: true,
+              wordBasedSuggestions: 'off',
+              parameterHints: { enabled: false },
+              quickSuggestions: {
+                other: false,
+                comments: false,
+                strings: false
               },
-              border: 'var(--jp-border-width) solid var(--jp-cell-editor-border-color)'
+              lineNumbers: 'off',
+              glyphMargin: false,
+              lineDecorationsWidth: 0,
+              lineNumbersMinChars: 0,
+              folding: false,
+              wordWrap: 'on',
+              wrappingIndent: 'same',
+              automaticLayout: true,
+              overviewRulerBorder: false,
+              hideCursorInOverviewRuler: true,
+              overviewRulerLanes: 0,
+              renderLineHighlight: 'none',
+              readOnly: isAiGenerating
             }}
           />
         </Box>

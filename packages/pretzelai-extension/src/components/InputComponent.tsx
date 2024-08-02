@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable camelcase */
 /*
  * Copyright (c) Pretzel AI GmbH.
@@ -12,7 +11,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Editor, Monaco } from '@monaco-editor/react';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 import posthog from 'posthog-js';
-import { FixedSizeStack } from '../utils';
+import { completionFunctionProvider, FixedSizeStack } from '../utils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import 'monaco-editor/min/vs/editor/editor.main.css';
@@ -24,8 +23,6 @@ interface ISubmitButtonProps {
   isDisabled: boolean;
   buttonText: string;
 }
-
-let isMonacoRegistered = false;
 
 const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled, buttonText }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -235,43 +232,11 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
     monaco.editor.setTheme(currentTheme);
 
-    if (!isMonacoRegistered) {
+    if (!globalState.isMonacoRegistered) {
       // Register the completion provider for Markdown
       monaco.languages.registerCompletionItemProvider('markdown', {
         triggerCharacters: ['@'],
-        provideCompletionItems: (model, position) => {
-          const textUntilPosition = model.getValueInRange({
-            startLineNumber: position.lineNumber,
-            startColumn: 1,
-            endLineNumber: position.lineNumber,
-            endColumn: position.column
-          });
-
-          const match = textUntilPosition.match(/@(\w*)$/);
-          if (!match) {
-            return { suggestions: [] };
-          }
-
-          const word = match[1];
-          const range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: position.column - word.length - 1,
-            endColumn: position.column
-          };
-
-          return {
-            suggestions: globalState.availableVariables
-              .filter(variable => variable.startsWith(word))
-              .map(variable => ({
-                label: variable,
-                kind: monaco.languages.CompletionItemKind.Variable,
-                insertText: `@${variable}`,
-                range: range,
-                filterText: `@${variable}`
-              }))
-          };
-        }
+        provideCompletionItems: completionFunctionProvider
       });
 
       // remove cmd+k shortcut
@@ -280,7 +245,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         command: null
       });
 
-      isMonacoRegistered = true;
+      globalState.isMonacoRegistered = true;
     }
 
     // Add event listeners
@@ -326,7 +291,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
 
       if (event.code === 'ArrowUp') {
-        const model = editor.getModel();
         const position = editor.getPosition()!;
         if (position.lineNumber === 1 && position.column === 1) {
           event.preventDefault();
