@@ -282,6 +282,18 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
     // Add event listeners
     editor.onKeyDown((event: any) => {
+      // Check if autocomplete widget is visible
+      const isAutocompleteWidgetVisible = () => {
+        const editorElement = editor.getContainerDomNode();
+        const suggestWidget = editorElement.querySelector('.editor-widget.suggest-widget.visible');
+        return suggestWidget !== null && suggestWidget.getAttribute('monaco-visible-content-widget') === 'true';
+      };
+
+      if (isAutocompleteWidgetVisible()) {
+        // Let Monaco handle the key events when autocomplete is open
+        return;
+      }
+
       if (event.code === 'Escape') {
         posthog.capture('Back to Cell via Escape', {
           event_type: 'keypress',
