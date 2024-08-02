@@ -31,6 +31,7 @@ import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
 import posthog from 'posthog-js';
 import MistralClient from '@mistralai/mistralai';
+import { IThemeManager } from '@jupyterlab/apputils';
 import { Editor, Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { globalState } from './globalState';
@@ -70,6 +71,7 @@ interface IChatProps {
   aiClient: OpenAI | OpenAIClient | MistralClient | null;
   codeMatchThreshold: number;
   posthogPromptTelemetry: boolean;
+  themeManager: IThemeManager;
 }
 
 export function Chat({
@@ -89,12 +91,12 @@ export function Chat({
   rmRegistry,
   aiClient,
   codeMatchThreshold,
-  posthogPromptTelemetry
+  posthogPromptTelemetry,
+  themeManager
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
   const [chatIndex, setChatIndex] = useState(0);
-  const [input, setInput] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [referenceSource, setReferenceSource] = useState('');
   const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
@@ -206,13 +208,13 @@ export function Chat({
     scrollToBottom();
   }, [messages]);
 
-  const onSend = async () => {
-    if (editorValue.trim() === '' || isAiGenerating) {
+  const onSend = async (editorValueFromEvent = editorValue) => {
+    if (editorValueFromEvent.trim() === '' || isAiGenerating) {
       return;
     }
     setIsAiGenerating(true);
-    posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? editorValue : 'no_telemetry' });
-    const inputMarkdown = editorValue.replace(/\n/g, '  \n');
+    posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? editorValueFromEvent : 'no_telemetry' });
+    const inputMarkdown = editorValueFromEvent.replace(/\n/g, '  \n');
     const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
     const embeddings = await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
     const selectedCode = getSelectedCode(notebookTracker).extractedCode;
@@ -226,7 +228,7 @@ export function Chat({
         role: msg.role,
         content: msg.content
       })),
-      { role: 'user', content: editorValue }
+      { role: 'user', content: editorValueFromEvent }
     ];
 
     const newMessage = {
@@ -239,7 +241,7 @@ export function Chat({
     setEditorValue('');
 
     const topSimilarities = await getTopSimilarities(
-      editorValue,
+      editorValueFromEvent,
       embeddings,
       5,
       aiClient,
@@ -282,42 +284,6 @@ export function Chat({
     stopGeneration();
     setReferenceSource('');
   };
-
-  // function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-  //   if (event.key === 'Enter' && !event.shiftKey) {
-  //     onSend();
-  //     event.stopPropagation();
-  //     event.preventDefault();
-  //   }
-  //   if (event.key === 'Escape') {
-  //     if (isAiGenerating) {
-  //       cancelGeneration();
-  //     } else {
-  //       notebookTracker?.activeCell?.editor?.focus();
-  //     }
-  //   }
-  //   // Cmd + Esc should clear the chat
-  //   if ((event.metaKey || event.ctrlKey) && event.key === 'Escape' && !isAiGenerating) {
-  //     clearChat();
-  //   }
-  //   // Navigate chat history with Cmd+Shift+, and Cmd+Shift+. (or Ctrl+Shift on Windows)
-  //   if (
-  //     (event.metaKey || event.ctrlKey) &&
-  //     event.shiftKey &&
-  //     (event.key === ',' || event.key === '<') &&
-  //     !isAiGenerating
-  //   ) {
-  //     restoreChat(-1);
-  //   }
-  //   if (
-  //     (event.metaKey || event.ctrlKey) &&
-  //     event.shiftKey &&
-  //     (event.key === '.' || event.key === '>') &&
-  //     !isAiGenerating
-  //   ) {
-  //     restoreChat(1);
-  //   }
-  // }
 
   const renderChat = (chunk: string) => {
     setMessages(prevMessages => {
@@ -377,15 +343,67 @@ export function Chat({
         command: null
       });
 
+      if (themeManager) {
+        themeManager.themeChanged.connect((_, theme) => {
+          const currentTheme = theme.newValue.includes('Light') ? 'vs' : 'vs-dark';
+          monaco.editor.setTheme(currentTheme);
+          console.log('themeChanged', theme, currentTheme);
+        });
+      }
+
       globalState.isMonacoRegistered = true;
     }
 
     editor.onKeyDown((event: monaco.IKeyboardEvent) => {
+      // Check if autocomplete widget is visible
+      const isAutocompleteWidgetVisible = () => {
+        const editorElement = editor.getContainerDomNode();
+        const suggestWidget = editorElement.querySelector('.editor-widget.suggest-widget.visible');
+        return suggestWidget !== null && suggestWidget.getAttribute('monaco-visible-content-widget') === 'true';
+      };
+
+      if (isAutocompleteWidgetVisible()) {
+        // Let Monaco handle the key events when autocomplete is open
+        return;
+      }
+
       if (event.keyCode === monaco.KeyCode.Enter && !event.shiftKey) {
         event.preventDefault();
-        onSend();
+        const currentValue = editor.getValue(); // Directly get the current value from the editor
+        onSend(currentValue); // Modify onSend to accept a parameter for the editor value
       }
-      // fixme ... add other key handlers as needed ...
+      if (event.keyCode === monaco.KeyCode.Escape) {
+        event.preventDefault();
+        if (isAiGenerating) {
+          cancelGeneration();
+        } else {
+          notebookTracker?.activeCell?.editor?.focus();
+        }
+      }
+      // Cmd + Esc should clear the chat
+      if ((event.ctrlKey || event.metaKey) && event.keyCode === monaco.KeyCode.Escape && !isAiGenerating) {
+        event.preventDefault();
+        clearChat();
+      }
+      // Navigate chat history with Cmd+Shift+, and Cmd+Shift+. (or Ctrl+Shift on Windows)
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.keyCode === monaco.KeyCode.Comma &&
+        !isAiGenerating
+      ) {
+        event.preventDefault();
+        restoreChat(-1);
+      }
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.keyCode === monaco.KeyCode.Period &&
+        !isAiGenerating
+      ) {
+        event.preventDefault();
+        restoreChat(1);
+      }
     });
   };
 
@@ -494,7 +512,7 @@ export function Chat({
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
             <div className="submit-button-container">
-              <button className="pretzelInputSubmitButton" onClick={onSend} title="Submit ↵">
+              <button className="pretzelInputSubmitButton" onClick={() => onSend(editorValue)} title="Submit ↵">
                 Submit <span style={{ fontSize: '0.8em' }}>↵</span>
               </button>
               <div className="tooltip">

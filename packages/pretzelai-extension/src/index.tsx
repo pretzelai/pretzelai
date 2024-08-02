@@ -12,7 +12,7 @@
  * @module pretzelai-extension
  */
 import { ILabShell, ILayoutRestorer, JupyterFrontEnd, JupyterFrontEndPlugin, LabShell } from '@jupyterlab/application';
-import { ICommandPalette } from '@jupyterlab/apputils';
+import { ICommandPalette, IThemeManager } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
 import MistralClient from '@mistralai/mistralai';
@@ -63,7 +63,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     INotebookTracker,
     ISettingRegistry,
     ICompletionProviderManager,
-    IMainMenu
+    IMainMenu,
+    IThemeManager
   ],
   optional: [ILayoutRestorer],
   activate: async (
@@ -74,6 +75,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     settingRegistry: ISettingRegistry,
     providerManager: ICompletionProviderManager,
     mainMenu: IMainMenu,
+    themeManager: IThemeManager,
     restorer: ILayoutRestorer | null
   ) => {
     const provider = new PretzelInlineProvider(notebookTracker, settingRegistry, app);
@@ -383,7 +385,6 @@ const extension: JupyterFrontEndPlugin<void> = {
     // fetch active variables names when cells are executed
     const updateAvailableVariables = async () => {
       const newAvailableVariables = await getAvailableVariables(notebookTracker);
-      console.log('Updated available variables:', newAvailableVariables);
       globalState.availableVariables = newAvailableVariables;
     };
     NotebookActions.executed.connect(async (sender, args) => {
@@ -666,7 +667,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         rmRegistry,
         aiClient,
         codeMatchThreshold,
-        posthogPromptTelemetry
+        posthogPromptTelemetry,
+        themeManager
       });
       newSidePanel.id = 'pretzelai-chat-panel';
       newSidePanel.node.classList.add('chat-sidepanel');
