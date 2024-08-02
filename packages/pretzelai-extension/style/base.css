@@ -55,9 +55,6 @@
   margin-left: 70px;
   color: var(--jp-ui-font-color1);
 }
-.cm-editor .cm-cursor {
-  border-left-color: var(--jp-editor-cursor-color);
-}
 
 .input-container {
   margin-top: var(--jp-ui-margin, 10px);
@@ -206,8 +203,9 @@
   outline: none;
 }
 
-div.pretzelInputField > .cm-editor {
-  height: 100px;
+/* Monaco editor styles */
+.monaco-editor {
+  height: 200px;
   color: var(--jp-ui-font-color1);
   background-color: var(--jp-layout-color1);
 }
@@ -420,11 +418,4 @@ div.pretzelInputField > .cm-editor {
       background-color: var(--jp-layout-color4);
     }
   }
-}
-
-.cm-tooltip-autocomplete {
-  z-index: 10000 !important;
-  background-color: white !important;
-  border: 1px solid #ccc !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
 }

@@ -9,19 +9,23 @@
  * the root of the project) are licensed under AGPLv3.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Editor } from '@monaco-editor/react';
+import { Editor, Monaco } from '@monaco-editor/react';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import 'monaco-editor/min/vs/editor/editor.main.css';
+import * as monaco from 'monaco-editor';
+import { globalState } from '../globalState';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
   isDisabled: boolean;
   buttonText: string;
 }
+
+let isMonacoRegistered = false;
 
 const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled, buttonText }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -146,9 +150,57 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0);
   const editorRef = useRef<any>(null);
 
-  const handleEditorDidMount = (editor: any, monaco: any) => {
+  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     setInputView(editor);
+
+    if (!isMonacoRegistered) {
+      // Register the completion provider for Markdown
+      monaco.languages.registerCompletionItemProvider('markdown', {
+        triggerCharacters: ['@'],
+        provideCompletionItems: (model, position) => {
+          const textUntilPosition = model.getValueInRange({
+            startLineNumber: position.lineNumber,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column
+          });
+
+          const match = textUntilPosition.match(/@(\w*)$/);
+          if (!match) {
+            return { suggestions: [] };
+          }
+
+          const word = match[1];
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: position.column - word.length - 1,
+            endColumn: position.column
+          };
+
+          return {
+            suggestions: globalState.availableVariables
+              .filter(variable => variable.startsWith(word))
+              .map(variable => ({
+                label: variable,
+                kind: monaco.languages.CompletionItemKind.Variable,
+                insertText: `@${variable}`,
+                range: range,
+                filterText: `@${variable}`
+              }))
+          };
+        }
+      });
+
+      // remove cmd+k shortcut
+      monaco.editor.addKeybindingRule({
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+        command: null
+      });
+
+      isMonacoRegistered = true;
+    }
 
     // Add event listeners
     editor.onKeyDown((event: any) => {
@@ -182,7 +234,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
       if (event.code === 'ArrowUp') {
         const model = editor.getModel();
-        const position = editor.getPosition();
+        const position = editor.getPosition()!;
         if (position.lineNumber === 1 && position.column === 1) {
           event.preventDefault();
           posthog.capture('Prompt History Back via Shortcut', {
@@ -210,8 +262,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
       if (event.code === 'ArrowDown') {
         const model = editor.getModel();
-        const position = editor.getPosition();
-        const lastLineNumber = model.getLineCount();
+        const position = editor.getPosition()!;
+        const lastLineNumber = model!.getLineCount();
         if (position.lineNumber === lastLineNumber) {
           event.preventDefault();
           posthog.capture('Prompt History Forward via Shortcut', {
