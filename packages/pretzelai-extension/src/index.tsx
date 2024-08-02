@@ -381,11 +381,14 @@ const extension: JupyterFrontEndPlugin<void> = {
     });
 
     // fetch active variables names when cells are executed
-    NotebookActions.executed.connect(async (sender, args) => {
-      // Update available variables when cells are executed
+    const updateAvailableVariables = async () => {
       const newAvailableVariables = await getAvailableVariables(notebookTracker);
       console.log('Updated available variables:', newAvailableVariables);
       globalState.availableVariables = newAvailableVariables;
+    };
+    NotebookActions.executed.connect(async (sender, args) => {
+      // Update available variables when cells are executed
+      updateAvailableVariables();
     });
 
     let debounceTimeout: NodeJS.Timeout | null = null;
@@ -607,6 +610,9 @@ const extension: JupyterFrontEndPlugin<void> = {
             aiAssistantComponentRoot.unmount();
             parentContainer.remove();
           };
+
+          // update available variables when creating a new cmd k
+          updateAvailableVariables();
 
           aiAssistantComponentRoot.render(
             <AIAssistantComponent

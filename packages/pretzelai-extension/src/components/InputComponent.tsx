@@ -153,10 +153,9 @@ class PlaceholderContentWidget {
       this.domNode.style.width = 'max-content';
       this.domNode.style.fontStyle = 'italic';
       this.domNode.style.color = 'gray';
+      this.domNode.style.pointerEvents = 'none';
 
-      // Split the placeholder text into lines
       const lines = this.placeholder.split('\n');
-
       // Create a separate div for each line
       lines.forEach((line, index) => {
         const lineDiv = document.createElement('div');
