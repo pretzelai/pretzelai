@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable camelcase */
 /*
  * Copyright (c) Pretzel AI GmbH.
@@ -8,22 +9,23 @@
  * the root of the project) are licensed under AGPLv3.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { EditorState } from '@codemirror/state';
-import { drawSelection, EditorView, keymap, placeholder } from '@codemirror/view';
-import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { history, historyKeymap, insertNewlineAndIndent } from '@codemirror/commands';
+import { Editor, Monaco } from '@monaco-editor/react';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 import posthog from 'posthog-js';
 import { FixedSizeStack } from '../utils';
-
 import { LabIcon } from '@jupyterlab/ui-components';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
+import 'monaco-editor/min/vs/editor/editor.main.css';
+import * as monaco from 'monaco-editor';
+import { globalState } from '../globalState';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
   isDisabled: boolean;
   buttonText: string;
 }
+
+let isMonacoRegistered = false;
 
 const SubmitButton: React.FC<ISubmitButtonProps> = ({ handleClick, isDisabled, buttonText }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -120,6 +122,67 @@ const PromptHistoryButton: React.FC<{
   );
 };
 
+class PlaceholderContentWidget {
+  static ID = 'editor.widget.placeholderHint';
+  private domNode: HTMLElement | null = null;
+  private editor: monaco.editor.IStandaloneCodeEditor;
+  private placeholder: string;
+
+  constructor(placeholder: string, editor: monaco.editor.IStandaloneCodeEditor) {
+    this.placeholder = placeholder;
+    this.editor = editor;
+    editor.onDidChangeModelContent(() => this.onDidChangeModelContent());
+    this.onDidChangeModelContent();
+  }
+
+  onDidChangeModelContent() {
+    if (this.editor.getValue() === '') {
+      this.editor.addContentWidget(this);
+    } else {
+      this.editor.removeContentWidget(this);
+    }
+  }
+
+  getId() {
+    return PlaceholderContentWidget.ID;
+  }
+
+  getDomNode() {
+    if (!this.domNode) {
+      this.domNode = document.createElement('div');
+      this.domNode.style.width = 'max-content';
+      this.domNode.style.fontStyle = 'italic';
+      this.domNode.style.color = 'gray';
+      this.domNode.style.pointerEvents = 'none';
+
+      const lines = this.placeholder.split('\n');
+      // Create a separate div for each line
+      lines.forEach((line, index) => {
+        const lineDiv = document.createElement('div');
+        lineDiv.textContent = line;
+        if (index > 0) {
+          lineDiv.style.marginTop = '4px'; // Add some spacing between lines
+        }
+        this.domNode!.appendChild(lineDiv);
+      });
+
+      this.editor.applyFontInfo(this.domNode);
+    }
+    return this.domNode;
+  }
+
+  getPosition() {
+    return {
+      position: { lineNumber: 1, column: 1 },
+      preference: [monaco.editor.ContentWidgetPositionPreference.EXACT]
+    };
+  }
+
+  dispose() {
+    this.editor.removeContentWidget(this);
+  }
+}
+
 interface IInputComponentProps {
   isAIEnabled: boolean;
   placeholderEnabled: string;
@@ -127,10 +190,11 @@ interface IInputComponentProps {
   handleSubmit: (input: string) => void;
   handleRemove: () => void;
   promptHistoryStack: FixedSizeStack<string>;
-  setInputView: (view: EditorView) => void;
+  setInputView: (view: any) => void;
   initialPrompt: string;
   activeCell: Cell<ICellModel>;
 }
+
 const InputComponent: React.FC<IInputComponentProps> = ({
   isAIEnabled,
   placeholderEnabled,
@@ -142,22 +206,192 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   initialPrompt,
   activeCell
 }) => {
-  const inputFieldRef = useRef<HTMLDivElement>(null);
-  const inputViewRef = useRef<EditorView | null>(null);
+  const [editorValue, setEditorValue] = useState(initialPrompt);
   const [submitButtonText, setSubmitButtonText] = useState('Generate');
-  const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0); // how many items to skip
+  const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0);
+  const editorRef = useRef<any>(null);
+
+  const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
+
+  useEffect(() => {
+    if (editorRef.current && placeholderWidgetRef.current) {
+      placeholderWidgetRef.current.dispose();
+      placeholderWidgetRef.current = new PlaceholderContentWidget(
+        isAIEnabled ? placeholderEnabled : placeholderDisabled,
+        editorRef.current
+      );
+    }
+  }, [isAIEnabled, placeholderEnabled, placeholderDisabled]);
+
+  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    editorRef.current = editor;
+    setInputView(editor);
+
+    placeholderWidgetRef.current = new PlaceholderContentWidget(
+      isAIEnabled ? placeholderEnabled : placeholderDisabled,
+      editor
+    );
+
+    const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
+    monaco.editor.setTheme(currentTheme);
+
+    if (!isMonacoRegistered) {
+      // Register the completion provider for Markdown
+      monaco.languages.registerCompletionItemProvider('markdown', {
+        triggerCharacters: ['@'],
+        provideCompletionItems: (model, position) => {
+          const textUntilPosition = model.getValueInRange({
+            startLineNumber: position.lineNumber,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column
+          });
+
+          const match = textUntilPosition.match(/@(\w*)$/);
+          if (!match) {
+            return { suggestions: [] };
+          }
+
+          const word = match[1];
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: position.column - word.length - 1,
+            endColumn: position.column
+          };
+
+          return {
+            suggestions: globalState.availableVariables
+              .filter(variable => variable.startsWith(word))
+              .map(variable => ({
+                label: variable,
+                kind: monaco.languages.CompletionItemKind.Variable,
+                insertText: `@${variable}`,
+                range: range,
+                filterText: `@${variable}`
+              }))
+          };
+        }
+      });
+
+      // remove cmd+k shortcut
+      monaco.editor.addKeybindingRule({
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+        command: null
+      });
+
+      isMonacoRegistered = true;
+    }
+
+    // Add event listeners
+    editor.onKeyDown((event: any) => {
+      // Check if autocomplete widget is visible
+      const isAutocompleteWidgetVisible = () => {
+        const editorElement = editor.getContainerDomNode();
+        const suggestWidget = editorElement.querySelector('.editor-widget.suggest-widget.visible');
+        return suggestWidget !== null && suggestWidget.getAttribute('monaco-visible-content-widget') === 'true';
+      };
+
+      if (isAutocompleteWidgetVisible()) {
+        // Let Monaco handle the key events when autocomplete is open
+        return;
+      }
+
+      if (event.code === 'Escape') {
+        posthog.capture('Back to Cell via Escape', {
+          event_type: 'keypress',
+          event_value: 'esc',
+          method: 'back_to_cell'
+        });
+        event.preventDefault();
+        if (activeCell && activeCell.editor) {
+          activeCell.editor.focus();
+        }
+      }
+
+      if (event.code === 'Enter') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          editor.trigger('keyboard', 'type', { text: '\n' });
+        } else {
+          posthog.capture('Submit via Enter', {
+            event_type: 'keypress',
+            event_value: 'enter',
+            method: 'submit'
+          });
+          const currentPrompt = editor.getValue();
+          promptHistoryStack.push(currentPrompt);
+          handleSubmit(currentPrompt);
+        }
+      }
+
+      if (event.code === 'ArrowUp') {
+        const model = editor.getModel();
+        const position = editor.getPosition()!;
+        if (position.lineNumber === 1 && position.column === 1) {
+          event.preventDefault();
+          posthog.capture('Prompt History Back via Shortcut', {
+            event_type: 'keypress',
+            event_value: 'up_arrow',
+            method: 'prompt_history'
+          });
+          setPromptHistoryIndex(prevIndex => {
+            let finalIndex: number;
+            if (prevIndex + 1 >= promptHistoryStack.length) {
+              finalIndex = promptHistoryStack.length - 1;
+            } else {
+              finalIndex = prevIndex + 1;
+            }
+            handlePromptHistory(finalIndex);
+            const currentPrompt = editor.getValue();
+            if (currentPrompt && prevIndex === 0) {
+              promptHistoryStack.push(currentPrompt);
+              finalIndex += 1;
+            }
+            return finalIndex;
+          });
+        }
+      }
+
+      if (event.code === 'ArrowDown') {
+        const model = editor.getModel();
+        const position = editor.getPosition()!;
+        const lastLineNumber = model!.getLineCount();
+        if (position.lineNumber === lastLineNumber) {
+          event.preventDefault();
+          posthog.capture('Prompt History Forward via Shortcut', {
+            event_type: 'keypress',
+            event_value: 'down_arrow',
+            method: 'prompt_history'
+          });
+          setPromptHistoryIndex(prevIndex => {
+            let finalIndex: number;
+            if (prevIndex - 1 < 0) {
+              finalIndex = 0;
+            } else {
+              finalIndex = prevIndex - 1;
+            }
+            handlePromptHistory(finalIndex);
+            return finalIndex;
+          });
+        }
+      }
+    });
+
+    editor.focus();
+  };
+
+  const handleEditorChange = (value: string | undefined) => {
+    if (value !== undefined) {
+      setEditorValue(value);
+    }
+  };
 
   const handlePromptHistory = (promptHistoryIndex: number = 0) => {
-    let oldPrompt = '';
     if (promptHistoryIndex >= 0 && promptHistoryIndex < promptHistoryStack.length) {
-      oldPrompt = promptHistoryStack.get(promptHistoryIndex);
-      inputViewRef.current!.dispatch({
-        changes: { from: 0, to: inputViewRef.current!.state.doc.length, insert: oldPrompt }
-      });
-      inputViewRef.current!.dispatch({
-        selection: { anchor: inputViewRef.current!.state.doc.length }
-      });
-      inputViewRef.current!.focus();
+      const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
+      setEditorValue(oldPrompt);
+      editorRef.current?.focus();
     }
   };
 
@@ -170,138 +404,49 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
     };
 
-    // Call the function initially
     updateSubmitButtonText();
 
-    // Listen to the stateChanged signal
     activeCell?.model.contentChanged.connect(() => {
       updateSubmitButtonText();
     });
   }, [activeCell]);
 
-  useEffect(() => {
-    if (inputFieldRef.current) {
-      const state = EditorState.create({
-        doc: initialPrompt,
-        extensions: [
-          history({ newGroupDelay: 50 }),
-          keymap.of(historyKeymap),
-          isAIEnabled ? placeholder(placeholderEnabled) : placeholder(placeholderDisabled),
-          EditorView.lineWrapping,
-          EditorView.editable.of(isAIEnabled),
-          syntaxHighlighting(defaultHighlightStyle),
-          drawSelection()
-        ]
-      });
-
-      const inputView = new EditorView({
-        state,
-        parent: inputFieldRef.current
-      });
-      setInputView(inputView);
-
-      inputView.dispatch({
-        selection: { anchor: state.doc.length, head: state.doc.length }
-      });
-
-      inputView.dom.addEventListener('keydown', event => {
-        if (event.key === 'Escape') {
-          posthog.capture('Back to Cell via Escape', {
-            event_type: 'keypress',
-            event_value: 'esc',
-            method: 'back_to_cell'
-          });
-          event.preventDefault();
-          if (activeCell && activeCell.editor) {
-            activeCell.editor.focus();
-          }
-        }
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          if (event.shiftKey) {
-            insertNewlineAndIndent({ state: inputView.state, dispatch: inputView.dispatch });
-          } else {
-            posthog.capture('Submit via Enter', {
-              event_type: 'keypress',
-              event_value: 'enter',
-              method: 'submit'
-            });
-            const currentPrompt = inputView.state.doc.toString();
-            promptHistoryStack.push(currentPrompt);
-            handleSubmit(currentPrompt);
-          }
-        }
-        if (event.key === 'ArrowUp') {
-          const { state } = inputViewRef.current!;
-          const firstLine = state.doc.lineAt(0);
-          const cursorPos = state.selection.main.head;
-
-          if (cursorPos <= firstLine.to) {
-            const currentPrompt = state.doc.toString();
-            event.preventDefault();
-            posthog.capture('Prompt History Back via Shortcut', {
-              event_type: 'keypress',
-              event_value: 'up_arrow',
-              method: 'prompt_history'
-            });
-            setPromptHistoryIndex(prevIndex => {
-              let finalIndex: number;
-              if (prevIndex + 1 >= promptHistoryStack.length) {
-                finalIndex = promptHistoryStack.length - 1;
-              } else {
-                finalIndex = prevIndex + 1;
-              }
-              handlePromptHistory(finalIndex);
-              if (currentPrompt && prevIndex == 0) {
-                promptHistoryStack.push(currentPrompt);
-                finalIndex += 1;
-              }
-              return finalIndex;
-            });
-          }
-        }
-
-        if (event.key === 'ArrowDown') {
-          const { state } = inputViewRef.current!;
-          const firstLine = state.doc.lineAt(0);
-          const lastLine = state.doc.lineAt(state.doc.length);
-          const cursorPos = state.selection.main.head;
-
-          if (cursorPos >= lastLine.from || cursorPos === firstLine.to) {
-            event.preventDefault();
-            posthog.capture('Prompt History Forward via Shortcut', {
-              event_type: 'keypress',
-              event_value: 'down_arrow',
-              method: 'prompt_history'
-            });
-            setPromptHistoryIndex(prevIndex => {
-              let finalIndex: number;
-              if (prevIndex - 1 < 0) {
-                finalIndex = 0;
-              } else {
-                finalIndex = prevIndex - 1;
-              }
-              handlePromptHistory(finalIndex);
-              return finalIndex;
-            });
-          }
-        }
-      });
-
-      inputViewRef.current = inputView;
-      // remove?
-      setInputView(inputView);
-      inputView.focus();
-    }
-
-    return () => {
-      inputViewRef.current?.destroy();
-    };
-  }, [isAIEnabled, handleSubmit, handleRemove, setInputView, activeCell]);
-
   return (
     <div className="input-container">
-      <div className="pretzelInputField" ref={inputFieldRef}></div>
+      <div className="pretzelInputField">
+        <Editor
+          height="100px"
+          defaultLanguage="markdown"
+          defaultValue={initialPrompt}
+          value={editorValue}
+          onChange={handleEditorChange}
+          onMount={handleEditorDidMount}
+          options={{
+            minimap: { enabled: false },
+            suggestOnTriggerCharacters: true,
+            wordBasedSuggestions: 'off',
+            parameterHints: { enabled: false },
+            quickSuggestions: {
+              other: false,
+              comments: false,
+              strings: false
+            },
+            lineNumbers: 'off',
+            glyphMargin: false,
+            lineDecorationsWidth: 0,
+            lineNumbersMinChars: 0,
+            folding: false,
+            wordWrap: 'on',
+            wrappingIndent: 'same',
+            automaticLayout: true,
+            overviewRulerBorder: false,
+            hideCursorInOverviewRuler: true,
+            overviewRulerLanes: 0,
+            renderLineHighlight: 'none',
+            readOnly: !isAIEnabled
+          }}
+        />
+      </div>
       <div className="input-field-buttons-container">
         <SubmitButton
           handleClick={() => {
@@ -309,41 +454,19 @@ const InputComponent: React.FC<IInputComponentProps> = ({
               event_type: 'click',
               method: 'submit'
             });
-            handleSubmit(inputViewRef.current?.state.doc.toString() || '');
+            handleSubmit(editorValue);
           }}
           isDisabled={!isAIEnabled}
           buttonText={submitButtonText}
         />
-        <RemoveButton
-          handleClick={() => {
-            posthog.capture('Remove via Click', {
-              event_type: 'click',
-              method: 'remove'
-            });
-            handleRemove();
-          }}
-        />
+        <RemoveButton handleClick={handleRemove} />
         <PromptHistoryButton
-          handleClick={(promptHistoryIndex: number) => {
-            posthog.capture('Prompt History via Click', {
-              event_type: 'click',
-              method: 'prompt_history'
-            });
-            const currentPrompt = inputViewRef.current?.state.doc.toString();
-            setPromptHistoryIndex(prevIndex => {
-              let finalIndex: number;
-              if (prevIndex + 1 >= promptHistoryStack.length) {
-                finalIndex = promptHistoryStack.length - 1;
-              } else {
-                finalIndex = prevIndex + 1;
-              }
-              handlePromptHistory(finalIndex);
-              if (currentPrompt && prevIndex == 0) {
-                promptHistoryStack.push(currentPrompt);
-                finalIndex += 1;
-              }
-              return finalIndex;
-            });
+          handleClick={index => {
+            if (index >= 0 && index < promptHistoryStack.length) {
+              const oldPrompt = promptHistoryStack.get(index);
+              setEditorValue(oldPrompt);
+              editorRef.current?.focus();
+            }
           }}
           promptHistoryIndex={promptHistoryIndex}
         />

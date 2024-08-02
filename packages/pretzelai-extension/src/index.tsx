@@ -18,7 +18,7 @@ import OpenAI from 'openai';
 import MistralClient from '@mistralai/mistralai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { deleteExistingEmbeddings, FixedSizeStack, getEmbeddings, PLUGIN_ID } from './utils';
+import { deleteExistingEmbeddings, FixedSizeStack, getAvailableVariables, getEmbeddings, PLUGIN_ID } from './utils';
 
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
@@ -38,6 +38,7 @@ import { ReactWidget } from '@jupyterlab/apputils';
 import { migrateSettings } from './migrations/migrations';
 import { getDefaultSettings } from './migrations/defaultSettings';
 import { NotebookActions } from '@jupyterlab/notebook';
+import { globalState } from './globalState';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -379,6 +380,17 @@ const extension: JupyterFrontEndPlugin<void> = {
       getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
     });
 
+    // fetch active variables names when cells are executed
+    const updateAvailableVariables = async () => {
+      const newAvailableVariables = await getAvailableVariables(notebookTracker);
+      console.log('Updated available variables:', newAvailableVariables);
+      globalState.availableVariables = newAvailableVariables;
+    };
+    NotebookActions.executed.connect(async (sender, args) => {
+      // Update available variables when cells are executed
+      updateAvailableVariables();
+    });
+
     let debounceTimeout: NodeJS.Timeout | null = null;
 
     notebookTracker.activeCellChanged.connect((sender, cell) => {
@@ -598,6 +610,9 @@ const extension: JupyterFrontEndPlugin<void> = {
             aiAssistantComponentRoot.unmount();
             parentContainer.remove();
           };
+
+          // update available variables when creating a new cmd k
+          updateAvailableVariables();
 
           aiAssistantComponentRoot.render(
             <AIAssistantComponent
