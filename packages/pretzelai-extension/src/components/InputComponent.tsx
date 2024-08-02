@@ -122,6 +122,68 @@ const PromptHistoryButton: React.FC<{
   );
 };
 
+class PlaceholderContentWidget {
+  static ID = 'editor.widget.placeholderHint';
+  private domNode: HTMLElement | null = null;
+  private editor: monaco.editor.IStandaloneCodeEditor;
+  private placeholder: string;
+
+  constructor(placeholder: string, editor: monaco.editor.IStandaloneCodeEditor) {
+    this.placeholder = placeholder;
+    this.editor = editor;
+    editor.onDidChangeModelContent(() => this.onDidChangeModelContent());
+    this.onDidChangeModelContent();
+  }
+
+  onDidChangeModelContent() {
+    if (this.editor.getValue() === '') {
+      this.editor.addContentWidget(this);
+    } else {
+      this.editor.removeContentWidget(this);
+    }
+  }
+
+  getId() {
+    return PlaceholderContentWidget.ID;
+  }
+
+  getDomNode() {
+    if (!this.domNode) {
+      this.domNode = document.createElement('div');
+      this.domNode.style.width = 'max-content';
+      this.domNode.style.fontStyle = 'italic';
+      this.domNode.style.color = 'gray';
+
+      // Split the placeholder text into lines
+      const lines = this.placeholder.split('\n');
+
+      // Create a separate div for each line
+      lines.forEach((line, index) => {
+        const lineDiv = document.createElement('div');
+        lineDiv.textContent = line;
+        if (index > 0) {
+          lineDiv.style.marginTop = '4px'; // Add some spacing between lines
+        }
+        this.domNode!.appendChild(lineDiv);
+      });
+
+      this.editor.applyFontInfo(this.domNode);
+    }
+    return this.domNode;
+  }
+
+  getPosition() {
+    return {
+      position: { lineNumber: 1, column: 1 },
+      preference: [monaco.editor.ContentWidgetPositionPreference.EXACT]
+    };
+  }
+
+  dispose() {
+    this.editor.removeContentWidget(this);
+  }
+}
+
 interface IInputComponentProps {
   isAIEnabled: boolean;
   placeholderEnabled: string;
@@ -150,9 +212,26 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0);
   const editorRef = useRef<any>(null);
 
+  const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
+
+  useEffect(() => {
+    if (editorRef.current && placeholderWidgetRef.current) {
+      placeholderWidgetRef.current.dispose();
+      placeholderWidgetRef.current = new PlaceholderContentWidget(
+        isAIEnabled ? placeholderEnabled : placeholderDisabled,
+        editorRef.current
+      );
+    }
+  }, [isAIEnabled, placeholderEnabled, placeholderDisabled]);
+
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     setInputView(editor);
+
+    placeholderWidgetRef.current = new PlaceholderContentWidget(
+      isAIEnabled ? placeholderEnabled : placeholderDisabled,
+      editor
+    );
 
     if (!isMonacoRegistered) {
       // Register the completion provider for Markdown
@@ -320,28 +399,32 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   return (
     <div className="input-container">
-      <Editor
-        height="200px"
-        defaultLanguage="markdown"
-        defaultValue={initialPrompt}
-        value={editorValue}
-        onChange={handleEditorChange}
-        onMount={handleEditorDidMount}
-        options={{
-          minimap: { enabled: false },
-          lineNumbers: 'off',
-          scrollbar: {
-            vertical: 'hidden',
-            horizontal: 'hidden',
-            handleMouseWheel: false
-          },
-          folding: false,
-          wordWrap: 'on',
-          wrappingIndent: 'same',
-          automaticLayout: true,
-          readOnly: !isAIEnabled
-        }}
-      />
+      <div className="pretzelInputField">
+        <Editor
+          height="100px"
+          defaultLanguage="markdown"
+          defaultValue={initialPrompt}
+          value={editorValue}
+          onChange={handleEditorChange}
+          onMount={handleEditorDidMount}
+          options={{
+            minimap: { enabled: false },
+            lineNumbers: 'off',
+            glyphMargin: false,
+            lineDecorationsWidth: 0,
+            lineNumbersMinChars: 0,
+            folding: false,
+            wordWrap: 'on',
+            wrappingIndent: 'same',
+            automaticLayout: true,
+            overviewRulerBorder: false,
+            hideCursorInOverviewRuler: true,
+            overviewRulerLanes: 0,
+            renderLineHighlight: 'none',
+            readOnly: !isAIEnabled
+          }}
+        />
+      </div>
       <div className="input-field-buttons-container">
         <SubmitButton
           handleClick={() => {

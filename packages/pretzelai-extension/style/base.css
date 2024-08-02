@@ -70,6 +70,8 @@
 
 .pretzelInputField {
   border: 1px solid var(--jp-border-color1);
+  padding-top: 4px;
+  padding-left: 4px;
 }
 
 .submit-button-container,
@@ -204,8 +206,8 @@
 }
 
 /* Monaco editor styles */
-.monaco-editor {
-  height: 200px;
+.pretzelInputField .monaco-editor {
+  height: 100px;
   color: var(--jp-ui-font-color1);
   background-color: var(--jp-layout-color1);
 }
