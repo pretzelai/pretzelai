@@ -423,6 +423,14 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: false },
+            suggestOnTriggerCharacters: true,
+            wordBasedSuggestions: 'off',
+            parameterHints: { enabled: false },
+            quickSuggestions: {
+              other: false,
+              comments: false,
+              strings: false
+            },
             lineNumbers: 'off',
             glyphMargin: false,
             lineDecorationsWidth: 0,
