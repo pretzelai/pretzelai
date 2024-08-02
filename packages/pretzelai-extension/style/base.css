@@ -70,6 +70,7 @@
 
 .pretzelInputField {
   border: 1px solid var(--jp-border-color1);
+  background: var(--jp-cell-editor-background);
   padding-top: 4px;
   padding-left: 4px;
 }

@@ -232,6 +232,9 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       editor
     );
 
+    const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
+    monaco.editor.setTheme(currentTheme);
+
     if (!isMonacoRegistered) {
       // Register the completion provider for Markdown
       monaco.languages.registerCompletionItemProvider('markdown', {
