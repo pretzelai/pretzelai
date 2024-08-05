@@ -7,7 +7,7 @@
  * the root of the project) are licensed under AGPLv3.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import pretzelSvg from '../style/icons/pretzel.svg';
@@ -53,6 +53,66 @@ const keyCombination = isMac ? 'Ctrl+Cmd+B' : 'Ctrl+Alt+B';
 const historyPrevKeyCombination = isMac ? '⇧⌘<' : '⇧^<';
 const historyNextKeyCombination = isMac ? '⇧⌘>' : '⇧^>';
 
+class PlaceholderContentWidget {
+  static ID = 'editor.widget.placeholderHint';
+  private domNode: HTMLElement | null = null;
+  private editor: monaco.editor.IStandaloneCodeEditor;
+  private placeholder: string;
+
+  constructor(placeholder: string, editor: monaco.editor.IStandaloneCodeEditor) {
+    this.placeholder = placeholder;
+    this.editor = editor;
+    editor.onDidChangeModelContent(() => this.onDidChangeModelContent());
+    this.onDidChangeModelContent();
+  }
+
+  onDidChangeModelContent() {
+    if (this.editor.getValue() === '') {
+      this.editor.addContentWidget(this);
+    } else {
+      this.editor.removeContentWidget(this);
+    }
+  }
+
+  getId() {
+    return PlaceholderContentWidget.ID;
+  }
+
+  getDomNode() {
+    if (!this.domNode) {
+      this.domNode = document.createElement('div');
+      this.domNode.style.width = 'max-content';
+      this.domNode.style.fontStyle = 'italic';
+      this.domNode.style.color = 'gray';
+      this.domNode.style.pointerEvents = 'none';
+
+      const lines = this.placeholder.split('\n');
+      lines.forEach((line, index) => {
+        const lineDiv = document.createElement('div');
+        lineDiv.textContent = line;
+        if (index > 0) {
+          lineDiv.style.marginTop = '4px';
+        }
+        this.domNode!.appendChild(lineDiv);
+      });
+
+      this.editor.applyFontInfo(this.domNode);
+    }
+    return this.domNode;
+  }
+
+  getPosition() {
+    return {
+      position: { lineNumber: 1, column: 1 },
+      preference: [monaco.editor.ContentWidgetPositionPreference.EXACT]
+    };
+  }
+
+  dispose() {
+    this.editor.removeContentWidget(this);
+  }
+}
+
 interface IChatProps {
   aiChatModelProvider: string;
   aiChatModelString: string;
@@ -96,13 +156,16 @@ export function Chat({
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
-  const [chatIndex, setChatIndex] = useState(0);
+  const [, setChatIndex] = useState(0);
+  const clearChatRef = useRef<() => void>(() => {});
+  const chatHistoryRef = useRef<IMessage[][]>([]);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [referenceSource, setReferenceSource] = useState('');
   const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const [editorValue, setEditorValue] = useState('');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
 
   const fetchChatHistory = async () => {
     const notebook = notebookTracker.currentWidget;
@@ -124,7 +187,6 @@ export function Chat({
       if (response.ok) {
         // chat_history.json exists
         const file = await app.serviceManager.contents.get(chatHistoryPath);
-
         const chatHistoryJson = JSON.parse(file.content);
         setChatHistory(chatHistoryJson);
         setChatIndex(chatHistoryJson.length);
@@ -192,6 +254,10 @@ export function Chat({
     // Load chat history
     fetchChatHistory();
   }, []);
+
+  useEffect(() => {
+    chatHistoryRef.current = chatHistory;
+  }, [chatHistory]);
 
   useEffect(() => {
     // Triggers when AI generation finishes
@@ -304,104 +370,125 @@ export function Chat({
     });
   };
 
-  const restoreChat = (direction: number) => {
-    if (direction === 1 && chatIndex === chatHistory.length - 1) {
-      clearChat();
-    } else if (chatIndex + direction >= 0 && chatIndex + direction < chatHistory.length) {
-      setChatIndex(chatIndex + direction);
-      setMessages(chatHistory[chatIndex + direction]);
-      posthog.capture('Chat History Restored', {
-        direction: direction
-      });
-    }
-  };
-
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
     setMessages(initialMessage);
-    setChatIndex(chatHistory.length);
+    setChatIndex(chatHistoryRef.current.length);
     posthog.capture('Chat Cleared', {
       chatLength: messages.length
     });
-  };
+  }, [messages.length]);
 
-  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
-    editorRef.current = editor;
-    monaco.editor.setTheme(themeManager?.theme?.includes('Light') ? 'vs' : 'vs-dark');
+  useEffect(() => {
+    clearChatRef.current = clearChat;
+  }, [clearChat]);
 
-    if (!globalState.isMonacoRegistered) {
-      // Register the completion provider for Markdown
-      monaco.languages.registerCompletionItemProvider('markdown', {
-        triggerCharacters: ['@'],
-        provideCompletionItems: completionFunctionProvider
-      });
-
-      // remove cmd+k shortcut
-      monaco.editor.addKeybindingRule({
-        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
-        command: null
-      });
-      if (themeManager) {
-        themeManager.themeChanged.connect((_, theme) => {
-          const currentTheme = theme.newValue.includes('Light') ? 'vs' : 'vs-dark';
-          monaco.editor.setTheme(currentTheme);
+  const restoreChat = useCallback((direction: number) => {
+    setChatIndex(prevIndex => {
+      const newIndex = prevIndex + direction;
+      const currentChatHistory = chatHistoryRef.current;
+      if (direction === 1 && newIndex === currentChatHistory.length) {
+        clearChatRef.current();
+        return currentChatHistory.length;
+      } else if (newIndex >= 0 && newIndex < currentChatHistory.length) {
+        setMessages(currentChatHistory[newIndex]);
+        posthog.capture('Chat History Restored', {
+          direction: direction
         });
+        return newIndex;
       }
-
-      globalState.isMonacoRegistered = true;
-    }
-
-    editor.onKeyDown((event: monaco.IKeyboardEvent) => {
-      // Check if autocomplete widget is visible
-      const isAutocompleteWidgetVisible = () => {
-        const editorElement = editor.getContainerDomNode();
-        const suggestWidget = editorElement.querySelector('.editor-widget.suggest-widget.visible');
-        return suggestWidget !== null && suggestWidget.getAttribute('monaco-visible-content-widget') === 'true';
-      };
-
-      if (isAutocompleteWidgetVisible()) {
-        // Let Monaco handle the key events when autocomplete is open
-        return;
-      }
-
-      if (event.keyCode === monaco.KeyCode.Enter && !event.shiftKey) {
-        event.preventDefault();
-        const currentValue = editor.getValue(); // Directly get the current value from the editor
-        onSend(currentValue); // Modify onSend to accept a parameter for the editor value
-      }
-      if (event.keyCode === monaco.KeyCode.Escape) {
-        event.preventDefault();
-        if (isAiGenerating) {
-          cancelGeneration();
-        } else {
-          notebookTracker?.activeCell?.editor?.focus();
-        }
-      }
-      // Cmd + Esc should clear the chat
-      if ((event.ctrlKey || event.metaKey) && event.keyCode === monaco.KeyCode.Escape && !isAiGenerating) {
-        event.preventDefault();
-        clearChat();
-      }
-      // Navigate chat history with Cmd+Shift+, and Cmd+Shift+. (or Ctrl+Shift on Windows)
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.shiftKey &&
-        event.keyCode === monaco.KeyCode.Comma &&
-        !isAiGenerating
-      ) {
-        event.preventDefault();
-        restoreChat(-1);
-      }
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.shiftKey &&
-        event.keyCode === monaco.KeyCode.Period &&
-        !isAiGenerating
-      ) {
-        event.preventDefault();
-        restoreChat(1);
-      }
+      return prevIndex;
     });
-  };
+  }, []);
+
+  const handleEditorDidMount = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+      editorRef.current = editor;
+      monaco.editor.setTheme(themeManager?.theme?.includes('Light') ? 'vs' : 'vs-dark');
+
+      // Add placeholder
+      const placeholder =
+        `Ask AI (toggle with: ${keyCombination}).\n` +
+        `Use Esc to jump back to cell. Shift + Enter for newline.\n` +
+        `Current cell and other relevant cells are available as context to the AI.`;
+
+      placeholderWidgetRef.current = new PlaceholderContentWidget(placeholder, editor);
+
+      if (!globalState.isMonacoRegistered) {
+        // Register the completion provider for Markdown
+        monaco.languages.registerCompletionItemProvider('markdown', {
+          triggerCharacters: ['@'],
+          provideCompletionItems: completionFunctionProvider
+        });
+
+        // remove cmd+k shortcut
+        monaco.editor.addKeybindingRule({
+          keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
+          command: null
+        });
+        if (themeManager) {
+          themeManager.themeChanged.connect((_, theme) => {
+            const currentTheme = theme.newValue.includes('Light') ? 'vs' : 'vs-dark';
+            monaco.editor.setTheme(currentTheme);
+          });
+        }
+
+        globalState.isMonacoRegistered = true;
+      }
+
+      editor.onKeyDown((event: monaco.IKeyboardEvent) => {
+        // Check if autocomplete widget is visible
+        const isAutocompleteWidgetVisible = () => {
+          const editorElement = editor.getContainerDomNode();
+          const suggestWidget = editorElement.querySelector('.editor-widget.suggest-widget.visible');
+          return suggestWidget !== null && suggestWidget.getAttribute('monaco-visible-content-widget') === 'true';
+        };
+
+        if (isAutocompleteWidgetVisible()) {
+          // Let Monaco handle the key events when autocomplete is open
+          return;
+        }
+
+        if (event.keyCode === monaco.KeyCode.Enter && !event.shiftKey) {
+          event.preventDefault();
+          const currentValue = editor.getValue(); // Directly get the current value from the editor
+          onSend(currentValue); // Modify onSend to accept a parameter for the editor value
+        }
+        if (event.keyCode === monaco.KeyCode.Escape) {
+          event.preventDefault();
+          if (isAiGenerating) {
+            cancelGeneration();
+          } else {
+            notebookTracker?.activeCell?.editor?.focus();
+          }
+        }
+        // Cmd + Esc should clear the chat
+        if ((event.ctrlKey || event.metaKey) && event.keyCode === monaco.KeyCode.Escape && !isAiGenerating) {
+          event.preventDefault();
+          clearChatRef.current();
+        }
+        // Navigate chat history with Cmd+Shift+, and Cmd+Shift+. (or Ctrl+Shift on Windows)
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          event.shiftKey &&
+          event.keyCode === monaco.KeyCode.Comma &&
+          !isAiGenerating
+        ) {
+          event.preventDefault();
+          restoreChat(-1);
+        }
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          event.shiftKey &&
+          event.keyCode === monaco.KeyCode.Period &&
+          !isAiGenerating
+        ) {
+          event.preventDefault();
+          restoreChat(1);
+        }
+      });
+    },
+    [restoreChat, isAiGenerating]
+  );
 
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
