@@ -12,7 +12,7 @@
  * @module pretzelai-extension
  */
 import { ILabShell, ILayoutRestorer, JupyterFrontEnd, JupyterFrontEndPlugin, LabShell } from '@jupyterlab/application';
-import { ICommandPalette } from '@jupyterlab/apputils';
+import { ICommandPalette, IThemeManager } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
 import MistralClient from '@mistralai/mistralai';
@@ -39,6 +39,7 @@ import { migrateSettings } from './migrations/migrations';
 import { getDefaultSettings } from './migrations/defaultSettings';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { globalState } from './globalState';
+import { debounce } from 'lodash';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -63,7 +64,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     INotebookTracker,
     ISettingRegistry,
     ICompletionProviderManager,
-    IMainMenu
+    IMainMenu,
+    IThemeManager
   ],
   optional: [ILayoutRestorer],
   activate: async (
@@ -74,6 +76,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     settingRegistry: ISettingRegistry,
     providerManager: ICompletionProviderManager,
     mainMenu: IMainMenu,
+    themeManager: IThemeManager,
     restorer: ILayoutRestorer | null
   ) => {
     const provider = new PretzelInlineProvider(notebookTracker, settingRegistry, app);
@@ -383,12 +386,17 @@ const extension: JupyterFrontEndPlugin<void> = {
     // fetch active variables names when cells are executed
     const updateAvailableVariables = async () => {
       const newAvailableVariables = await getAvailableVariables(notebookTracker);
-      console.log('Updated available variables:', newAvailableVariables);
       globalState.availableVariables = newAvailableVariables;
     };
     NotebookActions.executed.connect(async (sender, args) => {
       // Update available variables when cells are executed
       updateAvailableVariables();
+    });
+
+    const debouncedUpdateVariables = debounce(updateAvailableVariables, 500);
+
+    notebookTracker.activeCellChanged.connect(() => {
+      debouncedUpdateVariables();
     });
 
     let debounceTimeout: NodeJS.Timeout | null = null;
@@ -578,6 +586,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           codeMatchThreshold={codeMatchThreshold}
           numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
           posthogPromptTelemetry={posthogPromptTelemetry}
+          themeManager={themeManager}
         />
       );
       parentContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -641,6 +650,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               codeMatchThreshold={codeMatchThreshold}
               numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
               posthogPromptTelemetry={posthogPromptTelemetry}
+              themeManager={themeManager}
             />
           );
         }
@@ -666,7 +676,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         rmRegistry,
         aiClient,
         codeMatchThreshold,
-        posthogPromptTelemetry
+        posthogPromptTelemetry,
+        themeManager
       });
       newSidePanel.id = 'pretzelai-chat-panel';
       newSidePanel.node.classList.add('chat-sidepanel');

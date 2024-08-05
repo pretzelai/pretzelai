@@ -12,19 +12,22 @@ import * as monaco from 'monaco-editor';
 import { useEffect, useRef, useState } from 'react';
 import { ButtonsContainer } from './DiffButtonsComponent';
 import { fixCode } from '../postprocessing';
+import { IThemeManager } from '@jupyterlab/apputils';
 
 export interface IStreamingDiffEditorProps {
   stream: AsyncIterable<any>;
   oldCode: string;
   onEditorCreated: (editor: monaco.editor.IStandaloneDiffEditor) => void;
   onStreamingDone: () => void;
+  themeManager: IThemeManager | null;
 }
 
 export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
   stream,
   oldCode,
   onEditorCreated,
-  onStreamingDone
+  onStreamingDone,
+  themeManager
 }) => {
   const [newCode, setNewCode] = useState('');
   const diffEditorRef = useRef<HTMLDivElement>(null);
@@ -32,10 +35,9 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
 
   useEffect(() => {
     if (diffEditorRef.current && !editorRef.current) {
-      const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
       const editor = monaco.editor.createDiffEditor(diffEditorRef.current, {
         readOnly: true,
-        theme: currentTheme,
+        theme: themeManager?.theme?.includes('Light') ? 'vs' : 'vs-dark',
         renderSideBySide: false,
         minimap: { enabled: false },
         overviewRulerBorder: false,
@@ -48,10 +50,12 @@ export const StreamingDiffEditor: React.FC<IStreamingDiffEditorProps> = ({
           handleMouseWheel: false
         }
       });
+
       editor.setModel({
         original: monaco.editor.createModel(oldCode, 'python'),
         modified: monaco.editor.createModel('', 'python')
       });
+
       editorRef.current = editor;
       onEditorCreated(editor);
     }
@@ -131,6 +135,7 @@ interface IDiffContainerProps {
   isErrorFixPrompt: boolean;
   handleRemove: () => void;
   setShowStatusElement: (show: boolean) => void;
+  themeManager: IThemeManager | null;
 }
 
 export const DiffComponent: React.FC<IDiffContainerProps> = props => {
@@ -149,6 +154,7 @@ export const DiffComponent: React.FC<IDiffContainerProps> = props => {
           setStreamingDone(true);
           props.setShowStatusElement(false);
         }}
+        themeManager={props.themeManager}
       />
       {streamingDone && diffEditor && <ButtonsContainer {...props} diffEditor={diffEditor} />}
     </div>

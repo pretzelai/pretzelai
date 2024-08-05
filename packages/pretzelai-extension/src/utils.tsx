@@ -21,6 +21,8 @@ import { showErrorDialog } from './components/ErrorDialog';
 import MistralClient from '@mistralai/mistralai';
 import Groq from 'groq-sdk';
 import { IKernelConnection } from '@jupyterlab/services/src/kernel/kernel';
+import * as monaco from 'monaco-editor';
+import { globalState } from './globalState';
 
 export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
@@ -772,3 +774,37 @@ export async function streamAnthropicCompletion(
     }
   };
 }
+
+export const completionFunctionProvider = (model, position) => {
+  const textUntilPosition = model.getValueInRange({
+    startLineNumber: position.lineNumber,
+    startColumn: 1,
+    endLineNumber: position.lineNumber,
+    endColumn: position.column
+  });
+
+  const match = textUntilPosition.match(/@(\w*)$/);
+  if (!match) {
+    return { suggestions: [] };
+  }
+
+  const word = match[1];
+  const range = {
+    startLineNumber: position.lineNumber,
+    endLineNumber: position.lineNumber,
+    startColumn: position.column - word.length - 1,
+    endColumn: position.column
+  };
+
+  return {
+    suggestions: globalState.availableVariables
+      .filter(variable => variable.startsWith(word))
+      .map(variable => ({
+        label: variable,
+        kind: monaco.languages.CompletionItemKind.Variable,
+        insertText: `@${variable}`,
+        range: range,
+        filterText: `@${variable}`
+      }))
+  };
+};
