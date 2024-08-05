@@ -18,7 +18,7 @@ import { OpenAIClient } from '@azure/openai';
 import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import MistralClient from '@mistralai/mistralai';
-import { showErrorMessage } from '@jupyterlab/apputils';
+import { IThemeManager, showErrorMessage } from '@jupyterlab/apputils';
 // import { globalState } from '../globalState';
 
 interface IAIAssistantComponentProps {
@@ -47,6 +47,7 @@ interface IAIAssistantComponentProps {
   codeMatchThreshold: number;
   numberOfSimilarCells: number;
   posthogPromptTelemetry: boolean;
+  themeManager: IThemeManager | null;
 }
 
 export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props => {
@@ -193,6 +194,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           activeCell={props.notebookTracker.activeCell!}
           placeholderEnabled={props.placeholderEnabled}
           placeholderDisabled={props.placeholderDisabled}
+          themeManager={props.themeManager}
         />
       )}
       {showDiffContainer && stream && (
@@ -205,6 +207,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           isErrorFixPrompt={!!props.traceback}
           handleRemove={props.handleRemove}
           setShowStatusElement={setShowStatusElement}
+          themeManager={props.themeManager}
         />
       )}
     </>

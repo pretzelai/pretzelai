@@ -326,8 +326,8 @@ export function Chat({
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
+    monaco.editor.setTheme(themeManager?.theme?.includes('Light') ? 'vs' : 'vs-dark');
 
-    console.log('editorDidMount');
     if (!globalState.isMonacoRegistered) {
       // Register the completion provider for Markdown
       monaco.languages.registerCompletionItemProvider('markdown', {
@@ -340,16 +340,10 @@ export function Chat({
         keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK,
         command: null
       });
-
-      const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
-      monaco.editor.setTheme(currentTheme);
-
       if (themeManager) {
         themeManager.themeChanged.connect((_, theme) => {
           const currentTheme = theme.newValue.includes('Light') ? 'vs' : 'vs-dark';
-          // editor._themeService.setTheme(currentTheme);
           monaco.editor.setTheme(currentTheme);
-          console.log('themeChanged', theme, currentTheme);
         });
       }
 

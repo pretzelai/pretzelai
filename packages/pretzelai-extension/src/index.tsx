@@ -579,6 +579,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           codeMatchThreshold={codeMatchThreshold}
           numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
           posthogPromptTelemetry={posthogPromptTelemetry}
+          themeManager={themeManager}
         />
       );
       parentContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -642,6 +643,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               codeMatchThreshold={codeMatchThreshold}
               numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
               posthogPromptTelemetry={posthogPromptTelemetry}
+              themeManager={themeManager}
             />
           );
         }

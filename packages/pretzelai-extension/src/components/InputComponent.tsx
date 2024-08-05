@@ -17,6 +17,7 @@ import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import 'monaco-editor/min/vs/editor/editor.main.css';
 import * as monaco from 'monaco-editor';
 import { globalState } from '../globalState';
+import { IThemeManager } from '@jupyterlab/apputils';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
@@ -190,6 +191,7 @@ interface IInputComponentProps {
   setInputView: (view: any) => void;
   initialPrompt: string;
   activeCell: Cell<ICellModel>;
+  themeManager: IThemeManager | null;
 }
 
 const InputComponent: React.FC<IInputComponentProps> = ({
@@ -201,7 +203,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   promptHistoryStack,
   setInputView,
   initialPrompt,
-  activeCell
+  activeCell,
+  themeManager
 }) => {
   const [editorValue, setEditorValue] = useState(initialPrompt);
   const [submitButtonText, setSubmitButtonText] = useState('Generate');
@@ -229,6 +232,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       editor
     );
 
+    monaco.editor.setTheme(themeManager?.theme?.includes('Light') ? 'vs' : 'vs-dark');
+
     if (!globalState.isMonacoRegistered) {
       // Register the completion provider for Markdown
       monaco.languages.registerCompletionItemProvider('markdown', {
@@ -242,8 +247,12 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         command: null
       });
 
-      const currentTheme = document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark';
-      monaco.editor.setTheme(currentTheme);
+      if (themeManager) {
+        themeManager.themeChanged.connect((_, theme) => {
+          const currentTheme = theme.newValue.includes('Light') ? 'vs' : 'vs-dark';
+          monaco.editor.setTheme(currentTheme);
+        });
+      }
 
       globalState.isMonacoRegistered = true;
     }
