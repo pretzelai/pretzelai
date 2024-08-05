@@ -39,6 +39,7 @@ import { migrateSettings } from './migrations/migrations';
 import { getDefaultSettings } from './migrations/defaultSettings';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { globalState } from './globalState';
+import { debounce } from 'lodash';
 
 function initializePosthog(cookiesEnabled: boolean) {
   posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
@@ -390,6 +391,12 @@ const extension: JupyterFrontEndPlugin<void> = {
     NotebookActions.executed.connect(async (sender, args) => {
       // Update available variables when cells are executed
       updateAvailableVariables();
+    });
+
+    const debouncedUpdateVariables = debounce(updateAvailableVariables, 500);
+
+    notebookTracker.activeCellChanged.connect(() => {
+      debouncedUpdateVariables();
     });
 
     let debounceTimeout: NodeJS.Timeout | null = null;
