@@ -19,7 +19,7 @@ import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import MistralClient from '@mistralai/mistralai';
 import { IThemeManager, showErrorMessage } from '@jupyterlab/apputils';
-// import { globalState } from '../globalState';
+import { applyDiffToEditor, removeDiffFromEditor } from './diffWrapper';
 
 interface IAIAssistantComponentProps {
   aiChatModelProvider: string;
@@ -120,7 +120,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     const { extractedCode } = getSelectedCode(props.notebookTracker);
 
     let activeCell = props.notebookTracker.activeCell;
-    let embeddings = await readEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiChatModelProvider);
+    // let embeddings = await readEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiChatModelProvider);
 
     if (userInput !== '') {
       setShowInputComponent(false);
@@ -128,7 +128,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       setStatusElementText('Calculating embeddings...');
       const oldCode = activeCell!.model.sharedModel.source;
 
-      let oldCodeForPrompt = activeCell!.model.sharedModel.source;
+      // let oldCodeForPrompt = activeCell!.model.sharedModel.source;
       const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
       if (isInject && !extractedCode) {
         // here's what we do:
@@ -138,39 +138,44 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         userInput = userInput.replace(/inject/i, '').replace(/ij/i, '');
         (activeCell!.editor! as CodeMirrorEditor).moveToEndAndNewIndentedLine();
         activeCell!.editor!.replaceSelection!('# INJECT NEW CODE HERE');
-        oldCodeForPrompt = activeCell!.model.sharedModel.source;
+        // oldCodeForPrompt = activeCell!.model.sharedModel.source;
         activeCell!.model.sharedModel.source = oldCode;
       }
       userInput = await processTaggedVariables(userInput, props.notebookTracker);
       try {
-        const stream = await generateAIStream({
-          aiChatModelProvider: props.aiChatModelProvider,
-          aiClient: props.aiClient,
-          embeddings: embeddings,
-          userInput,
-          oldCodeForPrompt,
-          traceback: '',
-          notebookTracker: props.notebookTracker,
-          codeMatchThreshold: props.codeMatchThreshold,
-          numberOfSimilarCells: props.numberOfSimilarCells,
-          posthogPromptTelemetry: props.posthogPromptTelemetry,
-          openAiApiKey: props.openAiApiKey,
-          openAiBaseUrl: props.openAiBaseUrl,
-          aiChatModelString: props.aiChatModelString,
-          azureBaseUrl: props.azureBaseUrl,
-          azureApiKey: props.azureApiKey,
-          deploymentId: props.deploymentId,
-          mistralApiKey: props.mistralApiKey,
-          mistralModel: props.mistralModel,
-          anthropicApiKey: props.anthropicApiKey,
-          ollamaBaseUrl: props.ollamaBaseUrl,
-          groqApiKey: props.groqApiKey,
-          isInject: isInject
-        });
+        // const stream = await generateAIStream({
+        //   aiChatModelProvider: props.aiChatModelProvider,
+        //   aiClient: props.aiClient,
+        //   embeddings: embeddings,
+        //   userInput,
+        //   oldCodeForPrompt,
+        //   traceback: '',
+        //   notebookTracker: props.notebookTracker,
+        //   codeMatchThreshold: props.codeMatchThreshold,
+        //   numberOfSimilarCells: props.numberOfSimilarCells,
+        //   posthogPromptTelemetry: props.posthogPromptTelemetry,
+        //   openAiApiKey: props.openAiApiKey,
+        //   openAiBaseUrl: props.openAiBaseUrl,
+        //   aiChatModelString: props.aiChatModelString,
+        //   azureBaseUrl: props.azureBaseUrl,
+        //   azureApiKey: props.azureApiKey,
+        //   deploymentId: props.deploymentId,
+        //   mistralApiKey: props.mistralApiKey,
+        //   mistralModel: props.mistralModel,
+        //   anthropicApiKey: props.anthropicApiKey,
+        //   ollamaBaseUrl: props.ollamaBaseUrl,
+        //   groqApiKey: props.groqApiKey,
+        //   isInject: isInject
+        // });
 
-        setStream(stream);
-        setStatusElementText('Generating code...');
-        setShowDiffContainer(true);
+        // setStream(stream);
+        // setStatusElementText('Generating code...');
+        const editor = activeCell!.editor as CodeMirrorEditor;
+        const dummyNewPythonCode = `max(1, 2, 3)
+# The diff view will be removed once the user submits the prompt.
+print('Hello, World!')`;
+        applyDiffToEditor(editor, oldCode, dummyNewPythonCode);
+        // setShowDiffContainer(true);
       } catch (error: any) {
         props.handleRemove();
         const errorMessage = error.message || 'An unknown error occurred';
@@ -179,6 +184,15 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       }
     }
   };
+
+  // const handleRemoveDiff = () => {
+  //   const activeCell = props.notebookTracker.activeCell;
+  //   if (activeCell) {
+  //     const editor = activeCell.editor as CodeMirrorEditor;
+  //     removeDiffFromEditor(editor);
+  //   }
+  //   setShowDiffContainer(false);
+  // };
 
   return (
     <>
@@ -206,6 +220,10 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           commands={props.commands}
           isErrorFixPrompt={!!props.traceback}
           handleRemove={props.handleRemove}
+          // handleRemove={() => {
+          //   handleRemoveDiff();
+          //   props.handleRemove();
+          // }}
           setShowStatusElement={setShowStatusElement}
           themeManager={props.themeManager}
         />
