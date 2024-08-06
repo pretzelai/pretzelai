@@ -21,7 +21,7 @@ import { IThemeManager, showErrorMessage } from '@jupyterlab/apputils';
 import { applyDiffToEditor } from './diffWrapper';
 import { EditorView } from 'codemirror';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
-// import { fixCode } from '../postprocessing';
+import { fixCode } from '../postprocessing';
 
 import { ButtonsContainer } from './DiffButtonsComponent';
 
@@ -71,6 +71,20 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       handleFixError();
     }
   }, []);
+
+  useEffect(() => {
+    if (streamingDone && diffView) {
+      const fixedCode = fixCode(newCode);
+      diffView.dispatch({
+        changes: {
+          from: 0,
+          to: diffView.state.doc.length,
+          insert: fixedCode
+        }
+      });
+      setNewCode(fixedCode);
+    }
+  }, [streamingDone]);
 
   useEffect(() => {
     if (stream) {
@@ -123,7 +137,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       props.aiClient,
       props.aiChatModelProvider
     );
-    let oldCodeForPrompt = props.notebookTracker.activeCell!.model.sharedModel.source;
+    let oldCode = props.notebookTracker.activeCell!.model.sharedModel.source;
 
     try {
       const stream = await generateAIStream({
@@ -131,7 +145,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         aiClient: props.aiClient,
         embeddings: embeddings,
         userInput: '',
-        oldCodeForPrompt,
+        oldCodeForPrompt: oldCode,
         traceback: props.traceback,
         notebookTracker: props.notebookTracker,
         codeMatchThreshold: props.codeMatchThreshold,
@@ -151,12 +165,21 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         isInject: false
       });
 
+      const activeCell = props.notebookTracker.activeCell;
+      if (activeCell) {
+        const editor = activeCell.editor as CodeMirrorEditor;
+        const initialDiffView = applyDiffToEditor(editor, oldCode, '');
+        setDiffView(initialDiffView);
+      }
+
       setStream(stream);
       setStatusElementText('Generating code...');
-      // setShowDiffContainer(true);
-    } catch (error) {
+      setStreamingDone(false);
+    } catch (error: any) {
       props.handleRemove();
-      throw new Error('Error generating prompt');
+      const errorMessage = error.message || 'An unknown error occurred';
+      showErrorMessage('Error Generating Prompt', errorMessage);
+      throw new Error(`Error generating prompt: ${errorMessage}`);
     }
   };
 
