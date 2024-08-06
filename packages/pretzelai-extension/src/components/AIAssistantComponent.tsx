@@ -26,24 +26,35 @@ import { EditorState, Extension } from '@codemirror/state';
 import { unifiedMergeView } from '@codemirror/merge';
 import { python } from '@codemirror/lang-python';
 import { highlightSpecialChars } from '@codemirror/view';
-import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
+// import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { jupyterTheme } from '@jupyterlab/codemirror';
 
-function applyDiffToEditor(editor: CodeMirrorEditor, original: string, modified: string): EditorView {
+function applyDiffToEditor(
+  editor: CodeMirrorEditor,
+  original: string,
+  modified: string,
+  app: JupyterFrontEnd,
+  isNewCodeGeneration = false
+): EditorView {
   const extensions: Extension[] = [
     python(),
+    jupyterTheme,
     EditorView.editable.of(false),
     EditorState.readOnly.of(true),
-    unifiedMergeView({
-      original: original,
-      mergeControls: false,
-      gutter: false
-    }),
-    highlightSpecialChars(),
-    syntaxHighlighting(defaultHighlightStyle)
+    highlightSpecialChars()
   ];
 
+  if (!isNewCodeGeneration) {
+    extensions.push(
+      unifiedMergeView({
+        original: original,
+        mergeControls: false,
+        gutter: false
+      })
+    );
+  }
   // Create a new EditorView with the diff content
-  const diffView = new EditorView({
+  const newView = new EditorView({
     state: EditorState.create({
       doc: modified,
       extensions: extensions
@@ -54,10 +65,15 @@ function applyDiffToEditor(editor: CodeMirrorEditor, original: string, modified:
   // Hide the original editor view
   editor.editor.dom.classList.add('pretzel-hidden-editor');
 
-  // Append the diff view to the same parent as the original editor
-  editor.host.appendChild(diffView.dom);
+  // Add a class for new code generation
+  if (isNewCodeGeneration) {
+    newView.dom.classList.add('pretzel-new-code-generation');
+  }
 
-  return diffView;
+  // Append the new view to the same parent as the original editor
+  editor.host.appendChild(newView.dom);
+
+  return newView;
 }
 
 interface IAIAssistantComponentProps {
@@ -213,7 +229,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       const activeCell = props.notebookTracker.activeCell;
       if (activeCell) {
         const editor = activeCell.editor as CodeMirrorEditor;
-        const initialDiffView = applyDiffToEditor(editor, oldCode, '');
+        const initialDiffView = applyDiffToEditor(editor, oldCode, '', props.app, false);
         setDiffView(initialDiffView);
       }
 
@@ -281,7 +297,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         });
 
         const editor = activeCell!.editor as CodeMirrorEditor;
-        const initialDiffView = applyDiffToEditor(editor, oldCode, '');
+        const initialDiffView = applyDiffToEditor(editor, oldCode, '', props.app, oldCode.trim() === '');
         setDiffView(initialDiffView);
 
         setStream(stream);

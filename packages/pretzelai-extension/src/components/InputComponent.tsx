@@ -205,7 +205,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 }) => {
   const [editorValue, setEditorValue] = useState(initialPrompt);
   const [submitButtonText, setSubmitButtonText] = useState('Generate');
-  const [promptHistoryIndex, setPromptHistoryIndex] = useState<number>(0);
+  const [, setPromptHistoryIndex] = useState<number>(0);
   const editorRef = useRef<any>(null);
 
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
