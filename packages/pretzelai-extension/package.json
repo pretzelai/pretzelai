@@ -92,7 +92,6 @@
   },
   "dependencies": {
     "@azure/openai": "^1.0.0-beta.12",
-    "@codemirror/autocomplete": "^6.15.0",
     "@codemirror/commands": "^6.3.3",
     "@codemirror/language": "^6.10.1",
     "@codemirror/merge": "~6.6.7",
@@ -119,7 +118,7 @@
     "@monaco-editor/react": "~4.6.0",
     "@mui/icons-material": "~5.15.18",
     "@mui/material": "^5.15.21",
-    "codemirror": "^6.0.1",
+    "codemirror": "~6.0.1",
     "groq-sdk": "^0.5.0",
     "lodash": "~4.17.21",
     "monaco-editor": "^0.47.0",
