@@ -9,10 +9,9 @@
 
 import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
-import { DiffComponent } from './DiffComponent';
+// import { DiffComponent } from './DiffComponent';
 import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';
 import { CommandRegistry } from '@lumino/commands';
@@ -20,6 +19,11 @@ import { JupyterFrontEnd } from '@jupyterlab/application';
 import MistralClient from '@mistralai/mistralai';
 import { IThemeManager, showErrorMessage } from '@jupyterlab/apputils';
 import { applyDiffToEditor, removeDiffFromEditor } from './diffWrapper';
+import { EditorView } from 'codemirror';
+import { CodeMirrorEditor } from '@jupyterlab/codemirror';
+import { fixCode } from '../postprocessing';
+
+import { ButtonsContainer } from './DiffButtonsComponent';
 
 interface IAIAssistantComponentProps {
   aiChatModelProvider: string;
@@ -52,12 +56,68 @@ interface IAIAssistantComponentProps {
 
 export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props => {
   const [showInputComponent, setShowInputComponent] = useState(true);
-  const [showDiffContainer, setShowDiffContainer] = useState(false);
   const [showStatusElement, setShowStatusElement] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string>('');
 
   const [stream, setStream] = useState<AsyncIterable<any> | null>(null);
   const [statusElementText, setStatusElementText] = useState<string>('');
+
+  const [diffView, setDiffView] = useState<EditorView | null>(null);
+  const [originalCode, setOriginalCode] = useState<string>('');
+  const [newCode, setNewCode] = useState<string>('');
+  const [streamingDone, setStreamingDone] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (props.traceback) {
+      handleFixError();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (stream) {
+      const accumulate = async () => {
+        try {
+          for await (const chunk of stream) {
+            const newContent = chunk.choices[0]?.delta?.content || '';
+            console.log('New content received:', newContent);
+            setNewCode(prevCode => prevCode + newContent);
+          }
+          setStreamingDone(true);
+          setStatusElementText('');
+        } catch (error) {
+          console.error('Error processing stream:', error);
+          setStreamingDone(true);
+          setStatusElementText('');
+        }
+      };
+      accumulate();
+    }
+  }, [stream]);
+
+  useEffect(() => {
+    if (props.notebookTracker.activeCell && diffView) {
+      const editor = props.notebookTracker.activeCell.editor as CodeMirrorEditor;
+      removeDiffFromEditor(editor, diffView);
+      const updatedDiffView = applyDiffToEditor(editor, originalCode, newCode);
+      setDiffView(updatedDiffView);
+    }
+  }, [newCode]);
+
+  useEffect(() => {
+    if (streamingDone) {
+      applyFinalCode();
+    }
+  }, [streamingDone]);
+
+  const applyFinalCode = () => {
+    if (props.notebookTracker.activeCell && diffView) {
+      const editor = props.notebookTracker.activeCell.editor as CodeMirrorEditor;
+      const finalNewCode = fixCode(newCode);
+      removeDiffFromEditor(editor, diffView);
+      const updatedDiffView = applyDiffToEditor(editor, originalCode, finalNewCode);
+      setDiffView(updatedDiffView);
+    }
+  };
 
   useEffect(() => {
     if (props.notebookTracker.activeCell!.model.getMetadata('isPromptEdit')) {
@@ -109,7 +169,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
       setStream(stream);
       setStatusElementText('Generating code...');
-      setShowDiffContainer(true);
+      // setShowDiffContainer(true);
     } catch (error) {
       props.handleRemove();
       throw new Error('Error generating prompt');
@@ -120,7 +180,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     const { extractedCode } = getSelectedCode(props.notebookTracker);
 
     let activeCell = props.notebookTracker.activeCell;
-    // let embeddings = await readEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiChatModelProvider);
+    let embeddings = await readEmbeddings(props.notebookTracker, props.app, props.aiClient, props.aiChatModelProvider);
 
     if (userInput !== '') {
       setShowInputComponent(false);
@@ -128,7 +188,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       setStatusElementText('Calculating embeddings...');
       const oldCode = activeCell!.model.sharedModel.source;
 
-      // let oldCodeForPrompt = activeCell!.model.sharedModel.source;
+      let oldCodeForPrompt = activeCell!.model.sharedModel.source;
       const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
       if (isInject && !extractedCode) {
         // here's what we do:
@@ -138,44 +198,48 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         userInput = userInput.replace(/inject/i, '').replace(/ij/i, '');
         (activeCell!.editor! as CodeMirrorEditor).moveToEndAndNewIndentedLine();
         activeCell!.editor!.replaceSelection!('# INJECT NEW CODE HERE');
-        // oldCodeForPrompt = activeCell!.model.sharedModel.source;
+        oldCodeForPrompt = activeCell!.model.sharedModel.source;
         activeCell!.model.sharedModel.source = oldCode;
       }
       userInput = await processTaggedVariables(userInput, props.notebookTracker);
       try {
-        // const stream = await generateAIStream({
-        //   aiChatModelProvider: props.aiChatModelProvider,
-        //   aiClient: props.aiClient,
-        //   embeddings: embeddings,
-        //   userInput,
-        //   oldCodeForPrompt,
-        //   traceback: '',
-        //   notebookTracker: props.notebookTracker,
-        //   codeMatchThreshold: props.codeMatchThreshold,
-        //   numberOfSimilarCells: props.numberOfSimilarCells,
-        //   posthogPromptTelemetry: props.posthogPromptTelemetry,
-        //   openAiApiKey: props.openAiApiKey,
-        //   openAiBaseUrl: props.openAiBaseUrl,
-        //   aiChatModelString: props.aiChatModelString,
-        //   azureBaseUrl: props.azureBaseUrl,
-        //   azureApiKey: props.azureApiKey,
-        //   deploymentId: props.deploymentId,
-        //   mistralApiKey: props.mistralApiKey,
-        //   mistralModel: props.mistralModel,
-        //   anthropicApiKey: props.anthropicApiKey,
-        //   ollamaBaseUrl: props.ollamaBaseUrl,
-        //   groqApiKey: props.groqApiKey,
-        //   isInject: isInject
-        // });
+        const stream = await generateAIStream({
+          aiChatModelProvider: props.aiChatModelProvider,
+          aiClient: props.aiClient,
+          embeddings: embeddings,
+          userInput,
+          oldCodeForPrompt,
+          traceback: '',
+          notebookTracker: props.notebookTracker,
+          codeMatchThreshold: props.codeMatchThreshold,
+          numberOfSimilarCells: props.numberOfSimilarCells,
+          posthogPromptTelemetry: props.posthogPromptTelemetry,
+          openAiApiKey: props.openAiApiKey,
+          openAiBaseUrl: props.openAiBaseUrl,
+          aiChatModelString: props.aiChatModelString,
+          azureBaseUrl: props.azureBaseUrl,
+          azureApiKey: props.azureApiKey,
+          deploymentId: props.deploymentId,
+          mistralApiKey: props.mistralApiKey,
+          mistralModel: props.mistralModel,
+          anthropicApiKey: props.anthropicApiKey,
+          ollamaBaseUrl: props.ollamaBaseUrl,
+          groqApiKey: props.groqApiKey,
+          isInject: isInject
+        });
 
-        // setStream(stream);
-        // setStatusElementText('Generating code...');
         const editor = activeCell!.editor as CodeMirrorEditor;
-        const dummyNewPythonCode = `max(1, 2, 3)
-# The diff view will be removed once the user submits the prompt.
-print('Hello, World!')`;
-        applyDiffToEditor(editor, oldCode, dummyNewPythonCode);
-        // setShowDiffContainer(true);
+        const oldCode = activeCell!.model.sharedModel.source;
+        setOriginalCode(oldCode);
+        setNewCode(''); // Reset new code
+
+        // Apply initial empty diff
+        const initialDiffView = applyDiffToEditor(editor, oldCode, '');
+        setDiffView(initialDiffView);
+
+        setStream(stream);
+        setStatusElementText('Generating code...');
+        setStreamingDone(false);
       } catch (error: any) {
         props.handleRemove();
         const errorMessage = error.message || 'An unknown error occurred';
@@ -185,14 +249,16 @@ print('Hello, World!')`;
     }
   };
 
-  // const handleRemoveDiff = () => {
-  //   const activeCell = props.notebookTracker.activeCell;
-  //   if (activeCell) {
-  //     const editor = activeCell.editor as CodeMirrorEditor;
-  //     removeDiffFromEditor(editor);
-  //   }
-  //   setShowDiffContainer(false);
-  // };
+  const handleRemoveDiff = () => {
+    const activeCell = props.notebookTracker.activeCell;
+    if (activeCell && diffView) {
+      const editor = activeCell.editor as CodeMirrorEditor;
+      removeDiffFromEditor(editor, diffView);
+      setDiffView(null);
+      // Restore the original code
+      editor.model.sharedModel.setSource(originalCode);
+    }
+  };
 
   return (
     <>
@@ -211,22 +277,20 @@ print('Hello, World!')`;
           themeManager={props.themeManager}
         />
       )}
-      {showDiffContainer && stream && (
-        <DiffComponent
-          stream={stream}
-          oldCode={props.notebookTracker.activeCell!.model.sharedModel.source}
-          parentContainer={document.createElement('div')}
-          activeCell={props.notebookTracker.activeCell}
-          commands={props.commands}
-          isErrorFixPrompt={!!props.traceback}
-          handleRemove={props.handleRemove}
-          // handleRemove={() => {
-          //   handleRemoveDiff();
-          //   props.handleRemove();
-          // }}
-          setShowStatusElement={setShowStatusElement}
-          themeManager={props.themeManager}
-        />
+      {streamingDone && diffView && (
+        <div>
+          <button onClick={handleRemoveDiff}>Remove Diff</button>
+          <button
+            onClick={() => {
+              if (props.notebookTracker.activeCell) {
+                props.notebookTracker.activeCell.model.sharedModel.setSource(newCode);
+                handleRemoveDiff();
+              }
+            }}
+          >
+            Apply Changes
+          </button>
+        </div>
       )}
     </>
   );
