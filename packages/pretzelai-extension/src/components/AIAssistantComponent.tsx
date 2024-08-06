@@ -9,7 +9,6 @@
 
 import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
-// import { DiffComponent } from './DiffComponent';
 import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
@@ -18,12 +17,48 @@ import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import MistralClient from '@mistralai/mistralai';
 import { IThemeManager, showErrorMessage } from '@jupyterlab/apputils';
-import { applyDiffToEditor } from './diffWrapper';
 import { EditorView } from 'codemirror';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { fixCode } from '../postprocessing';
 
 import { ButtonsContainer } from './DiffButtonsComponent';
+import { EditorState, Extension } from '@codemirror/state';
+import { unifiedMergeView } from '@codemirror/merge';
+import { python } from '@codemirror/lang-python';
+import { highlightSpecialChars } from '@codemirror/view';
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
+
+function applyDiffToEditor(editor: CodeMirrorEditor, original: string, modified: string): EditorView {
+  const extensions: Extension[] = [
+    python(),
+    EditorView.editable.of(false),
+    EditorState.readOnly.of(true),
+    unifiedMergeView({
+      original: original,
+      mergeControls: false,
+      gutter: false
+    }),
+    highlightSpecialChars(),
+    syntaxHighlighting(defaultHighlightStyle)
+  ];
+
+  // Create a new EditorView with the diff content
+  const diffView = new EditorView({
+    state: EditorState.create({
+      doc: modified,
+      extensions: extensions
+    }),
+    parent: editor.editor.dom
+  });
+
+  // Hide the original editor view
+  editor.editor.dom.classList.add('pretzel-hidden-editor');
+
+  // Append the diff view to the same parent as the original editor
+  editor.host.appendChild(diffView.dom);
+
+  return diffView;
+}
 
 interface IAIAssistantComponentProps {
   aiChatModelProvider: string;
