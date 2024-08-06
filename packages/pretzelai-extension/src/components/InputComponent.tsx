@@ -227,6 +227,17 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     editorRef.current = editor;
     setInputView(editor);
 
+    // Set initial text in the editor
+    if (initialPrompt) {
+      editor.setValue(initialPrompt);
+      const model = editor.getModel();
+      if (model) {
+        const lastLineNumber = model.getLineCount();
+        const lastLineContent = model.getLineContent(lastLineNumber);
+        editor.setPosition({ lineNumber: lastLineNumber, column: lastLineContent.length + 1 });
+      }
+    }
+
     placeholderWidgetRef.current = new PlaceholderContentWidget(
       isAIEnabled ? placeholderEnabled : placeholderDisabled,
       editor
@@ -390,7 +401,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         <Editor
           height="100px"
           defaultLanguage="markdown"
-          defaultValue={initialPrompt}
           value={editorValue}
           onChange={handleEditorChange}
           onMount={handleEditorDidMount}

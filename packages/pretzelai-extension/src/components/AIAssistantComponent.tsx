@@ -57,7 +57,7 @@ interface IAIAssistantComponentProps {
 export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props => {
   const [showInputComponent, setShowInputComponent] = useState(true);
   const [showStatusElement, setShowStatusElement] = useState(true);
-  const [initialPrompt, setInitialPrompt] = useState<string>('');
+  const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
 
   const [stream, setStream] = useState<AsyncIterable<any> | null>(null);
   const [statusElementText, setStatusElementText] = useState<string>('');
@@ -105,12 +105,11 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   }, [newCode]);
 
   useEffect(() => {
-    if (props.notebookTracker.activeCell!.model.getMetadata('isPromptEdit')) {
-      setInitialPrompt(props.promptHistoryStack.get(1));
-      props.notebookTracker.activeCell!.model.setMetadata('isPromptEdit', false);
-    }
-    if (props.traceback) {
-      handleFixError();
+    if (props.notebookTracker.activeCell?.model.getMetadata('isPromptEdit')) {
+      setInitialPrompt(props.promptHistoryStack.get(1) || '');
+      props.notebookTracker.activeCell.model.setMetadata('isPromptEdit', false);
+    } else {
+      setInitialPrompt(''); // Set to empty string if no edit is needed
     }
   }, []);
 
@@ -242,18 +241,13 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
       // Clear the diff view state
       setDiffView(null);
-
-      // Set the old code in the editor view
-      // editor.editor.dispatch({
-      //   changes: { from: 0, to: editor.editor.state.doc.length, insert: activeCell.model.sharedModel.source }
-      // });
     }
   };
 
   return (
     <>
       {showStatusElement && <p className="status-element">{statusElementText}</p>}
-      {showInputComponent && (
+      {showInputComponent && initialPrompt !== null && (
         <InputComponent
           isAIEnabled={props.isAIEnabled}
           handleSubmit={handleSubmit}

@@ -276,7 +276,7 @@
 }
 
 .cm-editor.ͼ1.ͼ2.ͼ4.ͼo.pretzel-hidden-editor {
-  /* display: none !important; */
+  display: none !important;
 }
 
 #splash-accept {
