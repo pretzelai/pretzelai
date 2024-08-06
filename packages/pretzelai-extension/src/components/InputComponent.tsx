@@ -91,9 +91,8 @@ const promptHistoryIcon = new LabIcon({
 });
 
 const PromptHistoryButton: React.FC<{
-  handleClick: (promptHistoryIndex: number) => void;
-  promptHistoryIndex: number;
-}> = ({ handleClick, promptHistoryIndex }) => {
+  handleClick: () => void;
+}> = ({ handleClick }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
@@ -101,9 +100,7 @@ const PromptHistoryButton: React.FC<{
       <button
         className="prompt-history-button"
         title="Prompt History"
-        onClick={() => {
-          handleClick(promptHistoryIndex);
-        }}
+        onClick={handleClick}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >
@@ -371,12 +368,13 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     }
   };
 
-  const handlePromptHistory = (promptHistoryIndex: number = 0) => {
-    if (promptHistoryIndex >= 0 && promptHistoryIndex < promptHistoryStack.length) {
-      const oldPrompt = promptHistoryStack.get(promptHistoryIndex);
+  const handlePromptHistory = (index: number) => {
+    if (index >= 0 && index < promptHistoryStack.length) {
+      const oldPrompt = promptHistoryStack.get(index);
       setEditorValue(oldPrompt);
       editorRef.current?.focus();
     }
+    return index;
   };
 
   useEffect(() => {
@@ -444,14 +442,17 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         />
         <RemoveButton handleClick={handleRemove} />
         <PromptHistoryButton
-          handleClick={index => {
-            if (index >= 0 && index < promptHistoryStack.length) {
-              const oldPrompt = promptHistoryStack.get(index);
-              setEditorValue(oldPrompt);
-              editorRef.current?.focus();
-            }
+          handleClick={() => {
+            posthog.capture('Prompt History via Button Click', {
+              event_type: 'click',
+              method: 'prompt_history'
+            });
+            setPromptHistoryIndex(prevIndex => {
+              const newIndex = Math.min(prevIndex + 1, promptHistoryStack.length - 1);
+              handlePromptHistory(newIndex);
+              return newIndex;
+            });
           }}
-          promptHistoryIndex={promptHistoryIndex}
         />
       </div>
     </div>
