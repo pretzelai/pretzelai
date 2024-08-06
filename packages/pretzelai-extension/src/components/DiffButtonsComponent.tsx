@@ -256,7 +256,7 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.focus();
+      containerRef.current.focus({ preventScroll: true });
     }
   }, []);
 

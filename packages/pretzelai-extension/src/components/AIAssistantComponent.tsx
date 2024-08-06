@@ -101,6 +101,8 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   const [newCode, setNewCode] = useState<string>('');
   const [streamingDone, setStreamingDone] = useState<boolean>(false);
 
+  const buttonsRef = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (props.traceback) {
       handleFixError();
@@ -118,8 +120,16 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         }
       });
       setNewCode(fixedCode);
+      setShowStatusElement(false);
     }
   }, [streamingDone]);
+
+  useEffect(() => {
+    if (streamingDone && diffView && buttonsRef.current) {
+      // Scroll the buttons into view, but align to the nearest edge
+      buttonsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [streamingDone, diffView]);
 
   useEffect(() => {
     if (stream) {
@@ -320,18 +330,20 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         />
       )}
       {streamingDone && diffView && (
-        <ButtonsContainer
-          diffEditor={diffView}
-          activeCell={props.notebookTracker.activeCell!}
-          commands={props.commands}
-          isErrorFixPrompt={!!props.traceback}
-          oldCode={props.notebookTracker.activeCell!.model.sharedModel.source}
-          newCode={newCode}
-          handleRemove={() => {
-            handleRemoveDiff();
-            props.handleRemove();
-          }}
-        />
+        <div ref={buttonsRef}>
+          <ButtonsContainer
+            diffEditor={diffView}
+            activeCell={props.notebookTracker.activeCell!}
+            commands={props.commands}
+            isErrorFixPrompt={!!props.traceback}
+            oldCode={props.notebookTracker.activeCell!.model.sharedModel.source}
+            newCode={newCode}
+            handleRemove={() => {
+              handleRemoveDiff();
+              props.handleRemove();
+            }}
+          />
+        </div>
       )}
     </>
   );
