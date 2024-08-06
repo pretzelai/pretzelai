@@ -192,8 +192,8 @@ export function processImports(notebookTracker: INotebookTracker): string {
 export const getAvailableVariables = async (notebookTracker: INotebookTracker): Promise<string[]> => {
   const code = `from IPython import get_ipython;ipython = get_ipython();print(ipython.run_line_magic('who_ls', ''))`;
   const varsToIgnore = ['get_ipython', 'ipython'];
-  const kernel = notebookTracker!.currentWidget!.sessionContext!.session!.kernel!;
   try {
+    const kernel = notebookTracker!.currentWidget!.sessionContext!.session!.kernel!;
     const output = await executeCode(kernel, code);
     if (output) {
       try {

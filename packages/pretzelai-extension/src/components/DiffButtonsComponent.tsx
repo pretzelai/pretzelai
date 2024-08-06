@@ -8,19 +8,20 @@
  * the root of the project) are licensed under AGPLv3.
  */
 
-import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
 import posthog from 'posthog-js';
 import { Cell, ICellModel } from '@jupyterlab/cells';
 
 import { CommandRegistry } from '@lumino/commands';
+import { EditorView } from 'codemirror';
 
 const AcceptAndRunButton: React.FC<{
-  diffEditor: monaco.editor.IStandaloneDiffEditor;
+  diffEditor: EditorView;
   activeCell: Cell<ICellModel>;
   commands: CommandRegistry;
   handleRemove: () => void;
-}> = ({ diffEditor, activeCell, commands, handleRemove }) => {
+  newCode: string;
+}> = ({ diffEditor, activeCell, commands, handleRemove, newCode }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const keyCombination = 'Shift + Enter';
   const shortcut = '⇧↵';
@@ -28,14 +29,13 @@ const AcceptAndRunButton: React.FC<{
   const runOnlyKeyCombination = isMac ? 'Cmd + Enter' : 'Ctrl + Enter';
 
   const handleClick = () => {
-    const modifiedCode = diffEditor!.getModel()!.modified.getValue();
-    activeCell.model.sharedModel.source = modifiedCode;
-    commands.execute('notebook:run-cell-and-select-next');
+    activeCell.model.sharedModel.setSource(newCode);
     posthog.capture('Accept and Run', {
       event_type: 'click',
       method: 'accept_and_run'
     });
     handleRemove();
+    commands.execute('notebook:run-cell-and-select-next');
   };
 
   return (
@@ -66,25 +66,25 @@ const AcceptAndRunButton: React.FC<{
 
 // this button stays hidden and handles the Cmd+Enter shortcut
 const AcceptRunCodeSameCellButton: React.FC<{
-  diffEditor: monaco.editor.IStandaloneDiffEditor;
+  diffEditor: EditorView;
   activeCell: Cell<ICellModel>;
   commands: CommandRegistry;
   handleRemove: () => void;
-}> = ({ diffEditor, activeCell, commands, handleRemove }) => {
+  newCode: string;
+}> = ({ diffEditor, activeCell, commands, handleRemove, newCode }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const isMac = /Mac/i.test(navigator.userAgent);
   const keyCombination = isMac ? 'Cmd + Enter' : 'Ctrl + Enter';
   const shortcut = isMac ? '⌘↵' : '^↵';
 
   const handleClick = () => {
-    const modifiedCode = diffEditor!.getModel()!.modified.getValue();
-    activeCell.model.sharedModel.source = modifiedCode;
-    commands.execute('notebook:run-cell');
+    activeCell.model.sharedModel.setSource(newCode);
     posthog.capture('Accept and Run Same Cell', {
       event_type: 'click',
       method: 'accept_and_run_same_cell'
     });
     handleRemove();
+    commands.execute('notebook:run-cell');
   };
 
   return (
@@ -110,18 +110,18 @@ const AcceptRunCodeSameCellButton: React.FC<{
 };
 
 const AcceptButton: React.FC<{
-  diffEditor: monaco.editor.IStandaloneDiffEditor;
+  diffEditor: EditorView;
   activeCell: Cell<ICellModel>;
   handleRemove: () => void;
-}> = ({ diffEditor, activeCell, handleRemove }) => {
+  newCode: string;
+}> = ({ diffEditor, activeCell, handleRemove, newCode }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const isMac = /Mac/i.test(navigator.userAgent);
   const keyCombination = isMac ? 'Enter' : 'Enter';
   const shortcut = isMac ? '↵' : 'Enter';
 
   const handleClick = () => {
-    const modifiedCode = diffEditor!.getModel()!.modified.getValue();
-    activeCell.model.sharedModel.source = modifiedCode;
+    activeCell.model.sharedModel.setSource(newCode);
     posthog.capture('Accept', {
       event_type: 'click',
       method: 'accept'
@@ -235,11 +235,12 @@ const EditPromptButton: React.FC<{
 };
 
 interface IButtonsContainerProps {
-  diffEditor: monaco.editor.IStandaloneDiffEditor;
+  diffEditor: EditorView;
   activeCell: Cell<ICellModel>;
   commands: CommandRegistry;
   isErrorFixPrompt: boolean;
   oldCode: string;
+  newCode: string;
   handleRemove: () => void;
 }
 
@@ -249,12 +250,13 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
   commands,
   isErrorFixPrompt,
   oldCode,
+  newCode,
   handleRemove
 }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.focus();
+      containerRef.current.focus({ preventScroll: true });
     }
   }, []);
 
@@ -294,14 +296,16 @@ export const ButtonsContainer: React.FC<IButtonsContainerProps> = ({
         activeCell={activeCell}
         commands={commands}
         handleRemove={handleRemove}
+        newCode={newCode}
       />
       <AcceptRunCodeSameCellButton
         diffEditor={diffEditor}
         activeCell={activeCell}
         commands={commands}
         handleRemove={handleRemove}
+        newCode={newCode}
       />
-      <AcceptButton diffEditor={diffEditor} activeCell={activeCell} handleRemove={handleRemove} />
+      <AcceptButton diffEditor={diffEditor} activeCell={activeCell} handleRemove={handleRemove} newCode={newCode} />
       <RejectButton activeCell={activeCell} oldCode={oldCode} handleRemove={handleRemove} />
       {!isErrorFixPrompt && (
         <EditPromptButton activeCell={activeCell} commands={commands} handleRemove={handleRemove} />
