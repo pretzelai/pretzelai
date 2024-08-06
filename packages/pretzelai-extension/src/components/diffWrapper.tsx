@@ -19,25 +19,15 @@ export function applyDiffToEditor(editor: CodeMirrorEditor, original: string, mo
     state: EditorState.create({
       doc: modified,
       extensions: extensions
-    })
+    }),
+    parent: editor.editor.dom
   });
 
-  // Replace the content of the original editor with the diff view
-  editor.editor.dom.innerHTML = '';
-  editor.editor.dom.appendChild(diffView.dom);
+  // Hide the original editor view
+  editor.editor.dom.classList.add('pretzel-hidden-editor');
+
+  // Append the diff view to the same parent as the original editor
+  editor.host.appendChild(diffView.dom);
 
   return diffView;
-}
-
-export function removeDiffFromEditor(editor: CodeMirrorEditor, diffView: EditorView): void {
-  // Destroy the diff view
-  diffView.destroy();
-
-  // Clear the editor's DOM
-  editor.editor.dom.innerHTML = '';
-
-  // Recreate the original editor state
-  editor.editor.dispatch({
-    changes: { from: 0, to: editor.editor.state.doc.length, insert: editor.model.sharedModel.source }
-  });
 }

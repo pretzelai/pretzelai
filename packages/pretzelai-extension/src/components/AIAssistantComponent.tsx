@@ -18,10 +18,10 @@ import { CommandRegistry } from '@lumino/commands';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import MistralClient from '@mistralai/mistralai';
 import { IThemeManager, showErrorMessage } from '@jupyterlab/apputils';
-import { applyDiffToEditor, removeDiffFromEditor } from './diffWrapper';
+import { applyDiffToEditor } from './diffWrapper';
 import { EditorView } from 'codemirror';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
-import { fixCode } from '../postprocessing';
+// import { fixCode } from '../postprocessing';
 
 import { ButtonsContainer } from './DiffButtonsComponent';
 
@@ -63,7 +63,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   const [statusElementText, setStatusElementText] = useState<string>('');
 
   const [diffView, setDiffView] = useState<EditorView | null>(null);
-  const [originalCode, setOriginalCode] = useState<string>('');
   const [newCode, setNewCode] = useState<string>('');
   const [streamingDone, setStreamingDone] = useState<boolean>(false);
 
@@ -79,7 +78,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         try {
           for await (const chunk of stream) {
             const newContent = chunk.choices[0]?.delta?.content || '';
-            console.log('New content received:', newContent);
             setNewCode(prevCode => prevCode + newContent);
           }
           setStreamingDone(true);
@@ -96,28 +94,15 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   useEffect(() => {
     if (props.notebookTracker.activeCell && diffView) {
-      const editor = props.notebookTracker.activeCell.editor as CodeMirrorEditor;
-      removeDiffFromEditor(editor, diffView);
-      const updatedDiffView = applyDiffToEditor(editor, originalCode, newCode);
-      setDiffView(updatedDiffView);
+      diffView.dispatch({
+        changes: {
+          from: 0,
+          to: diffView.state.doc.length,
+          insert: newCode
+        }
+      });
     }
   }, [newCode]);
-
-  useEffect(() => {
-    if (streamingDone) {
-      applyFinalCode();
-    }
-  }, [streamingDone]);
-
-  const applyFinalCode = () => {
-    if (props.notebookTracker.activeCell && diffView) {
-      const editor = props.notebookTracker.activeCell.editor as CodeMirrorEditor;
-      const finalNewCode = fixCode(newCode);
-      removeDiffFromEditor(editor, diffView);
-      const updatedDiffView = applyDiffToEditor(editor, originalCode, finalNewCode);
-      setDiffView(updatedDiffView);
-    }
-  };
 
   useEffect(() => {
     if (props.notebookTracker.activeCell!.model.getMetadata('isPromptEdit')) {
@@ -186,7 +171,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       setShowInputComponent(false);
       setShowStatusElement(true);
       setStatusElementText('Calculating embeddings...');
-      const oldCode = activeCell!.model.sharedModel.source;
+      let oldCode = activeCell!.model.sharedModel.source;
 
       let oldCodeForPrompt = activeCell!.model.sharedModel.source;
       const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
@@ -229,11 +214,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         });
 
         const editor = activeCell!.editor as CodeMirrorEditor;
-        const oldCode = activeCell!.model.sharedModel.source;
-        setOriginalCode(oldCode);
-        setNewCode(''); // Reset new code
-
-        // Apply initial empty diff
         const initialDiffView = applyDiffToEditor(editor, oldCode, '');
         setDiffView(initialDiffView);
 
@@ -253,10 +233,20 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     const activeCell = props.notebookTracker.activeCell;
     if (activeCell && diffView) {
       const editor = activeCell.editor as CodeMirrorEditor;
-      removeDiffFromEditor(editor, diffView);
+
+      // Remove the diff view from the DOM
+      editor.host.removeChild(diffView.dom);
+
+      // Show the original editor view
+      editor.editor.dom.classList.remove('pretzel-hidden-editor');
+
+      // Clear the diff view state
       setDiffView(null);
-      // Restore the original code
-      editor.model.sharedModel.setSource(originalCode);
+
+      // Set the old code in the editor view
+      // editor.editor.dispatch({
+      //   changes: { from: 0, to: editor.editor.state.doc.length, insert: activeCell.model.sharedModel.source }
+      // });
     }
   };
 
@@ -278,19 +268,18 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         />
       )}
       {streamingDone && diffView && (
-        <div>
-          <button onClick={handleRemoveDiff}>Remove Diff</button>
-          <button
-            onClick={() => {
-              if (props.notebookTracker.activeCell) {
-                props.notebookTracker.activeCell.model.sharedModel.setSource(newCode);
-                handleRemoveDiff();
-              }
-            }}
-          >
-            Apply Changes
-          </button>
-        </div>
+        <ButtonsContainer
+          diffEditor={diffView}
+          activeCell={props.notebookTracker.activeCell!}
+          commands={props.commands}
+          isErrorFixPrompt={!!props.traceback}
+          oldCode={props.notebookTracker.activeCell!.model.sharedModel.source}
+          newCode={newCode}
+          handleRemove={() => {
+            handleRemoveDiff();
+            props.handleRemove();
+          }}
+        />
       )}
     </>
   );

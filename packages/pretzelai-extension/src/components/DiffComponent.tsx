@@ -156,7 +156,7 @@ export const DiffComponent: React.FC<IDiffContainerProps> = props => {
         }}
         themeManager={props.themeManager}
       />
-      {streamingDone && diffEditor && <ButtonsContainer {...props} diffEditor={diffEditor} />}
+      {/* {streamingDone && diffEditor && <ButtonsContainer {...props} diffEditor={diffEditor} />} */}
     </div>
   );
 };
