@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e .
+          pip install -e ".[dev,test]"
 
       - name: Install and build JavaScript dependencies
         run: |

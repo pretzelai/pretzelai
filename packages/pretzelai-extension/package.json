@@ -93,6 +93,7 @@
   "dependencies": {
     "@azure/openai": "^1.0.0-beta.12",
     "@codemirror/commands": "^6.3.3",
+    "@codemirror/lang-python": "^6.1.4",
     "@codemirror/language": "^6.10.1",
     "@codemirror/merge": "~6.6.7",
     "@codemirror/state": "^6.4.1",
