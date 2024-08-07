@@ -21,7 +21,7 @@ jobs:
         #   - os: macos-latest
         #     platform: darwin
         os: [macos-latest]
-        python-version: ['3.11.0']
+        python-version: ['3.11.x']
         include:
           - os: macos-latest
             platform: darwin
