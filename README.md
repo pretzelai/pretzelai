@@ -102,16 +102,12 @@ To update Pretzel to the latest version, just rebuild the Docker image with the 
 
 ### Bleeding Edge Version
 
-Bugs possible. To use the latest version of Pretzel:
+Bugs possible. To use the latest version of Pretzel, you can use the [Dockerfile](https://github.com/pretzelai/pretzelai/blob/main/Dockerfile) in the root of the repository.
 
-- Make sure Node.js is installed and is version 20
-- Clone and install the package
-
-```
-git clone https://github.com/pretzelai/pretzelai.git
-cd pretzelai
-pip install .
-```
+1. Clone the repository: `git clone https://github.com/pretzelai/pretzelai.git`
+2. Build the Docker image: `docker build -t pretzel .`
+3. (Optional) Switch to the folder where you want to run Pretzel
+4. Run the Docker container: `docker run --name pretzel-dev -p 8888:8888 $(pwd):/root/pretzel pretzel`
 
 ## Usage
 
