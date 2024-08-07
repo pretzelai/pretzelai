@@ -11,23 +11,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [ubuntu-latest, windows-latest, macos-latest]
-        # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         os: [ubuntu-latest]
-        python-version: ['3.11']
+        python-version: ['3.11.8']
         include:
           - os: ubuntu-latest
             arch: x86_64
-          # - os: ubuntu-latest
-          #   arch: i686
-          # - os: windows-latest
-          #   arch: x86
-          # - os: windows-latest
-          #   arch: x64
-          # - os: macos-latest
-          #   arch: x86_64
-          # - os: macos-latest
-          #   arch: arm64
 
     steps:
       - uses: actions/checkout@v3
