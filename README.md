@@ -86,19 +86,19 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
     && rm -rf /var/lib/apt/lists/*
+WORKDIR /root/pretzel
 RUN pip install pretzelai
-WORKDIR /home
 EXPOSE 8888
-CMD ["pretzel", "lab", "--ip=0.0.0.0", "--allow-root", "--notebook-dir=/home"]
+CMD ["pretzel", "lab", "--ip=0.0.0.0", "--allow-root", "--notebook-dir=/root/pretzel", "--ServerApp.allow_remote_access=True", "--ServerApp.token=''", "--no-browser"]
 ```
 
-2. In the same folder where you have your dockerfile, run `docker build -t pretzel .`
+2. In the same folder where you have your Dockerfile, run `docker build -t pretzel .`
 
-3. To run pretzel, you can run: `docker run -p 8888:8888 pretzel` - this will start a empty container.
+3. To run pretzel, you can run: `docker run --name pretzel -p 8888:8888  pretzel` and once the container is running, you can access it at `http://localhost:8888/lab`. To stop the container, press `Ctrl + C` followed by `docker stop pretzel`.
 
-4. If you want to your current folder in the container, you can run: `docker run -p 8888:8888 -v $(pwd):/home pretzel` - this will map your current directory to the container's `/home` folder. Make sure Docker has access to your current directory.
+If you want to access your current folder in Pretzel, you can run: `docker run --rm -p 8888:8888 -v $(pwd):/root/pretzel pretzel` - this will map your current directory to the container's `/root/pretzel` folder. Make sure Docker has access to your current directory.
 
-To update Pretzel to the latest version, just rebuild the Docker image before running: `docker build --no-cache -t pretzel .`
+To update Pretzel to the latest version, just rebuild the Docker image with the --no-cache flag: `docker build --no-cache -t pretzel .` and now you can run docker like step 3.
 
 ### Bleeding Edge Version
 

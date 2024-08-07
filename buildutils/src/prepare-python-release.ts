@@ -12,6 +12,7 @@ import * as utils from './utils';
 // Specify the program signature.
 commander
   .description('Prepare the Python package for release')
+  .option('--no-git', 'Skip Git operations')
   .action(async (options: any) => {
     utils.exitOnUncaughtException();
 
@@ -43,12 +44,14 @@ commander
       .map(entry => `${entry[0]}: ${entry[1]}`)
       .join('" -m "');
 
-    // Make the commit and the tag.
-    const curr = utils.getPythonVersion();
-    utils.run(
-      `git commit -am "Publish ${curr}" -m "SHA256 hashes:" -m "${hashString}"`
-    );
-    utils.run(`git tag v${curr}`);
+    if (options.git) {
+      // Make the commit and the tag.
+      const curr = utils.getPythonVersion();
+      utils.run(
+        `git commit -am "Publish ${curr}" -m "SHA256 hashes:" -m "${hashString}"`
+      );
+      utils.run(`git tag v${curr}`);
+    }
 
     // Prompt the user to finalize.
     console.debug('*'.repeat(40));

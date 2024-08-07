@@ -1,4 +1,4 @@
-name: Build and Publish Wheels
+name: Build Wheels All Platforms
 
 on:
   release:
@@ -40,12 +40,13 @@ jobs:
 
       - name: Install and build JavaScript dependencies
         run: |
+          jlpm prebuild:all
           jlpm install
           jlpm run build
 
       - name: Prepare Python release
         run: |
-          npm run prepare:python-release
+          npm run prepare:python-release:no-git
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.12.3
