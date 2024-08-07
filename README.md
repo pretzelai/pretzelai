@@ -54,6 +54,8 @@ Our roadmap includes building features such as:
 
 ## Installation
 
+### Using pip
+
 You can install Pretzel by using pip:
 
 ```
@@ -72,7 +74,33 @@ Just as with Jupyter, you should see a URL to access the Pretzel interface.
 
 To use your own AI model, see the [Configuration](#configuration) section.
 
-**Bleeding Edge Version**
+### Running within a docker container
+
+If you're having trouble installing Pretzel (for eg on Windows), you can run it in a Docker container.
+
+1. Create a Dockerfile:
+
+```dockerfile
+FROM python:3.9-slim
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install pretzelai
+WORKDIR /home
+EXPOSE 8888
+CMD ["pretzel", "lab", "--ip=0.0.0.0", "--allow-root", "--notebook-dir=/home"]
+```
+
+2. In the same folder where you have your dockerfile, run `docker build -t pretzel .`
+
+3. To run pretzel, you can run: `docker run -p 8888:8888 pretzel` - this will start a empty container.
+
+4. If you want to your current folder in the container, you can run: `docker run -p 8888:8888 -v $(pwd):/home pretzel` - this will map your current directory to the container's `/home` folder. Make sure Docker has access to your current directory.
+
+To update Pretzel to the latest version, just rebuild the Docker image before running: `docker build --no-cache -t pretzel .`
+
+### Bleeding Edge Version
 
 Bugs possible. To use the latest version of Pretzel:
 
