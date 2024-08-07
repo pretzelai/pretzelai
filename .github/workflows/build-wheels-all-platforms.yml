@@ -1,0 +1,58 @@
+name: Build and Publish Wheels
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: [3.8, 3.9, '3.10', '3.11']
+        include:
+          - os: macos-latest
+            arch: arm64
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install hatchling
+
+      - name: Install and build JavaScript dependencies
+        run: |
+          jlpm install
+          jlpm run build
+
+      - name: Prepare Python release
+        run: |
+          npm run prepare:python-release
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.12.3
+        env:
+          CIBW_ARCHS_MACOS: 'x86_64 arm64'
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: ./wheelhouse/*.whl
