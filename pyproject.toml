@@ -2,7 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 [build-system]
-requires = ["hatchling>=1.21.1"]
+requires = ["hatchling>=1.25.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -211,6 +211,9 @@ path = "jupyterlab/staging"
 source_dir = "jupyterlab/staging"
 build_dir = "jupyterlab/static"
 npm = ["node", "yarn.js"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.pytest.ini_options]
 testpaths = "jupyterlab/tests"

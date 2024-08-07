@@ -8,11 +8,15 @@ import * as crypto from 'crypto';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as utils from './utils';
+import * as os from 'os';
 
 // Specify the program signature.
 commander
   .description('Prepare the Python package for release')
-  .option('--no-git', 'Skip Git operations')
+  .option(
+    '--github-actions',
+    'Skip Git operations and build platform-specific wheels'
+  )
   .action(async (options: any) => {
     utils.exitOnUncaughtException();
 
@@ -29,7 +33,19 @@ commander
 
     // Make the Python release.
     utils.run('python -m pip install -U twine build');
-    utils.run('python -m build .');
+
+    if (options.githubActions) {
+      // Build platform-specific wheel
+      const platform = os.platform();
+      const arch = os.arch();
+      utils.run(
+        `python -m build --wheel --plat-name=${getPlatName(platform, arch)}`
+      );
+    } else {
+      // Build the 'any' wheel
+      utils.run('python -m build .');
+    }
+
     utils.run('twine check dist/*');
 
     const files = fs.readdirSync(distDir);
@@ -64,5 +80,18 @@ commander
     // Emit a system beep.
     process.stdout.write('\x07');
   });
+
+function getPlatName(platform: string, arch: string): string {
+  switch (platform) {
+    case 'linux':
+      return arch === 'x64' ? 'manylinux2014_x86_64' : 'manylinux2014_aarch64';
+    case 'darwin':
+      return arch === 'x64' ? 'macosx_10_9_x86_64' : 'macosx_11_0_arm64';
+    case 'win32':
+      return arch === 'x64' ? 'win_amd64' : 'win32';
+    default:
+      throw new Error(`Unsupported platform: ${platform}`);
+  }
+}
 
 commander.parse(process.argv);
