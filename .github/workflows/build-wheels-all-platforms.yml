@@ -11,17 +11,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [ubuntu-latest, windows-latest, macos-latest]
-        # python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-        # include:
-        #   - os: ubuntu-latest
-        #     platform: linux
-        #   - os: windows-latest
-        #     platform: win32
-        #   - os: macos-latest
-        #     platform: darwin
         os: [macos-latest]
         python-version: ['3.11.x']
+        arch: [arm64, x64]
         include:
           - os: macos-latest
             platform: darwin
@@ -39,7 +31,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '20.11.1'
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install pkg-config cairo pango libpng jpeg giflib librsvg pixman
 
       - name: Install dependencies
         run: |
