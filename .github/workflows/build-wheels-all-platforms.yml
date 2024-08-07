@@ -3,7 +3,7 @@ name: Build Wheels All Platforms
 on:
   release:
     types: [created]
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
 
 jobs:
   build_wheels:
@@ -12,10 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.8, 3.9, '3.10', '3.11']
-        include:
-          - os: macos-latest
-            arch: arm64
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
 
     steps:
       - uses: actions/checkout@v3
@@ -51,6 +48,8 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.12.3
         env:
+          CIBW_ARCHS_LINUX: 'i686 x86_64'
+          CIBW_ARCHS_WINDOWS: 'x86 AMD64'
           CIBW_ARCHS_MACOS: 'x86_64 arm64'
 
       - uses: actions/upload-artifact@v3
