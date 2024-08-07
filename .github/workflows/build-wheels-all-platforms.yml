@@ -13,6 +13,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          # - os: ubuntu-latest
+          #   arch: i686
+          # - os: windows-latest
+          #   arch: x86
+          # - os: windows-latest
+          #   arch: x64
+          # - os: macos-latest
+          #   arch: x86_64
+          - os: macos-latest
+            arch: arm64
 
     steps:
       - uses: actions/checkout@v3
@@ -23,6 +36,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.arch }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -41,18 +55,11 @@ jobs:
           jlpm install
           jlpm run build
 
-      - name: Prepare Python release
+      - name: Build wheel
         run: |
           npm run prepare:python-release:no-git
-
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.12.3
-        env:
-          CIBW_ARCHS_LINUX: 'i686 x86_64'
-          CIBW_ARCHS_WINDOWS: 'x86 AMD64'
-          CIBW_ARCHS_MACOS: 'x86_64 arm64'
 
       - uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: ./wheelhouse/*.whl
+          path: ./dist/*.whl
