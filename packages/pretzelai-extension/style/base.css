@@ -507,3 +507,17 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
 .cm-editor.cm-merge-b {
   background-color: transparent !important;
 }
+
+.pretzelParentContainerAI {
+  transition: all 0.3s ease;
+}
+
+.pretzelParentContainerAI.fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: var(--jp-layout-color1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}

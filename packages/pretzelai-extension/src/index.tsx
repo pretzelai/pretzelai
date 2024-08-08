@@ -615,7 +615,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           const aiAssistantComponentRoot = createRoot(parentContainer);
 
-          const handleRemove = () => {
+          let handleRemove = () => {
             aiAssistantComponentRoot.unmount();
             parentContainer.remove();
           };

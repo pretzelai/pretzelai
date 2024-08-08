@@ -118,6 +118,45 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   const [streamingDone, setStreamingDone] = useState<boolean>(false);
 
   const buttonsRef = React.useRef<HTMLDivElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const positionComponent = () => {
+      if (containerRef.current && props.notebookTracker.activeCell) {
+        const cellRect = props.notebookTracker.activeCell.node.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        // Add 30 for bottom bar + padding
+        const componentHeight = 144 + 30; // FIXME: Fixed height of the AIAssistantComponent (automate)
+
+        if (cellRect.bottom + componentHeight > viewportHeight) {
+          containerRef.current.style.position = 'fixed';
+          containerRef.current.style.bottom = '0';
+          containerRef.current.style.width = `${cellRect.width - 10}px`; // 10px for the padding
+          containerRef.current.style.zIndex = '1000';
+        } else {
+          containerRef.current.style.position = '';
+          containerRef.current.style.bottom = '';
+          containerRef.current.style.left = '';
+          containerRef.current.style.width = '';
+          containerRef.current.style.zIndex = '';
+        }
+      }
+    };
+
+    positionComponent();
+
+    const handleScroll = () => {
+      positionComponent();
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [props.notebookTracker.activeCell]);
 
   useEffect(() => {
     if (props.traceback) {
@@ -329,7 +368,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   };
 
   return (
-    <>
+    <div ref={containerRef}>
       {showStatusElement && <p className="status-element">{statusElementText}</p>}
       {showInputComponent && initialPrompt !== null && (
         <InputComponent
@@ -361,6 +400,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           />
         </div>
       )}
-    </>
+    </div>
   );
 };
