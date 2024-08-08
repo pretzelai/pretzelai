@@ -32,14 +32,14 @@ commander
     utils.run('node buildutils/lib/update-core-mode.js');
 
     // Make the Python release.
-    utils.run('python -m pip install -U twine build');
+    utils.run('python -m pip install -U twine build wheel');
 
     if (options.githubActions) {
       // Build platform-specific wheel
       const platform = os.platform();
       const arch = os.arch();
       utils.run(
-        `python -m build --wheel --plat-name=${getPlatName(platform, arch)}`
+        `python -m wheel bdist_wheel --plat-name=${getPlatName(platform, arch)}`
       );
     } else {
       // Build the 'any' wheel
