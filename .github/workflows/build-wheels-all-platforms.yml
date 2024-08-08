@@ -11,21 +11,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: ['3.11']
+        os: [windows-latest]
+        python-version: ['3.8']
         include:
           - os: windows-latest
             platform: win_amd64
-          - os: ubuntu-latest
-            platform: manylinux_x86_64
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -43,7 +41,7 @@ jobs:
         run: |
           pip install -e ".[dev,test]"
 
-      - name: Install and build JavaScript dependencies (Windows)
+      - name: JavaScript dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
           npm install -g yarn
@@ -61,9 +59,6 @@ jobs:
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20.0
-        env:
-          CIBW_SKIP: pp* *-musllinux*
-          CIBW_BUILD: ${{ matrix.platform }}*
 
       - name: Upload built wheels
         uses: actions/upload-artifact@v3
