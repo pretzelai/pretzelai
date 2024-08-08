@@ -63,7 +63,8 @@ jobs:
         env:
           CIBW_SKIP: pp* *-musllinux*
 
-      - uses: actions/upload-artifact@v3
+      - name: Upload built wheels
+        uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
           name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}
