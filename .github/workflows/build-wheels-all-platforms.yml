@@ -11,12 +11,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
-        python-version: ['3.11.x']
-        arch: [x64]
+        os: [windows-latest, ubuntu-latest]
+        python-version: ['3.11']
         include:
           - os: windows-latest
-            platform: win32
+            platform: win_amd64
+          - os: ubuntu-latest
+            platform: manylinux_x86_64
 
     steps:
       - uses: actions/checkout@v3
@@ -59,9 +60,10 @@ jobs:
           npm run prepare:python-release:github-actions
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.2
+        uses: pypa/cibuildwheel@v2.20.0
         env:
           CIBW_SKIP: pp* *-musllinux*
+          CIBW_BUILD: ${{ matrix.platform }}*
 
       - name: Upload built wheels
         uses: actions/upload-artifact@v3
