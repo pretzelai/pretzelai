@@ -43,10 +43,19 @@ jobs:
           pip install -e ".[dev,test]"
 
       - name: Install and build JavaScript dependencies
+        if: runner.os != 'Windows'
         run: |
           jlpm run prebuild:all
           jlpm install
           jlpm run build
+
+      - name: Install and build JavaScript dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          npm install -g yarn
+          yarn run prebuild:all
+          yarn install
+          yarn run build
 
       - name: Build platform-specific wheels
         run: |
