@@ -28,6 +28,12 @@ const updateFileReferences = (references: { [key: string]: string }) => {
         'file:../packages/',
         'file:../../packages/'
       );
+    } else if (value.startsWith('file:..\\packages\\')) {
+      // Handle backslash paths for Windows
+      references[key] = value.replace(
+        'file:..\\packages\\',
+        'file:..\\..\\packages\\'
+      );
     }
   }
 };
