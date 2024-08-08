@@ -54,14 +54,19 @@ jobs:
           jlpm install
           jlpm run build
 
-      - name: Build platform-specific wheels
+      - name: Prepare Python release
         run: |
           npm run prepare:python-release:github-actions
 
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.2
+        env:
+          CIBW_SKIP: pp* *-musllinux*
+
       - uses: actions/upload-artifact@v3
         with:
-          name: wheels
-          path: ./dist/*.whl
+          path: ./wheelhouse/*.whl
+          name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}
 
   combine_wheels:
     needs: build_wheels
@@ -69,13 +74,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: wheels
-          path: ./dist
+          path: ./combined_wheels
 
       - name: Display structure of downloaded files
-        run: ls -R ./dist
+        run: ls -R ./combined_wheels
 
       - uses: actions/upload-artifact@v3
         with:
-          name: combined-wheels
-          path: ./dist/*.whl
+          name: all-wheels
+          path: ./combined_wheels/**/*.whl
