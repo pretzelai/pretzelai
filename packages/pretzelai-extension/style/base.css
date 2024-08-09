@@ -507,3 +507,35 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
 .cm-editor.cm-merge-b {
   background-color: transparent !important;
 }
+
+.pretzelParentContainerAI > div:not(.fixed) {
+  transition: all 0.3s ease;
+}
+
+.pretzelParentContainerAI > div.fixed {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+/* New styles for the AIAssistantComponent */
+.ai-assistant-component {
+  transition: all 0.3s ease;
+}
+
+.ai-assistant-component.fixed {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+.ai-assistant-component.normal {
+  position: relative;
+}
+
+/* Target the new scroll container class */
+.jp-WindowedPanel-outer {
+  overflow-y: auto;
+}

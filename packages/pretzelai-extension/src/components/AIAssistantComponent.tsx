@@ -26,8 +26,8 @@ import { EditorState, Extension } from '@codemirror/state';
 import { unifiedMergeView } from '@codemirror/merge';
 import { python } from '@codemirror/lang-python';
 import { highlightSpecialChars } from '@codemirror/view';
-// import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { jupyterTheme } from '@jupyterlab/codemirror';
+import { debounce } from 'lodash';
 
 function applyDiffToEditor(
   editor: CodeMirrorEditor,
@@ -118,6 +118,125 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   const [streamingDone, setStreamingDone] = useState<boolean>(false);
 
   const buttonsRef = React.useRef<HTMLDivElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const componentHeight = 144;
+    const bottomOffset = 30;
+    const getCellPosition = () => {
+      const cellRectFooter = props.notebookTracker
+        .activeCell!.node.querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
+        .getBoundingClientRect();
+      const cellRect = props.notebookTracker.activeCell!.node.getBoundingClientRect();
+
+      const cellTop = cellRect.top;
+      const cellBottom = cellRectFooter.bottom;
+      const viewportHeight = window.innerHeight;
+
+      return {
+        cellTop,
+        cellBottom,
+        viewportHeight
+      };
+    };
+
+    let removeScrollListener: () => void;
+
+    const positionComponent = () => {
+      if (containerRef.current && props.notebookTracker.activeCell) {
+        const { cellTop, cellBottom, viewportHeight } = getCellPosition();
+        const cellRect = props.notebookTracker.activeCell.node
+          .querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
+          .getBoundingClientRect();
+
+        if (cellBottom + componentHeight + bottomOffset > viewportHeight) {
+          if (containerRef.current.classList.contains('fixed')) {
+            if (cellTop > viewportHeight - (componentHeight + bottomOffset + 10)) {
+              // Hide the component when the cell top goes below the component top
+              containerRef.current.style.display = 'none';
+            } else {
+              // Show the component
+              containerRef.current.style.display = 'block';
+            }
+          } else {
+            containerRef.current.classList.add('fixed');
+            containerRef.current.style.width = `${cellRect.width}px`;
+          }
+        } else {
+          containerRef.current.classList.remove('fixed');
+          containerRef.current.style.display = 'block';
+          containerRef.current.style.width = '';
+          removeScrollListener();
+        }
+      }
+    };
+    const { cellTop, cellBottom, viewportHeight } = getCellPosition();
+
+    if (cellBottom + componentHeight + bottomOffset > viewportHeight) {
+      // component would go below the viewport
+      const fullCellAndComponentHeight = cellBottom - cellTop + (componentHeight + bottomOffset);
+      if (fullCellAndComponentHeight < viewportHeight) {
+        // in this case, the component is out of view, but the cell is
+        // small enough to fit it and component in the viewport, so we can just scroll the cell
+        const panel = props.notebookTracker.currentWidget;
+        if (panel) {
+          const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer') as HTMLElement;
+          if (scrollContainer) {
+            setTimeout(
+              () => {
+                const currentScrollTop = scrollContainer.scrollTop;
+                // how much to scroll? just enough to fill the cell and the component at the bottom
+                const requiredScroll = cellTop - (viewportHeight - fullCellAndComponentHeight) + 10;
+
+                scrollContainer.scrollTo({
+                  top: currentScrollTop + requiredScroll,
+                  behavior: 'smooth'
+                });
+              },
+              cellBottom > viewportHeight - bottomOffset ? 100 : 0 // wait for the cell to render
+            );
+          }
+        }
+      } else {
+        // in this case, the component is out of view, and the cell is too large
+        // to fit in the viewport, so we need to scroll show with hover
+        positionComponent(); // intitial adjustment
+        const debouncedPositionComponent = debounce(positionComponent, 10);
+
+        const handleScroll = () => {
+          debouncedPositionComponent();
+        };
+
+        removeScrollListener = () => {
+          const panel = props.notebookTracker.currentWidget;
+          if (panel) {
+            const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer');
+            if (scrollContainer) {
+              scrollContainer.removeEventListener('scroll', handleScroll);
+            }
+          }
+        };
+
+        // Get the notebook panel
+        const panel = props.notebookTracker.currentWidget;
+        if (panel) {
+          // Get the new scroll container node
+          const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer');
+
+          if (scrollContainer) {
+            // Add scroll event listener to the new scroll container
+            scrollContainer.addEventListener('scroll', handleScroll);
+
+            // Cleanup function
+            return () => {
+              removeScrollListener();
+              debouncedPositionComponent.cancel();
+            };
+          }
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (props.traceback) {
@@ -329,7 +448,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   };
 
   return (
-    <>
+    <div ref={containerRef}>
       {showStatusElement && <p className="status-element">{statusElementText}</p>}
       {showInputComponent && initialPrompt !== null && (
         <InputComponent
@@ -361,6 +480,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           />
         </div>
       )}
-    </>
+    </div>
   );
 };
