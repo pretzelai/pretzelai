@@ -144,16 +144,27 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
     const positionComponent = () => {
       if (containerRef.current && props.notebookTracker.activeCell) {
-        const { cellBottom, viewportHeight } = getCellPosition();
+        const { cellTop, cellBottom, viewportHeight } = getCellPosition();
         const cellRect = props.notebookTracker.activeCell.node
           .querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
           .getBoundingClientRect();
 
         if (cellBottom + componentHeight + bottomOffset > viewportHeight) {
-          containerRef.current.classList.add('fixed');
-          containerRef.current.style.width = `${cellRect.width - 10}px`; // 10px for the padding
+          if (containerRef.current.classList.contains('fixed')) {
+            if (cellTop > viewportHeight - (componentHeight + bottomOffset + 10)) {
+              // Hide the component when the cell top goes below the component top
+              containerRef.current.style.display = 'none';
+            } else {
+              // Show the component
+              containerRef.current.style.display = 'block';
+            }
+          } else {
+            containerRef.current.classList.add('fixed');
+            containerRef.current.style.width = `${cellRect.width}px`;
+          }
         } else {
           containerRef.current.classList.remove('fixed');
+          containerRef.current.style.display = 'block';
           containerRef.current.style.width = '';
           removeScrollListener();
         }
