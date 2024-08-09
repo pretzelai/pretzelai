@@ -122,17 +122,16 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   useEffect(() => {
     const componentHeight = 144;
+    const bottomOffset = 30;
     const getCellPosition = () => {
       const cellRectFooter = props.notebookTracker
         .activeCell!.node.querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
         .getBoundingClientRect();
       const cellRect = props.notebookTracker.activeCell!.node.getBoundingClientRect();
-      const panel = props.notebookTracker.currentWidget;
-      const scrollContainer = panel!.node.querySelector('.jp-WindowedPanel-outer') as HTMLElement;
 
       const cellTop = cellRect.top;
       const cellBottom = cellRectFooter.bottom;
-      const viewportHeight = scrollContainer.clientHeight;
+      const viewportHeight = window.innerHeight;
 
       return {
         cellTop,
@@ -159,9 +158,9 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     };
     const { cellTop, cellBottom, viewportHeight } = getCellPosition();
 
-    if (cellBottom + componentHeight < viewportHeight) {
+    if (cellBottom + componentHeight + bottomOffset > viewportHeight) {
       // component would go below the viewport
-      if (cellTop - componentHeight > 0) {
+      if (cellTop - componentHeight - bottomOffset > 0) {
         // in this case, the component is out of view, but the cell is
         // small enough to fit in the viewport, so we can just scroll the cell
         const panel = props.notebookTracker.currentWidget;
@@ -169,8 +168,8 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer') as HTMLElement;
           if (scrollContainer) {
             const currentScrollTop = scrollContainer.scrollTop;
-            const requiredScroll = componentHeight - (viewportHeight - cellBottom); // pixels to scroll
-            const maxScroll = componentHeight;
+            const requiredScroll = componentHeight - (viewportHeight - cellBottom - 2 * bottomOffset); // 2x offset to leave some space
+            const maxScroll = componentHeight + 2 * bottomOffset;
             const scrollAmount = Math.min(requiredScroll, maxScroll);
 
             scrollContainer.scrollTo({
