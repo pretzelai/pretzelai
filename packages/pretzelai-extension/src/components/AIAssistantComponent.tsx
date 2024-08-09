@@ -123,15 +123,12 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   useEffect(() => {
     const positionComponent = () => {
       if (containerRef.current && props.notebookTracker.activeCell) {
+        const { isComponentOutOfView } = getCellPosition();
         const cellRect = props.notebookTracker.activeCell.node
           .querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
           .getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const componentHeight = 144 + 30; // FIXME: Fixed height of the AIAssistantComponent (automate)
 
-        const spaceBelow = viewportHeight - cellRect.bottom;
-
-        if (spaceBelow < componentHeight) {
+        if (isComponentOutOfView) {
           containerRef.current.classList.add('fixed');
           containerRef.current.style.width = `${cellRect.width - 10}px`; // 10px for the padding
         } else {
@@ -141,29 +138,73 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       }
     };
 
-    positionComponent();
+    const componentHeight = 144;
+    const bottomOffset = 30; // FIXME: Fixed height of the AIAssistantComponent (automate)
+    const fullComponentHeight = componentHeight + bottomOffset;
 
-    const debouncedPositionComponent = debounce(positionComponent, 10);
+    const getCellPosition = () => {
+      const cellRectFooter = props.notebookTracker
+        .activeCell!.node.querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
+        .getBoundingClientRect();
+      const cellRect = props.notebookTracker.activeCell!.node.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - cellRectFooter.bottom;
 
-    const handleScroll = () => {
-      debouncedPositionComponent();
+      let isComponentOutOfView = false;
+      let isCellTopOutOfViewAfterScroll = false;
+
+      isComponentOutOfView = spaceBelow < fullComponentHeight;
+      isCellTopOutOfViewAfterScroll = cellRect.top - componentHeight <= 0;
+      return {
+        isComponentOutOfView,
+        isCellTopOutOfViewAfterScroll
+      };
     };
 
-    // Get the notebook panel
-    const panel = props.notebookTracker.currentWidget;
-    if (panel) {
-      // Get the new scroll container node
-      const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer');
+    const { isComponentOutOfView, isCellTopOutOfViewAfterScroll } = getCellPosition();
 
-      if (scrollContainer) {
-        // Add scroll event listener to the new scroll container
-        scrollContainer.addEventListener('scroll', handleScroll);
+    if (isComponentOutOfView) {
+      if (!isCellTopOutOfViewAfterScroll) {
+        // in this case, the component is out of view, but the cell is
+        // small enough to fit in the viewport, so we can just scroll the cell
+        const panel = props.notebookTracker.currentWidget;
+        if (panel) {
+          const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer') as HTMLElement;
+          if (scrollContainer) {
+            const currentScrollTop = scrollContainer.scrollTop;
+            scrollContainer.scrollTo({
+              top: currentScrollTop + fullComponentHeight,
+              behavior: 'smooth'
+            });
+          }
+        }
+      } else {
+        // in this case, the component is out of view, and the cell is too large
+        // to fit in the viewport, so we need to scroll show with hover
+        positionComponent(); // intitial adjustment
+        const debouncedPositionComponent = debounce(positionComponent, 10);
 
-        // Cleanup function
-        return () => {
-          scrollContainer.removeEventListener('scroll', handleScroll);
-          debouncedPositionComponent.cancel();
+        const handleScroll = () => {
+          debouncedPositionComponent();
         };
+
+        // Get the notebook panel
+        const panel = props.notebookTracker.currentWidget;
+        if (panel) {
+          // Get the new scroll container node
+          const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer');
+
+          if (scrollContainer) {
+            // Add scroll event listener to the new scroll container
+            scrollContainer.addEventListener('scroll', handleScroll);
+
+            // Cleanup function
+            return () => {
+              scrollContainer.removeEventListener('scroll', handleScroll);
+              debouncedPositionComponent.cancel();
+            };
+          }
+        }
       }
     }
   }, []);
