@@ -142,12 +142,13 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
     const positionComponent = () => {
       if (containerRef.current && props.notebookTracker.activeCell) {
-        const { cellTop } = getCellPosition();
+        const { cellBottom } = getCellPosition();
         const cellRect = props.notebookTracker.activeCell.node
           .querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
           .getBoundingClientRect();
 
-        if (cellTop - componentHeight > 0) {
+        // if (cellTop - componentHeight > 0) {
+        if (cellBottom + componentHeight + bottomOffset > viewportHeight) {
           containerRef.current.classList.add('fixed');
           containerRef.current.style.width = `${cellRect.width - 10}px`; // 10px for the padding
         } else {
@@ -160,22 +161,27 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
     if (cellBottom + componentHeight + bottomOffset > viewportHeight) {
       // component would go below the viewport
-      if (cellTop - componentHeight - bottomOffset > 0) {
+      const fullCellAndComponentHeight = cellBottom - cellTop + (componentHeight + bottomOffset);
+      if (fullCellAndComponentHeight < viewportHeight) {
         // in this case, the component is out of view, but the cell is
-        // small enough to fit in the viewport, so we can just scroll the cell
+        // small enough to fit it and component in the viewport, so we can just scroll the cell
         const panel = props.notebookTracker.currentWidget;
         if (panel) {
           const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer') as HTMLElement;
           if (scrollContainer) {
-            const currentScrollTop = scrollContainer.scrollTop;
-            const requiredScroll = componentHeight - (viewportHeight - cellBottom - 2 * bottomOffset); // 2x offset to leave some space
-            const maxScroll = componentHeight + 2 * bottomOffset;
-            const scrollAmount = Math.min(requiredScroll, maxScroll);
+            setTimeout(
+              () => {
+                const currentScrollTop = scrollContainer.scrollTop;
+                // how much to scroll? just enough to fill the cell and the component at the bottom
+                const requiredScroll = cellTop - (viewportHeight - fullCellAndComponentHeight) + 10;
 
-            scrollContainer.scrollTo({
-              top: currentScrollTop + scrollAmount,
-              behavior: 'smooth'
-            });
+                scrollContainer.scrollTo({
+                  top: currentScrollTop + requiredScroll,
+                  behavior: 'smooth'
+                });
+              },
+              cellBottom > viewportHeight - bottomOffset ? 100 : 0 // wait for the cell to render
+            );
           }
         }
       } else {
