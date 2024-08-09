@@ -26,8 +26,8 @@ import { EditorState, Extension } from '@codemirror/state';
 import { unifiedMergeView } from '@codemirror/merge';
 import { python } from '@codemirror/lang-python';
 import { highlightSpecialChars } from '@codemirror/view';
-// import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { jupyterTheme } from '@jupyterlab/codemirror';
+import { debounce } from 'lodash';
 
 function applyDiffToEditor(
   editor: CodeMirrorEditor,
@@ -119,46 +119,54 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   const buttonsRef = React.useRef<HTMLDivElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const positionComponent = () => {
-    if (containerRef.current && props.notebookTracker.activeCell) {
-      const cellRect = props.notebookTracker.activeCell.node.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const componentHeight = 144 + 30; // FIXME: Fixed height of the AIAssistantComponent (automate)
-
-      const spaceBelow = viewportHeight - cellRect.bottom;
-
-      if (spaceBelow < componentHeight) {
-        containerRef.current.classList.add('fixed');
-        containerRef.current.style.width = `${cellRect.width - 10}px`; // 10px for the padding
-      } else {
-        containerRef.current.classList.remove('fixed');
-        containerRef.current.style.width = '';
-      }
-    }
-  };
 
   useEffect(() => {
+    const positionComponent = () => {
+      if (containerRef.current && props.notebookTracker.activeCell) {
+        const cellRect = props.notebookTracker.activeCell.node
+          .querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
+          .getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const componentHeight = 144 + 30; // FIXME: Fixed height of the AIAssistantComponent (automate)
+
+        const spaceBelow = viewportHeight - cellRect.bottom;
+
+        if (spaceBelow < componentHeight) {
+          containerRef.current.classList.add('fixed');
+          containerRef.current.style.width = `${cellRect.width - 10}px`; // 10px for the padding
+        } else {
+          containerRef.current.classList.remove('fixed');
+          containerRef.current.style.width = '';
+        }
+      }
+    };
+
     positionComponent();
+
+    const debouncedPositionComponent = debounce(positionComponent, 10);
 
     const handleScroll = () => {
-      console.log('Scroll event detected'); // Debugging log
-      setScrollPosition(window.scrollY);
-      requestAnimationFrame(positionComponent);
+      debouncedPositionComponent();
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
+    // Get the notebook panel
+    const panel = props.notebookTracker.currentWidget;
+    if (panel) {
+      // Get the new scroll container node
+      const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer');
 
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, [props.notebookTracker.activeCell]);
+      if (scrollContainer) {
+        // Add scroll event listener to the new scroll container
+        scrollContainer.addEventListener('scroll', handleScroll);
 
-  useEffect(() => {
-    positionComponent();
-  }, [scrollPosition]);
+        // Cleanup function
+        return () => {
+          scrollContainer.removeEventListener('scroll', handleScroll);
+          debouncedPositionComponent.cancel();
+        };
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (props.traceback) {
