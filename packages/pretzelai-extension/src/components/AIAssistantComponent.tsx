@@ -140,20 +140,22 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       };
     };
 
+    let removeScrollListener: () => void;
+
     const positionComponent = () => {
       if (containerRef.current && props.notebookTracker.activeCell) {
-        const { cellBottom } = getCellPosition();
+        const { cellBottom, viewportHeight } = getCellPosition();
         const cellRect = props.notebookTracker.activeCell.node
           .querySelector('.lm-Widget.jp-CellFooter.jp-Cell-footer')!
           .getBoundingClientRect();
 
-        // if (cellTop - componentHeight > 0) {
         if (cellBottom + componentHeight + bottomOffset > viewportHeight) {
           containerRef.current.classList.add('fixed');
           containerRef.current.style.width = `${cellRect.width - 10}px`; // 10px for the padding
         } else {
           containerRef.current.classList.remove('fixed');
           containerRef.current.style.width = '';
+          removeScrollListener();
         }
       }
     };
@@ -194,6 +196,16 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           debouncedPositionComponent();
         };
 
+        removeScrollListener = () => {
+          const panel = props.notebookTracker.currentWidget;
+          if (panel) {
+            const scrollContainer = panel.node.querySelector('.jp-WindowedPanel-outer');
+            if (scrollContainer) {
+              scrollContainer.removeEventListener('scroll', handleScroll);
+            }
+          }
+        };
+
         // Get the notebook panel
         const panel = props.notebookTracker.currentWidget;
         if (panel) {
@@ -206,7 +218,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
             // Cleanup function
             return () => {
-              scrollContainer.removeEventListener('scroll', handleScroll);
+              removeScrollListener();
               debouncedPositionComponent.cancel();
             };
           }
