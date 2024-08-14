@@ -605,6 +605,11 @@ const extension: JupyterFrontEndPlugin<void> = {
             });
             const statusElements = notebookTracker.activeCell.node.querySelectorAll('p.status-element');
             statusElements.forEach(element => element.remove());
+            const hiddenEditors = notebookTracker.activeCell.node.querySelectorAll('.pretzel-hidden-editor');
+            hiddenEditors.forEach(editor => editor.classList.remove('pretzel-hidden-editor'));
+            const newCodeGenerationElements =
+              notebookTracker.activeCell.node.querySelectorAll('.pretzel-new-code-generation');
+            newCodeGenerationElements.forEach(element => element.remove());
             notebookTracker.activeCell!.editor!.focus();
             return;
           }

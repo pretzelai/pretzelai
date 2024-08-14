@@ -27,16 +27,18 @@
 
 https://github.com/pretzelai/pretzelai/assets/121360087/ff4643b1-c931-410e-aa0b-9233e0766223
 
-Pretzel is a fork of Jupyter with the goal to improve Jupyter's capabilities. For our first few features, we've added AI code generation and editing, inline tab completion, sidebar chat and error fixing to Jupyter.
+Pretzel is a fork of Jupyter with the goal to improve Jupyter's capabilities. We've added AI code generation and editing, inline tab completion, sidebar chat and error fixing to Jupyter for now with a lot more to come.
 
 Switching to Pretzel from Jupyter is extremely easy **since it's simply an improved version of Jupyter**. All of your Jupyter config, settings, keybindings, and extensions will work out of the box.
 
 ## Quick Start
 
 - Installation: `pip install pretzelai` then run `pretzel lab` to open the web interface. OR, use our **free hosted version**: [pretzelai.app](https://pretzelai.app)
+  - See [this](#installation-problems) if you get errors during installation
 - Simply start typing in a cell to get inline tab completions
 - In any Jupyter cell, click “**Ask AI**” or press Cmd+K (Mac) / Ctrl+K (Linux/Windows) to prompt AI
-- Use the **AI Sidebar** with Ctrl+Cmd+B (Mac) or Ctrl+Alt+B (Linux/Windows) to chat with AI, generate code, and ask questions
+- Use the **AI Sidebar** with Ctrl+Cmd+B (Mac) or Ctrl+Alt+B (Linux/Windows) to chat with AI, generate code, and ask questions.
+- Type `@` to trigger auto-complete with function and variable names.
 - To use your own model (OpenAI, Anthropic/Claude, Ollama or Groq), see the [Configuration](#configuration) section
 
 ![](assets/main.png)
@@ -56,13 +58,13 @@ Our roadmap includes building features such as:
 
 ### Using pip
 
-You can install Pretzel by using pip:
+Install Pretzel with pip
 
 ```
 pip install pretzelai
 ```
 
-If using conda, first install pip with `conda install pip` followed by `pip install pretzelai`.
+For conda, install pip first with `conda install pip` and then `pip install pretzelai`.
 
 Then, start Pretzel with:
 
@@ -70,7 +72,7 @@ Then, start Pretzel with:
 pretzel lab
 ```
 
-Just as with Jupyter, you should see a URL to access the Pretzel interface.
+You'll be able to access the Pretzel interface via the provided URL.
 
 To use your own AI model, see the [Configuration](#configuration) section.
 
@@ -96,22 +98,32 @@ CMD ["pretzel", "lab", "--ip=0.0.0.0", "--allow-root", "--notebook-dir=/root/pre
 
 3. To run pretzel, you can run: `docker run --name pretzel -p 8888:8888  pretzel` and once the container is running, you can access it at `http://localhost:8888/lab`. To stop the container, press `Ctrl + C` followed by `docker stop pretzel`.
 
-If you want to access your current folder in Pretzel, you can run: `docker run --rm -p 8888:8888 -v $(pwd):/root/pretzel pretzel` - this will map your current directory to the container's `/root/pretzel` folder. Make sure Docker has access to your current directory.
+If you want to access your local folder in Pretzel, you can run: `docker run --rm -p 8888:8888 -v $(pwd):/root/pretzel pretzel` - this will map your current directory to the docker container's `/root/pretzel` folder. Make sure Docker has access to your current directory.
 
 To update Pretzel to the latest version, just rebuild the Docker image with the --no-cache flag: `docker build --no-cache -t pretzel .` and now you can run docker like step 3.
 
 ### Bleeding Edge Version
 
-Bugs possible. To use the latest version of Pretzel:
+You can use this [Dockerfile](https://github.com/pretzelai/pretzelai/blob/main/Dockerfile) to build and run the bleeding edge version. Follow the steps (starting at step 2) in the section [Running within a docker container](#running-within-a-docker-container)
 
-- Make sure Node.js is installed and is version 20
-- Clone and install the package
+### Installation problems
+
+If you get an error during installation that looks like this:
 
 ```
-git clone https://github.com/pretzelai/pretzelai.git
-cd pretzelai
-pip install .
+Failed to build installable wheels for some pyproject.toml based projects (pystemmer)
 ```
+
+That means the installation failed to install the dependency `PyStemmer`. This usually happens because you don't have the right build tools installed. To fix this:
+
+- **On Windows**: Install Miscrosoft build tools from [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/). Click on the _Download Build Tools_ button and then install it.
+- **On Ubuntu (and Debian flavoured systems)**: Install the required build tools by running the following command in your terminal:
+  ```
+  sudo apt-get update && sudo apt-get install build-essential python3-dev
+  ```
+- **On macOS**: `brew install gcc`. If this doesn't work, you may also need to run `xcode-select --install`
+
+Once this is done, you should be able to `pip install pretzelai` to install Pretzel.
 
 ## Usage
 
@@ -125,7 +137,7 @@ The default Pretzel AI Server uses [Mistral's Codestral](https://mistral.ai/news
 #### Generating and editing code in notebook cells
 
 - In a cell, press **`Cmd+K` (Mac) / `Ctrl+K` (Windows/Linux)** or **click "Ask AI"** to open AI prompt textbox and write your code generation/editing instruction
-  - Mention `@variable` to refer to variables and dataframes in memory
+  - Type `@` to get a dropdown of available variables in your session. Adding this `@vairable` to the prompt will send its value to the AI
   - We automatically send relevant code in the current notebook as context to the AI
 - If there's existing code in a cell, the prompt will edit the existing code
   - If you select/highlight some code in the cell, only the selected code will be edited
