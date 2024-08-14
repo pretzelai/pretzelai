@@ -24,6 +24,7 @@ import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import MistralClient from '@mistralai/mistralai';
 import { fixInlineCompletion } from './postprocessing';
 import Groq from 'groq-sdk';
+import { Signal } from '@lumino/signaling';
 
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(
@@ -114,6 +115,9 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     return false;
   }
 
+  public isFetching: boolean = false;
+  public isFetchingChanged = new Signal<this, boolean>(this);
+
   async fetch(
     request: CompletionHandler.IRequest,
     context: IInlineCompletionContext
@@ -144,6 +148,9 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
+        this.isFetching = true;
+        this.isFetchingChanged.emit(true);
+
         let prompt = this._prefixFromRequest(request);
         const suffix = this._suffixFromRequest(request);
         if (prompt.indexOf('\n') === -1 && !suffix) {
@@ -363,6 +370,9 @@ Fill in the blank to complete the code block. Your response should include only 
           resolve({
             items: []
           });
+        } finally {
+          this.isFetching = false;
+          this.isFetchingChanged.emit(false);
         }
       }, 1000);
     });

@@ -81,6 +81,30 @@ const extension: JupyterFrontEndPlugin<void> = {
   ) => {
     const provider = new PretzelInlineProvider(notebookTracker, settingRegistry, app);
     providerManager.registerInlineProvider(provider);
+
+    provider.isFetchingChanged.connect((_, isFetching) => {
+      const activeCell = notebookTracker.activeCell;
+      if (activeCell) {
+        const spinner = activeCell.node.querySelector('.loading-spinner') as HTMLElement;
+        const askAIButton = activeCell.node.querySelector('.ask-ai-button-container') as HTMLElement;
+
+        if (isFetching) {
+          if (!spinner) {
+            const newSpinner = document.createElement('div');
+            newSpinner.className = 'loading-spinner';
+            if (askAIButton) {
+              newSpinner.style.display = 'block';
+              askAIButton.insertBefore(newSpinner, askAIButton.firstChild);
+            }
+          }
+        } else {
+          if (spinner) {
+            spinner.remove();
+          }
+        }
+      }
+    });
+
     // Change the shortcut to accept inline completion to the Tab key
     app.commands.addKeyBinding({
       command: 'inline-completer:accept',
@@ -490,9 +514,9 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
 
     function addAskAIButton(cellNode: HTMLElement) {
-      // Remove existing buttons from all cells before adding a new one
-      document.querySelectorAll('.ask-ai-button-container').forEach(container => {
-        container.remove();
+      // Remove existing buttons and spinners from all cells before adding a new one
+      document.querySelectorAll('.ask-ai-button-container, .loading-spinner').forEach(element => {
+        element.remove();
       });
 
       const buttonContainer = document.createElement('div');
@@ -605,6 +629,11 @@ const extension: JupyterFrontEndPlugin<void> = {
             });
             const statusElements = notebookTracker.activeCell.node.querySelectorAll('p.status-element');
             statusElements.forEach(element => element.remove());
+            const hiddenEditors = notebookTracker.activeCell.node.querySelectorAll('.pretzel-hidden-editor');
+            hiddenEditors.forEach(editor => editor.classList.remove('pretzel-hidden-editor'));
+            const newCodeGenerationElements =
+              notebookTracker.activeCell.node.querySelectorAll('.pretzel-new-code-generation');
+            newCodeGenerationElements.forEach(element => element.remove());
             notebookTracker.activeCell!.editor!.focus();
             return;
           }
