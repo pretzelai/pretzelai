@@ -548,7 +548,7 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   border: 2px solid var(--jp-border-color1);
   border-top: 2px solid var(--jp-brand-color1);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.5s linear infinite;
   position: absolute;
   right: 75px;
   top: 3px;
