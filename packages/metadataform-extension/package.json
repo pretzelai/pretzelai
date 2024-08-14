@@ -39,7 +39,7 @@
     "watch": "tsc -w --listEmittedFiles"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.8",
+    "@jupyterlab/application": "^4.2.9",
     "@jupyterlab/metadataform": "^4.2.0",
     "@jupyterlab/notebook": "^4.2.0",
     "@jupyterlab/settingregistry": "^4.2.0",

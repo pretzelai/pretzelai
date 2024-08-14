@@ -35,7 +35,7 @@
     "watch": "tsc -w"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.8",
+    "@jupyterlab/application": "^4.2.9",
     "@jupyterlab/apputils": "^4.3.0",
     "@jupyterlab/docregistry": "^4.2.0",
     "@jupyterlab/htmlviewer": "^4.2.0",
