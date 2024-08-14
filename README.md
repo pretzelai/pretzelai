@@ -130,7 +130,7 @@ Once this is done, you should be able to `pip install pretzelai` to install Pret
 #### Inline Tab Completion
 
 - Start typing in a cell to get inline tab completions
-- Wait for 1 second to trigger completions
+- Wait for 1 second to trigger completions. You'll see a little spinner just before the blue Ask AI button in the cell
 
 The default Pretzel AI Server uses [Mistral's Codestral](https://mistral.ai/news/codestral/) but you can switch the inline completion model in Pretzel AI Settings. See the [configuration](#configuration) section.
 

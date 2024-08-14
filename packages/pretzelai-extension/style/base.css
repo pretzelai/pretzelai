@@ -539,3 +539,26 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
 .jp-WindowedPanel-outer {
   overflow-y: auto;
 }
+
+/* Loading spinner styles */
+.loading-spinner {
+  display: none;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--jp-border-color1);
+  border-top: 2px solid var(--jp-brand-color1);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  position: absolute;
+  right: 75px;
+  top: 3px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

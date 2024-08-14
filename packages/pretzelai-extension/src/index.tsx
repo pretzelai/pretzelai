@@ -83,7 +83,26 @@ const extension: JupyterFrontEndPlugin<void> = {
     providerManager.registerInlineProvider(provider);
 
     provider.isFetchingChanged.connect((_, isFetching) => {
-      console.log('isFetching', isFetching);
+      const activeCell = notebookTracker.activeCell;
+      if (activeCell) {
+        const spinner = activeCell.node.querySelector('.loading-spinner') as HTMLElement;
+        const askAIButton = activeCell.node.querySelector('.ask-ai-button-container') as HTMLElement;
+
+        if (isFetching) {
+          if (!spinner) {
+            const newSpinner = document.createElement('div');
+            newSpinner.className = 'loading-spinner';
+            if (askAIButton) {
+              newSpinner.style.display = 'block';
+              askAIButton.insertBefore(newSpinner, askAIButton.firstChild);
+            }
+          }
+        } else {
+          if (spinner) {
+            spinner.remove();
+          }
+        }
+      }
     });
 
     // Change the shortcut to accept inline completion to the Tab key
@@ -495,9 +514,9 @@ const extension: JupyterFrontEndPlugin<void> = {
     }
 
     function addAskAIButton(cellNode: HTMLElement) {
-      // Remove existing buttons from all cells before adding a new one
-      document.querySelectorAll('.ask-ai-button-container').forEach(container => {
-        container.remove();
+      // Remove existing buttons and spinners from all cells before adding a new one
+      document.querySelectorAll('.ask-ai-button-container, .loading-spinner').forEach(element => {
+        element.remove();
       });
 
       const buttonContainer = document.createElement('div');
