@@ -81,6 +81,11 @@ const extension: JupyterFrontEndPlugin<void> = {
   ) => {
     const provider = new PretzelInlineProvider(notebookTracker, settingRegistry, app);
     providerManager.registerInlineProvider(provider);
+
+    provider.isFetchingChanged.connect((_, isFetching) => {
+      console.log('isFetching', isFetching);
+    });
+
     // Change the shortcut to accept inline completion to the Tab key
     app.commands.addKeyBinding({
       command: 'inline-completer:accept',
