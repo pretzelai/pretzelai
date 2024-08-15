@@ -28,7 +28,7 @@ function SplashScreen() {
         <h1>Welcome to Pretzel</h1>
         <h3>Using Pretzel</h3>
         <ul>
-          <li>Start typing in a notebook cell to get tab completions</li>
+          <li>Start typing in a notebook cell to get inline tab completions</li>
           <li>
             Use <strong>{keyCombination}</strong> in a Jupyter cell to start generating code
           </li>
@@ -36,6 +36,7 @@ function SplashScreen() {
             Use <strong>{keyCombinationSidepanel}</strong> or Pretzel icon on right sidebar to open the AI assistant
             chat
           </li>
+          <li>Type @ to trigger auto-complete with function and variable names</li>
           <li>
             See more feature details{' '}
             <a href="https://github.com/pretzelai/pretzelai?tab=readme-ov-file#usage" target="_blank" rel="noreferrer">
@@ -43,8 +44,7 @@ function SplashScreen() {
             </a>
           </li>
           <li>
-            Go to <strong>Settings &gt; Settings Editor</strong> and search for Pretzel AI to use your own OpenAI or
-            Azure models.
+            Go to <strong>Settings &gt; Pretzel AI Settings</strong> to configure AI models and services.
           </li>
         </ul>
         <p style={{ marginTop: '30px' }}>
