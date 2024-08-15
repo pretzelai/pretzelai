@@ -562,3 +562,7 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
     transform: rotate(360deg);
   }
 }
+
+.monaco-icon-label-container .monaco-icon-name-container a.label-name span.monaco-highlighted-label span.highlight {
+  background: inherit !important;
+}
