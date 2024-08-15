@@ -566,3 +566,10 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
 .monaco-icon-label-container .monaco-icon-name-container a.label-name span.monaco-highlighted-label span.highlight {
   background: inherit !important;
 }
+
+.chat-label.unselectable {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
