@@ -12,7 +12,7 @@ import { addAboveIcon, addBelowIcon } from '@jupyterlab/ui-components';
 import { CopyButton } from './copy-button';
 import replaceCellIconRaw from '../../../style/icons/replace-cell.svg';
 import { LabIcon } from '@jupyterlab/ui-components';
-import { INotebookTracker, NotebookPanel } from '@jupyterlab/notebook';
+import { INotebookTracker, Notebook, NotebookPanel } from '@jupyterlab/notebook';
 
 const replaceCellIcon = new LabIcon({
   name: 'pretzelai::replace-cell',
@@ -52,16 +52,29 @@ type ToolbarButtonProps = {
   notebookTracker: INotebookTracker;
 };
 
-const insertCell = (notebookTracker: INotebookTracker, content: string, index: number) => {
+const insertCell = async (notebookTracker: INotebookTracker, content: string, index: number) => {
   if (notebookTracker.activeCell) {
     const nb = notebookTracker.currentWidget as NotebookPanel;
     const activeCellIndex = nb.model?.sharedModel.cells.findIndex(
       c => c.id === notebookTracker.activeCell?.model.sharedModel.id
     ) as number;
-    nb.model?.sharedModel.insertCell(activeCellIndex + index, {
+    const newCellIndex = activeCellIndex + index;
+    nb.model?.sharedModel.insertCell(newCellIndex, {
       cell_type: 'code',
       source: content
     });
+
+    // Wait for the cell to be added to the DOM
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    // Get the newly inserted cell
+    const notebook = nb.content as Notebook;
+    const newCell = notebook.widgets[newCellIndex];
+
+    // Scroll to the new cell
+    if (newCell) {
+      await notebook.scrollToCell(newCell);
+    }
   }
 };
 
@@ -69,7 +82,12 @@ function InsertAboveButton({ notebookTracker, content }: ToolbarButtonProps) {
   const tooltip = 'Insert above active cell';
 
   return (
-    <TooltippedIconButton tooltip={tooltip} onClick={() => insertCell(notebookTracker, content, 0)}>
+    <TooltippedIconButton
+      tooltip={tooltip}
+      onClick={() => {
+        insertCell(notebookTracker, content, 0).catch(console.error);
+      }}
+    >
       <addAboveIcon.react height="16px" width="16px" />
     </TooltippedIconButton>
   );
@@ -79,7 +97,12 @@ function InsertBelowButton({ notebookTracker, content }: ToolbarButtonProps) {
   const tooltip = 'Insert below active cell';
 
   return (
-    <TooltippedIconButton tooltip={tooltip} onClick={() => insertCell(notebookTracker, content, 1)}>
+    <TooltippedIconButton
+      tooltip={tooltip}
+      onClick={() => {
+        insertCell(notebookTracker, content, 1).catch(console.error);
+      }}
+    >
       <addBelowIcon.react height="16px" width="16px" />
     </TooltippedIconButton>
   );

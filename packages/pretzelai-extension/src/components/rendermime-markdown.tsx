@@ -25,6 +25,12 @@ function escapeLatexDelimiters(text: string) {
   return text.replace(/\\\(/g, '\\\\(').replace(/\\\)/g, '\\\\)').replace(/\\\[/g, '\\\\[').replace(/\\\]/g, '\\\\]');
 }
 
+function wrapLabels(markdownStr: string): string {
+  return markdownStr
+    .replace(/^\*\*\*You:\*\*\* /, '<span class="chat-label unselectable">***You:*** </span>')
+    .replace(/^\*\*\*AI:\*\*\* /, '<span class="chat-label unselectable">***AI:*** </span>');
+}
+
 function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
   const [renderedContent, setRenderedContent] = useState<HTMLElement | null>(null);
   const renderedContentRef = React.useRef<HTMLDivElement>(null);
@@ -32,7 +38,7 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
 
   useEffect(() => {
     const renderContent = async () => {
-      const mdStr = escapeLatexDelimiters(props.markdownStr);
+      const mdStr = escapeLatexDelimiters(wrapLabels(props.markdownStr));
       const model = props.rmRegistry.createModel({
         data: { [MD_MIME_TYPE]: mdStr }
       });

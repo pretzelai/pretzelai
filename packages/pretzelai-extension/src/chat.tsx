@@ -376,6 +376,7 @@ export function Chat({
     posthog.capture('Chat Cleared', {
       chatLength: messages.length
     });
+    editorRef.current?.focus();
   }, [messages.length]);
 
   useEffect(() => {
@@ -487,7 +488,7 @@ export function Chat({
         }
       });
     },
-    [restoreChat, isAiGenerating]
+    [restoreChat, isAiGenerating, clearChat]
   );
 
   const handleEditorChange = (value: string | undefined) => {
