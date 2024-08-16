@@ -630,7 +630,15 @@ export const generateAIStream = async ({
     codeMatchThreshold
   );
 
-  const prompt = generatePrompt(userInput, oldCodeForPrompt, topSimilarities, extractedCode, traceback, isInject);
+  const prompt = await generatePrompt(
+    userInput,
+    oldCodeForPrompt,
+    topSimilarities,
+    notebookTracker,
+    extractedCode,
+    traceback,
+    isInject
+  );
 
   if (posthogPromptTelemetry) {
     posthog.capture('prompt', { property: userInput });

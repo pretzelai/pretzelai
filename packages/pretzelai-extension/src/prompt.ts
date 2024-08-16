@@ -12,9 +12,10 @@ import { Embeddings as AzureEmbeddings } from '@azure/openai/types/openai';
 import { OpenAIClient } from '@azure/openai';
 import MistralClient, { EmbeddingResponse as MistralEmbeddings } from '@mistralai/mistralai';
 import { CreateEmbeddingResponse as OpenAIEmbeddings } from 'openai/resources/embeddings';
-import { getCookie } from './utils';
+import { getCookie, processTaggedVariables } from './utils';
 import { ServerConnection } from '@jupyterlab/services';
 import { URLExt } from '@jupyterlab/coreutils';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 export type Embedding = {
   id: string;
@@ -23,14 +24,17 @@ export type Embedding = {
   embedding: number[];
 };
 
-export function generatePrompt(
+export async function generatePrompt(
   userInput: string,
   oldCode: string,
   topSimilarities: string[],
+  notebookTracker: INotebookTracker,
   selectedCode: string = '',
   traceback: string = '',
   isInject: boolean = false
-): string {
+): Promise<string> {
+  userInput = await processTaggedVariables(userInput, notebookTracker);
+
   if (selectedCode) {
     return generatePromptEditPartial(userInput, selectedCode, oldCode, topSimilarities);
   }
