@@ -388,7 +388,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         oldCodeForPrompt = activeCell!.model.sharedModel.source;
         activeCell!.model.sharedModel.source = oldCode;
       }
-      userInput = await processTaggedVariables(userInput, props.notebookTracker);
       try {
         const stream = await generateAIStream({
           aiChatModelProvider: props.aiChatModelProvider,

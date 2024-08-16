@@ -127,7 +127,7 @@ export async function processTaggedVariables(userInput: string, notebookTracker:
   if (importsCode || varValues) {
     result += `*ADDITIONAL CONTEXT*\n\n`;
     if (importsCode) {
-      result += `The following imports are already present in *OTHER CELLS* the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
+      result += `The following imports are already present in *OTHER CELLS* of the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
     }
     if (varValues) {
       result += `\n${varValues}\n`;
@@ -630,7 +630,15 @@ export const generateAIStream = async ({
     codeMatchThreshold
   );
 
-  const prompt = generatePrompt(userInput, oldCodeForPrompt, topSimilarities, extractedCode, traceback, isInject);
+  const prompt = await generatePrompt(
+    userInput,
+    oldCodeForPrompt,
+    topSimilarities,
+    notebookTracker,
+    extractedCode,
+    traceback,
+    isInject
+  );
 
   if (posthogPromptTelemetry) {
     posthog.capture('prompt', { property: userInput });
@@ -718,7 +726,7 @@ export async function deleteExistingEmbeddings(app: JupyterFrontEnd, notebookTra
   }
 }
 
-async function getCookie(name: string): Promise<string> {
+export async function getCookie(name: string): Promise<string> {
   const r = document.cookie.match('\\b' + name + '=([^;]*)\\b');
   return r ? r[1] : '';
 }
@@ -730,8 +738,10 @@ export async function streamAnthropicCompletion(
   maxTokens: number = 4096
 ): Promise<AsyncIterable<any>> {
   const xsrfToken = await getCookie('_xsrf');
+  const baseUrl = ServerConnection.makeSettings().baseUrl;
+  const fullUrl = URLExt.join(baseUrl, '/anthropic/complete');
 
-  const response = await fetch('/anthropic/complete', {
+  const response = await fetch(fullUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
