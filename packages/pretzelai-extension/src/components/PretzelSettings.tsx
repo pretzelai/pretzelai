@@ -39,6 +39,8 @@ import { getProvidersInfo } from '../migrations/providerInfo';
 import { IProvidersInfo } from '../migrations/providerInfo';
 import debounce from 'lodash/debounce';
 import Groq from 'groq-sdk';
+import { ServerConnection } from '@jupyterlab/services';
+import { URLExt } from '@jupyterlab/coreutils';
 
 const AI_SERVICES_ORDER = ['OpenAI', 'Anthropic', 'Mistral', 'Groq', 'Ollama', 'Azure'];
 
@@ -522,8 +524,10 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       const anthropicProvider = tempSettings.providers.Anthropic;
       if (anthropicProvider?.enabled && anthropicProvider?.apiSettings?.apiKey?.value) {
         try {
+          const baseUrl = ServerConnection.makeSettings().baseUrl;
+          const fullUrl = URLExt.join(baseUrl, '/anthropic/verify_key');
           const xsrfToken = await getCookie('_xsrf');
-          const response = await fetch('/anthropic/verify_key', {
+          const response = await fetch(fullUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

@@ -13,6 +13,8 @@ import { OpenAIClient } from '@azure/openai';
 import MistralClient, { EmbeddingResponse as MistralEmbeddings } from '@mistralai/mistralai';
 import { CreateEmbeddingResponse as OpenAIEmbeddings } from 'openai/resources/embeddings';
 import { getCookie } from './utils';
+import { ServerConnection } from '@jupyterlab/services';
+import { URLExt } from '@jupyterlab/coreutils';
 
 export type Embedding = {
   id: string;
@@ -248,8 +250,10 @@ export const openaiEmbeddings = async (
       input: source
     });
   } else {
+    const baseUrl = ServerConnection.makeSettings().baseUrl;
+    const fullUrl = URLExt.join(baseUrl, '/embed');
     const xsrfToken = await getCookie('_xsrf');
-    const response = await fetch('/embed', {
+    const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

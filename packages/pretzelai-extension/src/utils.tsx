@@ -730,8 +730,10 @@ export async function streamAnthropicCompletion(
   maxTokens: number = 4096
 ): Promise<AsyncIterable<any>> {
   const xsrfToken = await getCookie('_xsrf');
+  const baseUrl = ServerConnection.makeSettings().baseUrl;
+  const fullUrl = URLExt.join(baseUrl, '/anthropic/complete');
 
-  const response = await fetch('/anthropic/complete', {
+  const response = await fetch(fullUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
