@@ -127,7 +127,7 @@ export async function processTaggedVariables(userInput: string, notebookTracker:
   if (importsCode || varValues) {
     result += `*ADDITIONAL CONTEXT*\n\n`;
     if (importsCode) {
-      result += `The following imports are already present in *OTHER CELLS* the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
+      result += `The following imports are already present in *OTHER CELLS* of the notebook:\n\`\`\`\n${importsCode}\n\`\`\`\n\n`;
     }
     if (varValues) {
       result += `\n${varValues}\n`;
