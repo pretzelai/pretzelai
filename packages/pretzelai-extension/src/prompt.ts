@@ -12,6 +12,7 @@ import { Embeddings as AzureEmbeddings } from '@azure/openai/types/openai';
 import { OpenAIClient } from '@azure/openai';
 import MistralClient, { EmbeddingResponse as MistralEmbeddings } from '@mistralai/mistralai';
 import { CreateEmbeddingResponse as OpenAIEmbeddings } from 'openai/resources/embeddings';
+import { getCookie } from './utils';
 
 export type Embedding = {
   id: string;
@@ -247,10 +248,12 @@ export const openaiEmbeddings = async (
       input: source
     });
   } else {
+    const xsrfToken = await getCookie('_xsrf');
     const response = await fetch('/embed', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-XSRFToken': xsrfToken
       },
       body: JSON.stringify({
         texts: [source]

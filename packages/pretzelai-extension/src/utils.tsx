@@ -718,7 +718,7 @@ export async function deleteExistingEmbeddings(app: JupyterFrontEnd, notebookTra
   }
 }
 
-async function getCookie(name: string): Promise<string> {
+export async function getCookie(name: string): Promise<string> {
   const r = document.cookie.match('\\b' + name + '=([^;]*)\\b');
   return r ? r[1] : '';
 }

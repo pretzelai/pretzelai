@@ -34,7 +34,7 @@ import Tooltip from '@mui/material/Tooltip';
 
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { getDefaultSettings } from '../migrations/defaultSettings';
-import { PLUGIN_ID } from '../utils';
+import { getCookie, PLUGIN_ID } from '../utils';
 import { getProvidersInfo } from '../migrations/providerInfo';
 import { IProvidersInfo } from '../migrations/providerInfo';
 import debounce from 'lodash/debounce';
@@ -522,10 +522,12 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       const anthropicProvider = tempSettings.providers.Anthropic;
       if (anthropicProvider?.enabled && anthropicProvider?.apiSettings?.apiKey?.value) {
         try {
+          const xsrfToken = await getCookie('_xsrf');
           const response = await fetch('/anthropic/verify_key', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-XSRFToken': xsrfToken
             },
             body: JSON.stringify({
               // eslint-disable-next-line camelcase
