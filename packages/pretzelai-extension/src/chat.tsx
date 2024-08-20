@@ -293,65 +293,69 @@ export function Chat({
       selectedCode = getSelectedCode(notebookTracker).extractedCode;
     }
 
-    const formattedMessages = [
-      {
-        role: 'system',
-        content: CHAT_SYSTEM_MESSAGE
-      },
-      ...messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      { role: 'user', content: editorValueFromEvent }
-    ];
-
     const newMessage = {
       id: String(messages.length + 1),
       content: inputMarkdown,
       role: 'user'
     };
 
-    setMessages(prevMessages => [...prevMessages, newMessage as IMessage]);
-    setEditorValue('');
+    setMessages(prevMessages => {
+      const updatedMessages = [...prevMessages, newMessage as IMessage];
 
-    console.log('messages', messages);
+      const formattedMessages = [
+        {
+          role: 'system',
+          content: CHAT_SYSTEM_MESSAGE
+        },
+        ...updatedMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }))
+      ];
 
-    const topSimilarities = await getTopSimilarities(
-      editorValueFromEvent,
-      embeddings,
-      5,
-      aiClient,
-      aiChatModelProvider,
-      'no-match-id',
-      codeMatchThreshold
-    );
+      (async () => {
+        const topSimilarities = await getTopSimilarities(
+          editorValueFromEvent,
+          embeddings,
+          5,
+          aiClient,
+          aiChatModelProvider,
+          'no-match-id',
+          codeMatchThreshold
+        );
 
-    const controller = new AbortController();
-    let signal = controller.signal;
-    setStopGeneration(() => () => controller.abort());
+        const controller = new AbortController();
+        let signal = controller.signal;
+        setStopGeneration(() => () => controller.abort());
 
-    await chatAIStream({
-      aiChatModelProvider,
-      aiChatModelString,
-      openAiApiKey,
-      openAiBaseUrl,
-      azureBaseUrl,
-      azureApiKey,
-      deploymentId,
-      mistralApiKey,
-      anthropicApiKey,
-      ollamaBaseUrl,
-      groqApiKey,
-      renderChat,
-      messages: formattedMessages as ChatCompletionMessage[],
-      topSimilarities,
-      activeCellCode,
-      selectedCode,
-      setReferenceSource,
-      setIsAiGenerating,
-      signal,
-      notebookTracker
+        await chatAIStream({
+          aiChatModelProvider,
+          aiChatModelString,
+          openAiApiKey,
+          openAiBaseUrl,
+          azureBaseUrl,
+          azureApiKey,
+          deploymentId,
+          mistralApiKey,
+          anthropicApiKey,
+          ollamaBaseUrl,
+          groqApiKey,
+          renderChat,
+          messages: formattedMessages as ChatCompletionMessage[],
+          topSimilarities,
+          activeCellCode,
+          selectedCode,
+          setReferenceSource,
+          setIsAiGenerating,
+          signal,
+          notebookTracker
+        });
+      })();
+
+      return updatedMessages;
     });
+
+    setEditorValue('');
   };
 
   const cancelGeneration = () => {
