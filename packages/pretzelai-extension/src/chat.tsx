@@ -527,7 +527,8 @@ export function Chat({
                   borderRadius: '4px',
                   display: 'inline-block',
                   marginLeft: '0px',
-                  marginBottom: '8px',
+                  marginTop: '8px',
+                  marginBottom: '2px',
                   padding: '2px 6px'
                 }}
               >
