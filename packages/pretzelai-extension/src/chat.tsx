@@ -15,7 +15,7 @@ import { Box, Typography } from '@mui/material';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { JupyterFrontEnd } from '@jupyterlab/application';
+import { ILabShell, JupyterFrontEnd } from '@jupyterlab/application';
 import {
   completionFunctionProvider,
   getSelectedCode,
@@ -169,8 +169,7 @@ export function Chat({
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
 
   const fetchChatHistory = async () => {
-    if (!notebookTracker || !notebookTracker.currentWidget) return;
-    const notebook = notebookTracker.currentWidget;
+    const notebook = notebookTracker?.currentWidget;
     if (!notebook?.model) {
       setTimeout(fetchChatHistory, 1000);
       return;
@@ -256,6 +255,10 @@ export function Chat({
   useEffect(() => {
     // Load chat history
     fetchChatHistory();
+    const labShell = app.shell as ILabShell;
+    labShell.currentPathChanged.connect((sender, args) => {
+      fetchChatHistory();
+    });
   }, []);
 
   useEffect(() => {

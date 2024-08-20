@@ -38,10 +38,10 @@ export function CodeToolbar(props: CodeToolbarProps): JSX.Element | null {
         display: 'flex',
         justifyContent: 'flex-end',
         alignItems: 'center',
-        padding: '6px 2px',
-        marginBottom: '1em',
-        border: '1px solid var(--jp-cell-editor-border-color)',
-        borderTop: 'none'
+        padding: '2px',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        borderRadius: '8px',
+        marginBottom: '-2px'
       }}
     >
       <InsertAboveButton {...props} />

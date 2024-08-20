@@ -402,6 +402,8 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     });
 
+
+
     // re-create embeddings when cells are deleted
     NotebookActions.cellsDeleted.connect((sender, args) => {
       getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);

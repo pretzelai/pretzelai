@@ -55,7 +55,8 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
       const preBlocks = renderer.node.querySelectorAll('pre');
       preBlocks.forEach(preBlock => {
         const codeToolbarRoot = document.createElement('div');
-        preBlock.parentNode?.insertBefore(codeToolbarRoot, preBlock.nextSibling);
+        codeToolbarRoot.className = 'code-toolbar';
+        preBlock.appendChild(codeToolbarRoot);
         newCodeToolbarDefns.push([
           codeToolbarRoot,
           { content: preBlock.textContent || '', notebookTracker: props.notebookTracker }

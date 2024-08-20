@@ -573,3 +573,19 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   -ms-user-select: none;
   user-select: none;
 }
+
+.jp-pretzelai-rendermime-markdown pre {
+  position: relative;
+}
+
+.jp-pretzelai-rendermime-markdown .code-toolbar {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.jp-pretzelai-rendermime-markdown pre:hover .code-toolbar {
+  opacity: 1;
+}
