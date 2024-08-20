@@ -517,8 +517,8 @@ export function Chat({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
-        {messages.map(message => (
-          <Box key={message.id} sx={message.role === 'user' ? { margin: '0 -16px 16px -16px' } : {}}>
+        {messages.map((message, index) => (
+          <Box key={`message-${index}`}>
             {referenceSource && message.role === 'assistant' && messages[messages.length - 1].id === message.id && (
               <Box
                 sx={{

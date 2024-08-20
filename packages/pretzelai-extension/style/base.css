@@ -303,14 +303,20 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
 
 .jp-pretzelai-rendermime-markdown .jp-RenderedHTMLCommon {
   padding-right: 0;
+  font-size: 0.8rem;
+}
+
+.jp-pretzelai-rendermime-markdown .jp-RenderedHTMLCommon > * {
+  padding: 0;
+  margin: 0;
 }
 
 #jp-right-stack .jp-pretzelai-rendermime-markdown pre {
   background-color: var(--jp-cell-editor-background);
   overflow-x: auto;
   white-space: pre;
-  margin: 0;
-  padding: 4px 2px 0 6px;
+  margin: 7px 0;
+  padding: 4px 2px 1px 6px;
   border: var(--jp-border-width) solid var(--jp-cell-editor-border-color);
   font-size: 0.775rem;
 }
@@ -339,8 +345,15 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
 
 #pretzelai-chat-panel .user-msg {
   background-color: var(--jp-layout-color2);
-  padding-top: 10px;
+  margin: 0 -16px 0 -16px;
+  padding-top: 5px;
+  padding-bottom: 5px;
   padding-left: 16px;
+}
+
+#pretzelai-chat-panel .ai-msg {
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 #pretzelai-chat-panel .submit-button-container,
@@ -580,8 +593,8 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
 
 .jp-pretzelai-rendermime-markdown .code-toolbar {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  top: -1px;
+  right: -1px;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
