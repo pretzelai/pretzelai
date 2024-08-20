@@ -35,6 +35,7 @@ import { IThemeManager } from '@jupyterlab/apputils';
 import { Editor, Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { globalState } from './globalState';
+import { Embedding } from './prompt';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -125,7 +126,7 @@ interface IChatProps {
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
   groqApiKey?: string;
-  notebookTracker: INotebookTracker;
+  notebookTracker: INotebookTracker | null;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
   aiClient: OpenAI | OpenAIClient | MistralClient | null;
@@ -157,17 +158,18 @@ export function Chat({
   const [messages, setMessages] = useState(initialMessage);
   const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
   const [, setChatIndex] = useState(0);
-  const clearChatRef = useRef<() => void>(() => {});
+  const clearChatRef = useRef<() => void>(() => { });
   const chatHistoryRef = useRef<IMessage[][]>([]);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [referenceSource, setReferenceSource] = useState('');
-  const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
+  const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => { });
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const [editorValue, setEditorValue] = useState('');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
 
   const fetchChatHistory = async () => {
+    if (!notebookTracker || !notebookTracker.currentWidget) return;
     const notebook = notebookTracker.currentWidget;
     if (!notebook?.model) {
       setTimeout(fetchChatHistory, 1000);
@@ -195,6 +197,7 @@ export function Chat({
   };
 
   const saveMessages = async () => {
+    if (!notebookTracker || !notebookTracker.currentWidget) return;
     const notebook = notebookTracker.currentWidget;
     if (notebook?.model && !isAiGenerating) {
       const currentNotebookPath = notebook.context.path;
@@ -281,9 +284,14 @@ export function Chat({
     setIsAiGenerating(true);
     posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? editorValueFromEvent : 'no_telemetry' });
     const inputMarkdown = editorValueFromEvent.replace(/\n/g, '  \n');
-    const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
-    const embeddings = await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
-    const selectedCode = getSelectedCode(notebookTracker).extractedCode;
+    let activeCellCode: string = '';
+    let embeddings: Embedding[] = [];
+    let selectedCode: string = '';
+    if (notebookTracker && notebookTracker.currentWidget) {
+      activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source || '';
+      embeddings = await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+      selectedCode = getSelectedCode(notebookTracker).extractedCode;
+    }
 
     const formattedMessages = [
       {
@@ -305,6 +313,8 @@ export function Chat({
 
     setMessages(prevMessages => [...prevMessages, newMessage as IMessage]);
     setEditorValue('');
+
+    console.log('messages', messages);
 
     const topSimilarities = await getTopSimilarities(
       editorValueFromEvent,

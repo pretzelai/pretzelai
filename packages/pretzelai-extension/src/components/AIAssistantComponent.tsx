@@ -9,7 +9,7 @@
 
 import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
-import { FixedSizeStack, generateAIStream, getSelectedCode, processTaggedVariables, readEmbeddings } from '../utils';
+import { FixedSizeStack, generateAIStream, getSelectedCode, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';

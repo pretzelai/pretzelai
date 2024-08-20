@@ -22,12 +22,19 @@ export const CHAT_SYSTEM_MESSAGE =
 export const generateChatPrompt = async (
   lastContent: string,
   setReferenceSource: (source: string) => void,
-  notebookTracker: INotebookTracker,
+  notebookTracker: INotebookTracker | null,
   topSimilarities?: string[],
   activeCellCode?: string,
   selectedCode?: string
 ) => {
-  const { processedInput, varValues } = await processVariables(lastContent, notebookTracker);
+  let processedInput = lastContent;
+  let varValues = '';
+
+  if (notebookTracker && notebookTracker.currentWidget) {
+    const result = await processVariables(lastContent, notebookTracker);
+    processedInput = result.processedInput;
+    varValues = result.varValues;
+  }
 
   let output = `${processedInput}\n`;
 
@@ -102,7 +109,7 @@ export const chatAIStream = async ({
   setReferenceSource: (source: string) => void;
   setIsAiGenerating: (isGenerating: boolean) => void;
   signal: AbortSignal;
-  notebookTracker: INotebookTracker;
+  notebookTracker: INotebookTracker | null;
 }): Promise<void> => {
   const lastContent = messages[messages.length - 1].content as string;
   const lastContentWithInjection = await generateChatPrompt(

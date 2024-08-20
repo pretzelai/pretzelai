@@ -17,7 +17,7 @@ const RENDERMIME_MD_CLASS = 'jp-pretzelai-rendermime-markdown';
 type RendermimeMarkdownProps = {
   markdownStr: string;
   rmRegistry: IRenderMimeRegistry;
-  notebookTracker: INotebookTracker;
+  notebookTracker: INotebookTracker | null;
   role?: string;
 };
 
