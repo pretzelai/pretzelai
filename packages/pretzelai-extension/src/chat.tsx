@@ -197,7 +197,7 @@ export function Chat({
   };
 
   const saveMessages = async () => {
-    if (!notebookTracker || !notebookTracker.currentWidget) return;
+    if (!notebookTracker) return;
     const notebook = notebookTracker.currentWidget;
     if (notebook?.model && !isAiGenerating) {
       const currentNotebookPath = notebook.context.path;
