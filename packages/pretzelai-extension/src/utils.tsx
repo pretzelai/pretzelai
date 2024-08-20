@@ -159,7 +159,7 @@ export async function processVariables(
 
       if (variableType?.includes('DataFrame')) {
         const sampleRows = await getVariableValue(`${variableName}.sample(n=5).to_csv(index=False)`, notebookTracker);
-        varValues += `\n\`${variableName}\` is a DataFrame with the following CSV representation:\n`;
+        varValues += `\n\`${variableName}\` is a DataFrame. Five random rows from this DataFrame are shown below as CSV:\n`;
         varValues += `\`\`\`\n${sampleRows}\n\`\`\`\n`;
       } else if (variableType) {
         const variableValue = await getVariableValue(variableName, notebookTracker);
