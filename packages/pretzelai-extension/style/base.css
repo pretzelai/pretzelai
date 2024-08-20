@@ -602,3 +602,7 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
 .jp-pretzelai-rendermime-markdown pre:hover .code-toolbar {
   opacity: 1;
 }
+
+#pretzelai-chat-panel div.lines-content.monaco-editor-background div.contentWidgets > div {
+  font-size: 0.75rem !important;
+}

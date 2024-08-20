@@ -86,6 +86,7 @@ class PlaceholderContentWidget {
       this.domNode.style.fontStyle = 'italic';
       this.domNode.style.color = 'gray';
       this.domNode.style.pointerEvents = 'none';
+      this.domNode.style.fontSize = '0.75rem';
 
       const lines = this.placeholder.split('\n');
       lines.forEach((line, index) => {
