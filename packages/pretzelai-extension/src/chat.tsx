@@ -15,7 +15,7 @@ import { Box, Typography } from '@mui/material';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { JupyterFrontEnd } from '@jupyterlab/application';
+import { ILabShell, JupyterFrontEnd } from '@jupyterlab/application';
 import {
   completionFunctionProvider,
   getSelectedCode,
@@ -35,6 +35,7 @@ import { IThemeManager } from '@jupyterlab/apputils';
 import { Editor, Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { globalState } from './globalState';
+import { Embedding } from './prompt';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -85,6 +86,7 @@ class PlaceholderContentWidget {
       this.domNode.style.fontStyle = 'italic';
       this.domNode.style.color = 'gray';
       this.domNode.style.pointerEvents = 'none';
+      this.domNode.style.fontSize = '0.75rem';
 
       const lines = this.placeholder.split('\n');
       lines.forEach((line, index) => {
@@ -125,7 +127,7 @@ interface IChatProps {
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
   groqApiKey?: string;
-  notebookTracker: INotebookTracker;
+  notebookTracker: INotebookTracker | null;
   app: JupyterFrontEnd;
   rmRegistry: IRenderMimeRegistry;
   aiClient: OpenAI | OpenAIClient | MistralClient | null;
@@ -157,18 +159,18 @@ export function Chat({
   const [messages, setMessages] = useState(initialMessage);
   const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
   const [, setChatIndex] = useState(0);
-  const clearChatRef = useRef<() => void>(() => {});
+  const clearChatRef = useRef<() => void>(() => { });
   const chatHistoryRef = useRef<IMessage[][]>([]);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [referenceSource, setReferenceSource] = useState('');
-  const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
+  const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => { });
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const [editorValue, setEditorValue] = useState('');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
 
   const fetchChatHistory = async () => {
-    const notebook = notebookTracker.currentWidget;
+    const notebook = notebookTracker?.currentWidget;
     if (!notebook?.model) {
       setTimeout(fetchChatHistory, 1000);
       return;
@@ -195,6 +197,7 @@ export function Chat({
   };
 
   const saveMessages = async () => {
+    if (!notebookTracker) return;
     const notebook = notebookTracker.currentWidget;
     if (notebook?.model && !isAiGenerating) {
       const currentNotebookPath = notebook.context.path;
@@ -253,6 +256,10 @@ export function Chat({
   useEffect(() => {
     // Load chat history
     fetchChatHistory();
+    const labShell = app.shell as ILabShell;
+    labShell.currentPathChanged.connect((sender, args) => {
+      fetchChatHistory();
+    });
   }, []);
 
   useEffect(() => {
@@ -281,21 +288,14 @@ export function Chat({
     setIsAiGenerating(true);
     posthog.capture('prompt_chat', { property: posthogPromptTelemetry ? editorValueFromEvent : 'no_telemetry' });
     const inputMarkdown = editorValueFromEvent.replace(/\n/g, '  \n');
-    const activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source;
-    const embeddings = await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
-    const selectedCode = getSelectedCode(notebookTracker).extractedCode;
-
-    const formattedMessages = [
-      {
-        role: 'system',
-        content: CHAT_SYSTEM_MESSAGE
-      },
-      ...messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      { role: 'user', content: editorValueFromEvent }
-    ];
+    let activeCellCode: string = '';
+    let embeddings: Embedding[] = [];
+    let selectedCode: string = '';
+    if (notebookTracker && notebookTracker.currentWidget) {
+      activeCellCode = notebookTracker?.activeCell?.model?.sharedModel?.source || '';
+      embeddings = await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+      selectedCode = getSelectedCode(notebookTracker).extractedCode;
+    }
 
     const newMessage = {
       id: String(messages.length + 1),
@@ -303,45 +303,63 @@ export function Chat({
       role: 'user'
     };
 
-    setMessages(prevMessages => [...prevMessages, newMessage as IMessage]);
-    setEditorValue('');
+    setMessages(prevMessages => {
+      const updatedMessages = [...prevMessages, newMessage as IMessage];
 
-    const topSimilarities = await getTopSimilarities(
-      editorValueFromEvent,
-      embeddings,
-      5,
-      aiClient,
-      aiChatModelProvider,
-      'no-match-id',
-      codeMatchThreshold
-    );
+      const formattedMessages = [
+        {
+          role: 'system',
+          content: CHAT_SYSTEM_MESSAGE
+        },
+        ...updatedMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }))
+      ];
 
-    const controller = new AbortController();
-    let signal = controller.signal;
-    setStopGeneration(() => () => controller.abort());
+      (async () => {
+        const topSimilarities = await getTopSimilarities(
+          editorValueFromEvent,
+          embeddings,
+          5,
+          aiClient,
+          aiChatModelProvider,
+          'no-match-id',
+          codeMatchThreshold
+        );
 
-    await chatAIStream({
-      aiChatModelProvider,
-      aiChatModelString,
-      openAiApiKey,
-      openAiBaseUrl,
-      azureBaseUrl,
-      azureApiKey,
-      deploymentId,
-      mistralApiKey,
-      anthropicApiKey,
-      ollamaBaseUrl,
-      groqApiKey,
-      renderChat,
-      messages: formattedMessages as ChatCompletionMessage[],
-      topSimilarities,
-      activeCellCode,
-      selectedCode,
-      setReferenceSource,
-      setIsAiGenerating,
-      signal,
-      notebookTracker
+        const controller = new AbortController();
+        let signal = controller.signal;
+        setStopGeneration(() => () => controller.abort());
+
+        await chatAIStream({
+          aiChatModelProvider,
+          aiChatModelString,
+          openAiApiKey,
+          openAiBaseUrl,
+          azureBaseUrl,
+          azureApiKey,
+          deploymentId,
+          mistralApiKey,
+          anthropicApiKey,
+          ollamaBaseUrl,
+          groqApiKey,
+          renderChat,
+          messages: formattedMessages as ChatCompletionMessage[],
+          topSimilarities,
+          activeCellCode,
+          selectedCode,
+          setReferenceSource,
+          setIsAiGenerating,
+          signal,
+          notebookTracker
+        });
+      })();
+
+      return updatedMessages;
     });
+
+    setEditorValue('');
   };
 
   const cancelGeneration = () => {
@@ -500,8 +518,8 @@ export function Chat({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
-        {messages.map(message => (
-          <Box key={message.id} sx={message.role === 'user' ? { margin: '0 -16px 16px -16px' } : {}}>
+        {messages.map((message, index) => (
+          <Box key={`message-${index}`}>
             {referenceSource && message.role === 'assistant' && messages[messages.length - 1].id === message.id && (
               <Box
                 sx={{
@@ -509,7 +527,8 @@ export function Chat({
                   borderRadius: '4px',
                   display: 'inline-block',
                   marginLeft: '0px',
-                  marginBottom: '8px',
+                  marginTop: '8px',
+                  marginBottom: '2px',
                   padding: '2px 6px'
                 }}
               >

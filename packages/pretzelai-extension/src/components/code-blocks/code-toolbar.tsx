@@ -23,20 +23,24 @@ import { TooltippedIconButton } from '../mui-extras/tooltipped-icon-button';
 
 export type CodeToolbarProps = {
   content: string;
-  notebookTracker: INotebookTracker;
+  notebookTracker: INotebookTracker | null;
 };
 
-export function CodeToolbar(props: CodeToolbarProps): JSX.Element {
+export function CodeToolbar(props: CodeToolbarProps): JSX.Element | null {
+  // If there's no notebookTracker, return null (don't render anything)
+  if (!props.notebookTracker || !props.notebookTracker.currentWidget) {
+    return null;
+  }
+
   return (
     <Box
       sx={{
         display: 'flex',
         justifyContent: 'flex-end',
         alignItems: 'center',
-        padding: '6px 2px',
-        marginBottom: '1em',
-        border: '1px solid var(--jp-cell-editor-border-color)',
-        borderTop: 'none'
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        borderBottomLeftRadius: '6px',
+        marginBottom: '-2px'
       }}
     >
       <InsertAboveButton {...props} />
@@ -49,7 +53,7 @@ export function CodeToolbar(props: CodeToolbarProps): JSX.Element {
 
 type ToolbarButtonProps = {
   content: string;
-  notebookTracker: INotebookTracker;
+  notebookTracker: INotebookTracker | null;
 };
 
 const insertCell = async (notebookTracker: INotebookTracker, content: string, index: number) => {
@@ -81,6 +85,8 @@ const insertCell = async (notebookTracker: INotebookTracker, content: string, in
 function InsertAboveButton({ notebookTracker, content }: ToolbarButtonProps) {
   const tooltip = 'Insert above active cell';
 
+  if (!notebookTracker) return null;
+
   return (
     <TooltippedIconButton
       tooltip={tooltip}
@@ -96,6 +102,8 @@ function InsertAboveButton({ notebookTracker, content }: ToolbarButtonProps) {
 function InsertBelowButton({ notebookTracker, content }: ToolbarButtonProps) {
   const tooltip = 'Insert below active cell';
 
+  if (!notebookTracker) return null;
+
   return (
     <TooltippedIconButton
       tooltip={tooltip}
@@ -110,6 +118,8 @@ function InsertBelowButton({ notebookTracker, content }: ToolbarButtonProps) {
 
 function ReplaceButton({ notebookTracker, content }: ToolbarButtonProps) {
   const tooltip = 'Replace active cell';
+
+  if (!notebookTracker) return null;
 
   return (
     <TooltippedIconButton

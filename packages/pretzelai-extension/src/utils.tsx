@@ -158,8 +158,9 @@ export async function processVariables(
       const variableType = await getVariableValue(`type(${variableName})`, notebookTracker);
 
       if (variableType?.includes('DataFrame')) {
-        const variableColumns = await getVariableValue(`${variableName}.columns`, notebookTracker);
-        varValues += `\n\`${variableName}\` is a DataFrame with the following columns: \`${variableColumns}\`\n`;
+        const sampleRows = await getVariableValue(`${variableName}.sample(n=5).to_csv(index=False)`, notebookTracker);
+        varValues += `\n\`${variableName}\` is a DataFrame. Five random rows from this DataFrame are shown below as CSV:\n`;
+        varValues += `\`\`\`\n${sampleRows}\n\`\`\`\n`;
       } else if (variableType) {
         const variableValue = await getVariableValue(variableName, notebookTracker);
         varValues += `\n\`${variableName}\` is a Python variable of type \`${variableType}\` with value \`${variableValue}\`\n`;

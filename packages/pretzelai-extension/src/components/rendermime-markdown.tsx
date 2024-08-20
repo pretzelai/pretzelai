@@ -17,7 +17,7 @@ const RENDERMIME_MD_CLASS = 'jp-pretzelai-rendermime-markdown';
 type RendermimeMarkdownProps = {
   markdownStr: string;
   rmRegistry: IRenderMimeRegistry;
-  notebookTracker: INotebookTracker;
+  notebookTracker: INotebookTracker | null;
   role?: string;
 };
 
@@ -55,7 +55,8 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
       const preBlocks = renderer.node.querySelectorAll('pre');
       preBlocks.forEach(preBlock => {
         const codeToolbarRoot = document.createElement('div');
-        preBlock.parentNode?.insertBefore(codeToolbarRoot, preBlock.nextSibling);
+        codeToolbarRoot.className = 'code-toolbar';
+        preBlock.insertBefore(codeToolbarRoot, preBlock.firstChild);
         newCodeToolbarDefns.push([
           codeToolbarRoot,
           { content: preBlock.textContent || '', notebookTracker: props.notebookTracker }
