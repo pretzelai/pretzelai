@@ -362,6 +362,69 @@ export function Chat({
     setEditorValue('');
   };
 
+  const onSendWithoutContext = async (editorValueFromEvent = editorValue) => {
+    if (editorValueFromEvent.trim() === '' || isAiGenerating) {
+      return;
+    }
+    setIsAiGenerating(true);
+    posthog.capture('prompt_chat_without_context', { property: posthogPromptTelemetry ? editorValueFromEvent : 'no_telemetry' });
+    const inputMarkdown = editorValueFromEvent.replace(/\n/g, '  \n');
+
+    const newMessage = {
+      id: String(messages.length + 1),
+      content: inputMarkdown,
+      role: 'user'
+    };
+
+    setMessages(prevMessages => {
+      const updatedMessages = [...prevMessages, newMessage as IMessage];
+
+      const formattedMessages = [
+        {
+          role: 'system',
+          content: CHAT_SYSTEM_MESSAGE
+        },
+        ...updatedMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }))
+      ];
+
+      (async () => {
+        const controller = new AbortController();
+        let signal = controller.signal;
+        setStopGeneration(() => () => controller.abort());
+
+        await chatAIStream({
+          aiChatModelProvider,
+          aiChatModelString,
+          openAiApiKey,
+          openAiBaseUrl,
+          azureBaseUrl,
+          azureApiKey,
+          deploymentId,
+          mistralApiKey,
+          anthropicApiKey,
+          ollamaBaseUrl,
+          groqApiKey,
+          renderChat,
+          messages: formattedMessages as ChatCompletionMessage[],
+          topSimilarities: [],
+          activeCellCode: '',
+          selectedCode: '',
+          setReferenceSource,
+          setIsAiGenerating,
+          signal,
+          notebookTracker
+        });
+      })();
+
+      return updatedMessages;
+    });
+
+    setEditorValue('');
+  };
+
   const cancelGeneration = () => {
     posthog.capture('prompt_chat cancel generation');
     setIsAiGenerating(false);
@@ -469,9 +532,14 @@ export function Chat({
 
         if (event.keyCode === monaco.KeyCode.Enter && !event.shiftKey) {
           event.preventDefault();
-          const currentValue = editor.getValue(); // Directly get the current value from the editor
-          onSend(currentValue); // Modify onSend to accept a parameter for the editor value
+          const currentValue = editor.getValue();
+          if ((isMac && event.altKey) || (!isMac && event.altKey)) {
+            onSendWithoutContext(currentValue);
+          } else {
+            onSend(currentValue);
+          }
         }
+
         if (event.keyCode === monaco.KeyCode.Escape) {
           event.preventDefault();
           if (isAiGenerating) {
@@ -504,9 +572,10 @@ export function Chat({
           event.preventDefault();
           restoreChat(1);
         }
+
       });
     },
-    [restoreChat, isAiGenerating, clearChat]
+    [restoreChat, isAiGenerating, clearChat, onSendWithoutContext]
   );
 
   const handleEditorChange = (value: string | undefined) => {
@@ -623,7 +692,10 @@ export function Chat({
                 Submit the message to the AI
                 <br />
                 Shortcut: <strong>Enter</strong>
+                <br />
+                Submit without context: <strong>{isMac ? 'Option' : 'Alt'}+Enter</strong>
               </div>
+
             </div>
             <div className="clear-button-container">
               <button className="pretzelInputSubmitButton" onClick={clearChat} title="Clear (Esc)">

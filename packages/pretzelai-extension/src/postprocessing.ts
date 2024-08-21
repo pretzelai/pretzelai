@@ -21,6 +21,8 @@ export const fixCode = (code: string) => {
   if (endBackticksIndex !== -1) {
     finalCode = finalCode.slice(0, endBackticksIndex).trim();
   }
+  // Replace '!pip install' with '%pip install'
+  finalCode = finalCode.replace(/^!pip install/gm, '%pip install');
   return finalCode;
 };
 
