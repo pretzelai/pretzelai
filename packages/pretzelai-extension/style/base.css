@@ -618,6 +618,10 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   opacity: 1;
 }
 
+.jp-pretzelai-rendermime-markdown .code-toolbar button {
+  padding: 4px 5px !important;
+}
+
 #pretzelai-chat-panel div.lines-content.monaco-editor-background div.contentWidgets>div {
   font-size: 0.75rem !important;
 }
