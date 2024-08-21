@@ -38,8 +38,8 @@
     "watch": "tsc -b --watch"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.9",
-    "@jupyterlab/application-extension": "^4.2.9",
+    "@jupyterlab/application": "^4.2.10",
+    "@jupyterlab/application-extension": "^4.2.10",
     "@jupyterlab/apputils": "^4.3.0",
     "@jupyterlab/apputils-extension": "^4.2.0",
     "@jupyterlab/attachments": "^4.2.0",

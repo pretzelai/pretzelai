@@ -128,7 +128,8 @@
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
   white-space: nowrap;
   border: 1px solid var(--jp-border-color1);
-  z-index: 1000; /* Ensure the tooltip is above other elements */
+  z-index: 1000;
+  /* Ensure the tooltip is above other elements */
 }
 
 .accept-and-run-button,
@@ -306,7 +307,7 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   font-size: 0.8rem;
 }
 
-.jp-pretzelai-rendermime-markdown .jp-RenderedHTMLCommon > * {
+.jp-pretzelai-rendermime-markdown .jp-RenderedHTMLCommon>* {
   padding: 0;
   margin: 0;
 }
@@ -321,7 +322,7 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   font-size: 0.775rem;
 }
 
-#jp-right-stack .jp-pretzelai-rendermime-markdown pre > code {
+#jp-right-stack .jp-pretzelai-rendermime-markdown pre>code {
   background-color: inherit;
   overflow-x: inherit;
   white-space: inherit;
@@ -332,14 +333,15 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
 }
 
 .cm-placeholder {
-  white-space: pre-wrap; /* Preserve line breaks */
+  white-space: pre-wrap;
+  /* Preserve line breaks */
 }
 
 .monaco-diff-editor {
   margin-left: 70px;
 }
 
-#jp-right-stack > .lm-Widget {
+#jp-right-stack>.lm-Widget {
   min-width: 450px !important;
 }
 
@@ -384,8 +386,10 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   opacity: 0;
   transition: opacity 0.3s;
 }
+
 #pretzelai-chat-panel .submit-button-container .tooltip {
-  transform: translateX(-25%) !important;
+  transform: translateX(-18%) !important;
+  top: -55px;
 }
 
 #pretzelai-chat-panel .submit-button-container:hover .tooltip,
@@ -399,38 +403,47 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
 /* hacky fix for the background color of the <ul> element */
 /* Fix for dropdown background color */
 .MuiPaper-root .MuiList-root {
-  background-color: var(--jp-layout-color1) !important; /* Match the background color of the list */
+  background-color: var(--jp-layout-color1) !important;
+  /* Match the background color of the list */
 }
 
 /* Ensure selected item retains its background color */
 .MuiPaper-root .MuiList-root .Mui-selected {
-  background-color: var(--jp-brand-color1) !important; /* Background color for selected item */
-  color: var(--jp-ui-inverse-font-color0) !important; /* Text color for selected item */
+  background-color: var(--jp-brand-color1) !important;
+  /* Background color for selected item */
+  color: var(--jp-ui-inverse-font-color0) !important;
+  /* Text color for selected item */
 }
 
 /* Ensure hover state retains its background color */
 .MuiPaper-root .MuiList-root .MuiMenuItem-root:hover {
-  background-color: var(--jp-layout-color2) !important; /* Background color on hover */
+  background-color: var(--jp-layout-color2) !important;
+  /* Background color on hover */
 }
 
 /* Ensure hover state of selected item retains its background color */
 .MuiPaper-root .MuiList-root .Mui-selected:hover {
-  background-color: var(--jp-brand-color1) !important; /* Background color for selected item on hover */
-  color: var(--jp-ui-inverse-font-color0) !important; /* Text color for selected item on hover */
+  background-color: var(--jp-brand-color1) !important;
+  /* Background color for selected item on hover */
+  color: var(--jp-ui-inverse-font-color0) !important;
+  /* Text color for selected item on hover */
 }
 
 .MuiSwitch-root {
   .MuiSwitch-switchBase {
     color: var(--jp-layout-color3);
   }
+
   .Mui-checked {
     color: var(--jp-brand-color1);
   }
+
   .MuiSwitch-track {
     background-color: var(--jp-layout-color3);
     opacity: 0.5;
   }
-  .Mui-checked + .MuiSwitch-track {
+
+  .Mui-checked+.MuiSwitch-track {
     background-color: var(--jp-brand-color1);
     opacity: 0.8;
   }
@@ -442,6 +455,7 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
     .MuiSwitch-switchBase {
       color: var(--jp-layout-color4);
     }
+
     .MuiSwitch-track {
       background-color: var(--jp-layout-color4);
     }
@@ -521,11 +535,11 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   background-color: transparent !important;
 }
 
-.pretzelParentContainerAI > div:not(.fixed) {
+.pretzelParentContainerAI>div:not(.fixed) {
   transition: all 0.3s ease;
 }
 
-.pretzelParentContainerAI > div.fixed {
+.pretzelParentContainerAI>div.fixed {
   position: fixed;
   bottom: 0;
   width: 100%;
@@ -571,6 +585,7 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -603,6 +618,20 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   opacity: 1;
 }
 
-#pretzelai-chat-panel div.lines-content.monaco-editor-background div.contentWidgets > div {
+.jp-pretzelai-rendermime-markdown .code-toolbar button {
+  padding: 4px 5px !important;
+}
+
+#pretzelai-chat-panel div.lines-content.monaco-editor-background div.contentWidgets>div {
   font-size: 0.75rem !important;
+}
+
+#pretzelai-chat-panel h1,
+#pretzelai-chat-panel h2,
+#pretzelai-chat-panel h3,
+#pretzelai-chat-panel h4,
+#pretzelai-chat-panel h5,
+#pretzelai-chat-panel h6 {
+  padding-top: 10px;
+  padding-bottom: 5px;
 }

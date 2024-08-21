@@ -7,8 +7,8 @@
     "clean": "rimraf build"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.9",
-    "@jupyterlab/application-extension": "^4.2.9",
+    "@jupyterlab/application": "^4.2.10",
+    "@jupyterlab/application-extension": "^4.2.10",
     "@jupyterlab/apputils-extension": "^4.2.0",
     "@jupyterlab/builder": "^4.2.0",
     "@jupyterlab/celltags-extension": "^4.2.0",

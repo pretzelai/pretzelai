@@ -38,7 +38,8 @@ export function CodeToolbar(props: CodeToolbarProps): JSX.Element | null {
         display: 'flex',
         justifyContent: 'flex-end',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        backgroundColor: 'var(--jp-cell-editor-background)',
+        opacity: 0.75,
         borderBottomLeftRadius: '6px',
         marginBottom: '-2px'
       }}

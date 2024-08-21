@@ -161,6 +161,16 @@ export async function processVariables(
         const sampleRows = await getVariableValue(`${variableName}.sample(n=5).to_csv(index=False)`, notebookTracker);
         varValues += `\n\`${variableName}\` is a DataFrame. Five random rows from this DataFrame are shown below as CSV:\n`;
         varValues += `\`\`\`\n${sampleRows}\n\`\`\`\n`;
+      } else if (variableType?.includes('function')) {
+        const functionDefinition = await executeCode(notebookTracker!.currentWidget!.sessionContext!.session!.kernel!, `import inspect; print(inspect.getsource(${variableName}))`);
+        varValues += `\n\`${variableName}\` is a function. Its definition is:\n`;
+        varValues += `\`\`\`python\n${functionDefinition}\n\`\`\`\n`;
+      } else if (variableType?.includes('type')) {
+        const classDefinition = await executeCode(notebookTracker!.currentWidget!.sessionContext!.session!.kernel!, `import inspect; print(inspect.getsource(${variableName}))`);
+        if (classDefinition) {
+          varValues += `\n\`${variableName}\` is a class. Its definition is:\n`;
+          varValues += `\`\`\`python\n${classDefinition}\n\`\`\`\n`;
+        }
       } else if (variableType) {
         const variableValue = await getVariableValue(variableName, notebookTracker);
         varValues += `\n\`${variableName}\` is a Python variable of type \`${variableType}\` with value \`${variableValue}\`\n`;
