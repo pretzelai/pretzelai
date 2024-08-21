@@ -9,7 +9,7 @@
     "watch": "webpack --watch"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.9",
+    "@jupyterlab/application": "^4.2.10",
     "@jupyterlab/coreutils": "^6.2.0",
     "@jupyterlab/observables": "^5.2.0",
     "@jupyterlab/theme-light-extension": "^4.2.0",
