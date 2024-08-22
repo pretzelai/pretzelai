@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /*
  * Copyright (c) Pretzel AI GmbH.
  * This file is part of the Pretzel project and is licensed under the
@@ -168,6 +169,7 @@ export function Chat({
   const [editorValue, setEditorValue] = useState('');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
+  const [base64Images, setBase64Images] = useState<string[]>([]);
 
   const fetchChatHistory = async () => {
     const notebook = notebookTracker?.currentWidget;
@@ -281,6 +283,43 @@ export function Chat({
     scrollToBottom();
   }, [messages]);
 
+  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const items = event.clipboardData?.items;
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          if (blob) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const base64Image = e.target?.result as string;
+              setBase64Images((prevImages) => [...prevImages, base64Image]);
+            };
+            reader.readAsDataURL(blob);
+          }
+        } else if (item.type === 'text/plain') {
+          item.getAsString((text) => {
+            if (editorRef.current) {
+              const position = editorRef.current.getPosition();
+              editorRef.current.executeEdits('paste', [{
+                range: new monaco.Range(
+                  position!.lineNumber,
+                  position!.column,
+                  position!.lineNumber,
+                  position!.column
+                ),
+                text: text,
+                forceMoveMarkers: true
+              }]);
+            }
+          });
+        }
+      }
+    }
+  }, []);
+
   const onSend = async (editorValueFromEvent = editorValue) => {
     if (editorValueFromEvent.trim() === '' || isAiGenerating) {
       return;
@@ -317,6 +356,11 @@ export function Chat({
         }))
       ];
 
+      const imageMessages = base64Images.map((base64Image) => ({
+        type: 'image_url',
+        image_url: { url: base64Image }
+      }));
+
       (async () => {
         const topSimilarities = await getTopSimilarities(
           editorValueFromEvent,
@@ -345,7 +389,7 @@ export function Chat({
           ollamaBaseUrl,
           groqApiKey,
           renderChat,
-          messages: formattedMessages as ChatCompletionMessage[],
+          messages: [...formattedMessages, ...imageMessages] as ChatCompletionMessage[],
           topSimilarities,
           activeCellCode,
           selectedCode,
@@ -360,6 +404,7 @@ export function Chat({
     });
 
     setEditorValue('');
+    setBase64Images([]); // Clear images after sending
   };
 
   const onSendWithoutContext = async (editorValueFromEvent = editorValue) => {
@@ -517,6 +562,39 @@ export function Chat({
         globalState.isMonacoRegistered = true;
       }
 
+      editor.onDidPaste((e) => {
+        // handlePaste(editor, e);
+        console.log('Pasted content:', e);
+      });
+
+      // editor.onDidPaste((e) => {
+      //   // Get the clipboard content
+      //   navigator.clipboard.readText().then((clipboardText) => {
+      //     // Log or process the clipboard content
+      //     console.log('Pasted content:', clipboardText);
+      //     // You can perform additional actions with the clipboard text here
+      //   }).catch((err) => {
+      //     console.error('Failed to read clipboard contents: ', err);
+      //   });
+      // });
+
+      // editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, async function () {
+      //   // try {
+      //   //   const clipboardText = await navigator.clipboard.readText();
+      //   //   editor.trigger('editor', 'paste', {
+      //   //     text: clipboardText
+      //   //   });
+      //   // } catch (err) {
+      //   //   console.error('Failed to read clipboard contents: ', err);
+      //   // }
+      //   try {
+      //     editor.trigger('keyboard', 'editor.action.clipboardPasteAction', null);
+      //   } catch (err) {
+      //     console.error('Failed to trigger paste action: ', err);
+      //   }
+      // });
+
+
       editor.onKeyDown((event: monaco.IKeyboardEvent) => {
         // Check if autocomplete widget is visible
         const isAutocompleteWidgetVisible = () => {
@@ -572,11 +650,11 @@ export function Chat({
           event.preventDefault();
           restoreChat(1);
         }
-
       });
     },
     [restoreChat, isAiGenerating, clearChat, onSendWithoutContext]
   );
+
 
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
@@ -633,6 +711,7 @@ export function Chat({
             border: '1px solid var(--jp-border-color1)',
             background: 'var(--vscode-editor-background)'
           }}
+          onPaste={handlePaste}
         >
           <Editor
             height="100px"

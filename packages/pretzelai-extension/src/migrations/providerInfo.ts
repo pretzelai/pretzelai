@@ -16,6 +16,7 @@ export interface IProviderInfo {
       description: string;
       canBeUsedForChat: boolean;
       canBeUsedForInlineCompletion: boolean;
+      canBeUsedForImages: boolean;
     };
   };
   apiSettings?: {
@@ -42,7 +43,8 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               displayName: "Pretzel's Free AI Server (recommended)",
               description: 'Best for most users. Free and no API key required. Fast and accurate.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: true
             }
           }
         },
@@ -54,19 +56,22 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               displayName: 'GPT-4 Turbo',
               description: 'Most capable GPT-4 model but slower than GPT-4o.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: true
             },
             'gpt-4o': {
               displayName: 'GPT-4o',
               description: 'Fast and accurate. Cheaper than GPT-4 Turbo, but slightly less capable.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: true
             },
             'gpt-4o-mini': {
               displayName: 'GPT-4o Mini',
               description: 'Fast and cost-effective model for simpler tasks. Good balance of speed and capability.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: true
             }
           },
           apiSettings: {
@@ -90,13 +95,15 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               displayName: 'GPT-4',
               description: 'Most advanced GPT-4 model available on Azure.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: false
             },
             'gpt-35-turbo': {
               displayName: 'GPT-3.5 Turbo',
               description: 'Faster and more cost-effective model for many tasks.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: false
             }
           },
           apiSettings: {
@@ -122,13 +129,15 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               displayName: 'Codestral',
               description: 'Fast and accurate code generation model.',
               canBeUsedForChat: false,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: false
             },
             'mistral-large-latest': {
               displayName: 'Mistral Large',
               description: 'General Purpose LLM with slighly less performance and accuracy compared to GPT-4.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: false
             }
           },
           apiSettings: {
@@ -147,25 +156,29 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               description:
                 'The best model from Anthropic. Fast and highly capable, better than GPT-4 series of models.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: true
             },
             'claude-3-opus-20240229': {
               displayName: 'Claude-3 Opus',
               description: 'Slow but highly capable model from Anthropic.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: true
             },
             'claude-3-sonnet-20240229': {
               displayName: 'Claude-3 Sonnet',
               description: 'Balanced model for various tasks.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: true
             },
             'claude-3-haiku-20240307': {
               displayName: 'Claude-3 Haiku',
               description: 'Fastest Claude model, good for simpler tasks.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: true
             }
           },
           apiSettings: {
@@ -196,25 +209,29 @@ export function getProvidersInfo(version: string): IProvidersInfo {
               description:
                 'GPT-4 Turbo class open source LLM from Meta. NOTE! Please make sure you have access to this model in Groq.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: false
             },
             'llama-3.1-70b-versatile': {
               displayName: 'LLaMA 3.1 70B Versatile',
               description: 'GPT-4o class model from Meta',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: false
             },
             'llama-3.1-8b-instant': {
               displayName: 'LLaMA 3.1 8B Instant',
               description: 'Small GPT-3.5 class model from Meta. Instant completions',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: false
             },
             'gemma2-9b-it': {
               displayName: 'Gemma2 9B IT',
               description: 'Small open-source language model from Google, optimized for instruction-following tasks.',
               canBeUsedForChat: true,
-              canBeUsedForInlineCompletion: true
+              canBeUsedForInlineCompletion: true,
+              canBeUsedForImages: false
             }
           },
           apiSettings: {

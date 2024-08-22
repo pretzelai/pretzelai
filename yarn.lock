@@ -4915,7 +4915,7 @@ __metadata:
     groq-sdk: ^0.5.0
     jest: ^29.2.0
     lodash: ~4.17.21
-    monaco-editor: ^0.47.0
+    monaco-editor: ^0.48.0
     npm-run-all: ^4.1.5
     openai: ^4.38.0
     posthog-js: ^1.130.2
@@ -4937,7 +4937,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=a66e89&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=15342b&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
@@ -4971,12 +4971,12 @@ __metadata:
     codemirror: ~6.0.1
     groq-sdk: ^0.5.0
     lodash: ~4.17.21
-    monaco-editor: ^0.47.0
+    monaco-editor: ^0.48.0
     openai: ^4.38.0
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: b265a77598741f8101404497cbe50d8e0d6d59cb47c6bf4493a7b0eaf4a809d9c366378de1e1ee1d9a56e74029a7e1a49c4d48015029c17c0c9ec10f8222730f
+  checksum: e1fb8f3cd4a6262eeccac6825eaae80863c71dc9ad4096ee6345f894b645aca9fe188dc2f97b85cce21fbb78da8be01dfeee7b80555f8e61543e3a1a5f847f02
   languageName: node
   linkType: hard
 
@@ -17281,10 +17281,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"monaco-editor@npm:^0.47.0":
-  version: 0.47.0
-  resolution: "monaco-editor@npm:0.47.0"
-  checksum: a1c5fe6a0d71214aa2fd4fd635f89a7df6ad599e4e01492a268eb70a456e7a29dfa301324e00b577eaf9fa69813b8a28924980ab8457d89faf14d13fcbbc2d6e
+"monaco-editor@npm:^0.48.0":
+  version: 0.48.0
+  resolution: "monaco-editor@npm:0.48.0"
+  checksum: 611eaded772935a8b7491325672a165efcb5fde69da4fabd822eae799765655fb55b4ef0fac411103a49c65679c597da82177e06f6f466b001af6117e8107e28
   languageName: node
   linkType: hard
 
