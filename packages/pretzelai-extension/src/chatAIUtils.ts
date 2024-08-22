@@ -111,22 +111,28 @@ export const chatAIStream = async ({
   signal: AbortSignal;
   notebookTracker: INotebookTracker | null;
 }): Promise<void> => {
-  const lastContent = messages[messages.length - 1].content as string;
+  const lastMessage = messages[messages.length - 1].content;
   const lastContentWithInjection = await generateChatPrompt(
-    lastContent,
+    Array.isArray(lastMessage) ? lastMessage[0].text : lastMessage,
     setReferenceSource,
     notebookTracker,
     topSimilarities,
     activeCellCode,
     selectedCode
   );
-  const messagesWithInjection = [...messages.slice(0, -1), { role: 'user', content: lastContentWithInjection }];
+
+  const updatedLastMessage = Array.isArray(lastMessage)
+    ? [{ type: 'text', text: lastContentWithInjection }, ...lastMessage.slice(1)]
+    : lastContentWithInjection;
+
+  const messagesWithInjection = [...messages.slice(0, -1), { role: 'user', content: updatedLastMessage }];
   if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && messages) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
       baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
     });
+
     const stream = await openai.chat.completions.create(
       {
         model: aiChatModelString,

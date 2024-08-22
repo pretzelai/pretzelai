@@ -33,10 +33,12 @@ import { ServerConnection } from '@jupyterlab/services';
 import posthog from 'posthog-js';
 import MistralClient from '@mistralai/mistralai';
 import { IThemeManager } from '@jupyterlab/apputils';
-import { Editor, Monaco } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
 import { globalState } from './globalState';
 import { Embedding } from './prompt';
+import * as monaco from 'monaco-editor';
+import { loader } from '@monaco-editor/react';
+loader.config({ monaco }); // BUG FIX - WAS PICKING UP OLD VERSION OF MONACO FROM JSDELIVR
+import { Editor, Monaco } from '@monaco-editor/react';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -283,10 +285,10 @@ export function Chat({
     scrollToBottom();
   }, [messages]);
 
-  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const items = event.clipboardData?.items;
-    if (items) {
+  const handlePaste = useCallback((editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
+    const clipboardData = event.clipboardEvent?.clipboardData;
+    if (clipboardData) {
+      const items = clipboardData.items;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (item.type.indexOf('image') !== -1) {
@@ -338,7 +340,15 @@ export function Chat({
 
     const newMessage = {
       id: String(messages.length + 1),
-      content: inputMarkdown,
+      content: base64Images.length > 0
+        ? [
+          { type: "text", text: inputMarkdown },
+          ...base64Images.map(base64Image => ({
+            type: "image_url",
+            image_url: { url: base64Image }
+          }))
+        ]
+        : inputMarkdown,
       role: 'user'
     };
 
@@ -355,11 +365,6 @@ export function Chat({
           content: msg.content
         }))
       ];
-
-      const imageMessages = base64Images.map((base64Image) => ({
-        type: 'image_url',
-        image_url: { url: base64Image }
-      }));
 
       (async () => {
         const topSimilarities = await getTopSimilarities(
@@ -389,7 +394,7 @@ export function Chat({
           ollamaBaseUrl,
           groqApiKey,
           renderChat,
-          messages: [...formattedMessages, ...imageMessages] as ChatCompletionMessage[],
+          messages: formattedMessages as ChatCompletionMessage[],
           topSimilarities,
           activeCellCode,
           selectedCode,
@@ -563,37 +568,8 @@ export function Chat({
       }
 
       editor.onDidPaste((e) => {
-        // handlePaste(editor, e);
-        console.log('Pasted content:', e);
+        handlePaste(editor, e);
       });
-
-      // editor.onDidPaste((e) => {
-      //   // Get the clipboard content
-      //   navigator.clipboard.readText().then((clipboardText) => {
-      //     // Log or process the clipboard content
-      //     console.log('Pasted content:', clipboardText);
-      //     // You can perform additional actions with the clipboard text here
-      //   }).catch((err) => {
-      //     console.error('Failed to read clipboard contents: ', err);
-      //   });
-      // });
-
-      // editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, async function () {
-      //   // try {
-      //   //   const clipboardText = await navigator.clipboard.readText();
-      //   //   editor.trigger('editor', 'paste', {
-      //   //     text: clipboardText
-      //   //   });
-      //   // } catch (err) {
-      //   //   console.error('Failed to read clipboard contents: ', err);
-      //   // }
-      //   try {
-      //     editor.trigger('keyboard', 'editor.action.clipboardPasteAction', null);
-      //   } catch (err) {
-      //     console.error('Failed to trigger paste action: ', err);
-      //   }
-      // });
-
 
       editor.onKeyDown((event: monaco.IKeyboardEvent) => {
         // Check if autocomplete widget is visible
@@ -652,7 +628,7 @@ export function Chat({
         }
       });
     },
-    [restoreChat, isAiGenerating, clearChat, onSendWithoutContext]
+    [restoreChat, isAiGenerating, clearChat, onSendWithoutContext, handlePaste]
   );
 
 
@@ -693,7 +669,10 @@ export function Chat({
             )}
             <RendermimeMarkdown
               rmRegistry={rmRegistry}
-              markdownStr={message.role === 'user' ? '***You:*** ' + message.content : '***AI:*** ' + message.content}
+              markdownStr={message.role === 'user'
+                ? '***You:*** ' + (Array.isArray(message.content) ? message.content[0].text : message.content)
+                : '***AI:*** ' + (Array.isArray(message.content) ? message.content[0].text : message.content)
+              }
               notebookTracker={notebookTracker}
               role={message.role}
             />
@@ -711,7 +690,6 @@ export function Chat({
             border: '1px solid var(--jp-border-color1)',
             background: 'var(--vscode-editor-background)'
           }}
-          onPaste={handlePaste}
         >
           <Editor
             height="100px"
