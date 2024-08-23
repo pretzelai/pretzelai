@@ -295,8 +295,19 @@ export function Chat({
           if (blob) {
             const reader = new FileReader();
             reader.onload = (e) => {
-              const base64Image = e.target?.result as string;
-              setBase64Images((prevImages) => [...prevImages, base64Image]);
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  ctx.drawImage(img, 0, 0);
+                  const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
+                  setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
+                }
+              };
+              img.src = e.target?.result as string;
             };
             reader.readAsDataURL(blob);
           }
