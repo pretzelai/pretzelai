@@ -153,6 +153,30 @@ const ErrorContainer = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(2)
 }));
 
+const isPretzelAIHostedVersion = window.location.hostname.includes('pretzelai.app');
+
+// Function to fetch subscription status
+const fetchSubscriptionStatus = async () => {
+  try {
+    const url = window.location.href;
+    const emailMatch = url.match(/\/user\/([^/]+)\/lab/);
+    const email = emailMatch ? decodeURIComponent(emailMatch[1]) : null;
+
+    const response = await fetch('https://issubscribed.pretzelai.app', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email })
+    });
+    const data = await response.json();
+    return data.isSubscribed;
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    return false;
+  }
+};
+
 export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegistry }) => {
   const [tempSettings, setTempSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -164,6 +188,13 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     inlineCompletion: { provider: '', model: '' }
   });
   const [providersInfo, setProvidersInfo] = useState<IProvidersInfo>({});
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  useEffect(() => {
+    if (isPretzelAIHostedVersion) {
+      fetchSubscriptionStatus().then(isSubscribed => setIsSubscribed(isSubscribed));
+    }
+  }, []);
 
   useEffect(() => {
     if (Object.keys(validationErrors).length > 0) {
@@ -812,18 +843,43 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     <Box>
       <SectionTitle variant="h6">Other Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
-        <Grid item xs={6}>
-          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-            Enable PostHog Prompt Telemetry
-          </InputLabel>
-        </Grid>
-        <Grid item xs={6}>
-          <Switch
-            size="small"
-            checked={tempSettings.features.posthogTelemetry.posthogPromptTelemetry.enabled}
-            onChange={e => handleChange('features.posthogTelemetry.posthogPromptTelemetry.enabled', e.target.checked)}
-          />
-        </Grid>
+        {isPretzelAIHostedVersion ? (
+          <>
+            <Grid item xs={6}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
+                We use telemetry to improve our product {'https://withpretzel.com/termsandconditions'}.
+                {!isSubscribed && 'To disable telemetry, upgrade at https://subscription.pretzelai.app'}
+              </InputLabel>
+            </Grid>
+            <Grid item xs={6}>
+              <Switch
+                size="small"
+                disabled={!isSubscribed}
+                checked={tempSettings.features.posthogTelemetry.posthogGeneralTelemetry.enabled}
+                onChange={e =>
+                  handleChange('features.posthogTelemetry.posthogGeneralTelemetry.enabled', e.target.checked)
+                }
+              />
+            </Grid>
+          </>
+        ) : (
+          <>
+            <Grid item xs={6}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
+                Enable PostHog Prompt Telemetry
+              </InputLabel>
+            </Grid>
+            <Grid item xs={6}>
+              <Switch
+                size="small"
+                checked={tempSettings.features.posthogTelemetry.posthogPromptTelemetry.enabled}
+                onChange={e =>
+                  handleChange('features.posthogTelemetry.posthogPromptTelemetry.enabled', e.target.checked)
+                }
+              />
+            </Grid>
+          </>
+        )}
       </CompactGrid>
     </Box>
   );
