@@ -427,7 +427,15 @@ export function Chat({
 
     const newMessage = {
       id: String(messages.length + 1),
-      content: inputMarkdown,
+      content: base64ImagesRef.current.length > 0
+        ? [
+          { type: "text", text: inputMarkdown },
+          ...base64ImagesRef.current.map(base64Image => ({
+            type: "image",
+            data: base64Image
+          }))
+        ]
+        : inputMarkdown,
       role: 'user'
     };
 
@@ -478,6 +486,7 @@ export function Chat({
     });
 
     setEditorValue('');
+    setBase64Images([]); // Clear images after sending
   };
 
   const cancelGeneration = () => {
@@ -693,7 +702,7 @@ export function Chat({
 
       <Box sx={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
         {hoveredImage && (
-          <Box sx={{ marginBottom: 1, marginLeft: 1, marginRight: 1 }}>
+          <Box sx={{ marginBottom: 1, marginLeft: 1, marginRight: 1, backgroundColor: 'transparent' }}>
             <img src={hoveredImage} alt="Preview" />
           </Box>
         )}
