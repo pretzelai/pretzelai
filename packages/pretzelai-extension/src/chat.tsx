@@ -14,7 +14,6 @@ import { LabIcon } from '@jupyterlab/ui-components';
 import pretzelSvg from '../style/icons/pretzel.svg';
 import { Box, Typography } from '@mui/material';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
-import { ChatCompletionMessage } from 'openai/resources';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { ILabShell, JupyterFrontEnd } from '@jupyterlab/application';
 import {
@@ -344,8 +343,8 @@ export function Chat({
         ? [
           { type: "text", text: inputMarkdown },
           ...base64Images.map(base64Image => ({
-            type: "image_url",
-            image_url: { url: base64Image }
+            type: "image",
+            data: base64Image
           }))
         ]
         : inputMarkdown,
@@ -394,7 +393,7 @@ export function Chat({
           ollamaBaseUrl,
           groqApiKey,
           renderChat,
-          messages: formattedMessages as ChatCompletionMessage[],
+          messages: formattedMessages,
           topSimilarities,
           activeCellCode,
           selectedCode,
@@ -458,7 +457,7 @@ export function Chat({
           ollamaBaseUrl,
           groqApiKey,
           renderChat,
-          messages: formattedMessages as ChatCompletionMessage[],
+          messages: formattedMessages,
           topSimilarities: [],
           activeCellCode: '',
           selectedCode: '',
@@ -504,6 +503,7 @@ export function Chat({
   const clearChat = useCallback(() => {
     setMessages(initialMessage);
     setChatIndex(chatHistoryRef.current.length);
+    setBase64Images([]);
     posthog.capture('Chat Cleared', {
       chatLength: messages.length
     });

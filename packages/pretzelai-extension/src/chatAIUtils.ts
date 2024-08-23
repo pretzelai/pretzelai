@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /*
  * Copyright (c) Pretzel AI GmbH.
  * This file is part of the Pretzel project and is licensed under the
@@ -68,6 +69,52 @@ ${topSimilarities.join('\n```\n```python\n')}
   return output;
 };
 
+const processMessages = (messages: any[], provider: string, model: string): any[] => {
+  const processedMessages: any[] = [];
+
+  for (const message of messages) {
+    if (!Array.isArray(message.content)) {
+      processedMessages.push(message);
+      continue;
+    }
+
+    if (provider !== 'OpenAI' && provider !== 'Anthropic' && provider !== 'Pretzel AI') {
+      // If the provider doesn't support images, only keep the text content
+      const textContent = message.content.find(item => item.type === 'text')?.text || '';
+      processedMessages.push({ ...message, content: textContent });
+      continue;
+    }
+
+    // Process messages for image-supporting models
+    let processedContent: any[] = [];
+    for (const item of message.content) {
+      if (item.type === 'text') {
+        processedContent.push({ type: 'text', text: item.text });
+      } else if (item.type === 'image') {
+        if (provider === 'Anthropic') {
+          processedContent.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: item.data.split(',')[0].split(':')[1].split(';')[0],
+              data: item.data.split(',')[1]
+            }
+          });
+        } else if (provider === 'OpenAI' || provider === 'Pretzel AI') {
+          processedContent.push({
+            type: 'image_url',
+            image_url: { url: item.data }
+          });
+        } else {
+          throw new Error('Invalid provider');
+        }
+      }
+    }
+    processedMessages.push({ ...message, content: processedContent });
+  }
+  return processedMessages;
+};
+
 export const chatAIStream = async ({
   aiChatModelProvider,
   aiChatModelString,
@@ -102,7 +149,7 @@ export const chatAIStream = async ({
   ollamaBaseUrl?: string;
   groqApiKey?: string;
   renderChat: (message: string) => void;
-  messages: OpenAI.ChatCompletionMessage[];
+  messages: any[]; // types are too complex
   topSimilarities: string[];
   activeCellCode?: string;
   selectedCode?: string;
@@ -111,21 +158,22 @@ export const chatAIStream = async ({
   signal: AbortSignal;
   notebookTracker: INotebookTracker | null;
 }): Promise<void> => {
-  const lastMessage = messages[messages.length - 1].content;
-  const lastContentWithInjection = await generateChatPrompt(
-    Array.isArray(lastMessage) ? lastMessage[0].text : lastMessage,
+  const lastMessageContent = messages[messages.length - 1].content;
+  const lastMessageText = Array.isArray(lastMessageContent) ? lastMessageContent[0].text : lastMessageContent;
+  const lastMessageTextWithInjection = await generateChatPrompt(
+    lastMessageText,
     setReferenceSource,
     notebookTracker,
     topSimilarities,
     activeCellCode,
     selectedCode
   );
+  const updatedLastMessageContent = Array.isArray(lastMessageContent)
+    ? [{ type: 'text', text: lastMessageTextWithInjection }, ...lastMessageContent.slice(1)]
+    : lastMessageTextWithInjection;
+  const updatedMessages = [...messages.slice(0, -1), { role: 'user', content: updatedLastMessageContent }];
+  const processedMessages = processMessages(updatedMessages, aiChatModelProvider, aiChatModelString);
 
-  const updatedLastMessage = Array.isArray(lastMessage)
-    ? [{ type: 'text', text: lastContentWithInjection }, ...lastMessage.slice(1)]
-    : lastContentWithInjection;
-
-  const messagesWithInjection = [...messages.slice(0, -1), { role: 'user', content: updatedLastMessage }];
   if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && messages) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
@@ -136,7 +184,7 @@ export const chatAIStream = async ({
     const stream = await openai.chat.completions.create(
       {
         model: aiChatModelString,
-        messages: messagesWithInjection as ChatCompletionMessage[],
+        messages: processedMessages as ChatCompletionMessage[],
         stream: true
       },
       {
@@ -158,7 +206,7 @@ export const chatAIStream = async ({
     messages
   ) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
-    const events = await client.streamChatCompletions(deploymentId, messagesWithInjection as ChatCompletionMessage[]);
+    const events = await client.streamChatCompletions(deploymentId, processedMessages as ChatCompletionMessage[]);
     for await (const event of events) {
       for (const choice of event.choices) {
         if (choice.delta?.content) {
@@ -175,7 +223,7 @@ export const chatAIStream = async ({
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        messages: messagesWithInjection
+        messages: processedMessages
       }),
       signal
     });
@@ -197,7 +245,7 @@ export const chatAIStream = async ({
     const client = new MistralClient(mistralApiKey);
 
     // Convert messagesWithInjection to the required Message[] type
-    const convertedMessages = messagesWithInjection.map(msg => ({
+    const convertedMessages = processedMessages.map(msg => ({
       role: msg.role,
       content: msg.content || ''
     }));
@@ -215,7 +263,7 @@ export const chatAIStream = async ({
     setReferenceSource('');
     setIsAiGenerating(false);
   } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && messages) {
-    const filteredMessages = messagesWithInjection.filter((msg, index) => index !== 1);
+    const filteredMessages = processedMessages.filter((msg, index) => index !== 1);
     const stream = await streamAnthropicCompletion(anthropicApiKey, filteredMessages, aiChatModelString);
 
     for await (const chunk of stream) {
@@ -233,7 +281,7 @@ export const chatAIStream = async ({
       },
       body: JSON.stringify({
         model: aiChatModelString,
-        messages: messagesWithInjection,
+        messages: processedMessages,
         stream: true
       }),
       signal
@@ -262,7 +310,7 @@ export const chatAIStream = async ({
     const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
     const stream = await groq.chat.completions.create({
       model: aiChatModelString,
-      messages: messagesWithInjection as ChatCompletionMessageParam[],
+      messages: processedMessages as ChatCompletionMessageParam[],
       stream: true
     });
 
