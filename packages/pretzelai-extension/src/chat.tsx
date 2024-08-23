@@ -687,7 +687,7 @@ export function Chat({
 
       <Box sx={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
         {hoveredImage && (
-          <Box sx={{ marginBottom: 1 }}>
+          <Box sx={{ marginBottom: 1, marginLeft: 1, marginRight: 1 }}>
             <img src={hoveredImage} alt="Preview" />
           </Box>
         )}
@@ -707,9 +707,11 @@ export function Chat({
                   }
                 }
               }}
+              onMouseEnter={() => setHoveredImage(base64Image)}
+              onMouseLeave={() => setHoveredImage(null)}
             >
               <Chip
-                label={`Image ${index + 1}`}
+                label="Image"
                 size="small"
                 sx={{
                   backgroundColor: 'var(--jp-layout-color2)',
