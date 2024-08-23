@@ -16,13 +16,14 @@ import Groq from 'groq-sdk';
 import { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
 import { processVariables } from './utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
+import { Dispatch, SetStateAction } from 'react';
 
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
 
 export const generateChatPrompt = async (
   lastContent: string,
-  setReferenceSource: (source: string) => void,
+  setReferenceSource: Dispatch<SetStateAction<string>>,
   notebookTracker: INotebookTracker | null,
   topSimilarities?: string[],
   activeCellCode?: string,
@@ -40,7 +41,7 @@ export const generateChatPrompt = async (
   let output = `${processedInput}\n`;
 
   if (!selectedCode && !activeCellCode && (!topSimilarities || topSimilarities.length === 0)) {
-    setReferenceSource('No specific code context');
+    setReferenceSource(prev => (prev ? prev : 'No context'));
     output += `My main question is the above. Your goal is to answer my question briefly and don't mention the code unless necessary.\n`;
   }
 
@@ -59,7 +60,7 @@ ${selectedCode || activeCellCode}
   }
 
   if (topSimilarities && topSimilarities.length > 0) {
-    setReferenceSource(selectedCode || activeCellCode ? 'Current code and related cells' : 'Related cells in notebook');
+    setReferenceSource(selectedCode || activeCellCode ? 'Current code, Related cells' : 'Related cells');
     output += `Cells containing related content are:
 \`\`\`python
 ${topSimilarities.join('\n```\n```python\n')}
@@ -153,12 +154,21 @@ export const chatAIStream = async ({
   topSimilarities: string[];
   activeCellCode?: string;
   selectedCode?: string;
-  setReferenceSource: (source: string) => void;
+  setReferenceSource: Dispatch<SetStateAction<string>>;
   setIsAiGenerating: (isGenerating: boolean) => void;
   signal: AbortSignal;
   notebookTracker: INotebookTracker | null;
 }): Promise<void> => {
   const lastMessageContent = messages[messages.length - 1].content;
+
+  // FIXME: This should be handled at each provider level, this is a workaround
+  if (aiChatModelProvider === 'OpenAI' || aiChatModelProvider === 'Anthropic' || aiChatModelProvider === 'Pretzel AI') {
+    if (Array.isArray(lastMessageContent)) {
+      setReferenceSource(prevSource => (prevSource ? `${prevSource}, Image` : 'Image'));
+    }
+  }
+
+  // Process the last message to add context
   const lastMessageText = Array.isArray(lastMessageContent) ? lastMessageContent[0].text : lastMessageContent;
   const lastMessageTextWithInjection = await generateChatPrompt(
     lastMessageText,

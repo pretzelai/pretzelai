@@ -663,27 +663,40 @@ export function Chat({
         {messages.map((message, index) => (
           <Box key={`message-${index}`}>
             {referenceSource && message.role === 'assistant' && messages[messages.length - 1].id === message.id && (
-              <Box
-                sx={{
-                  backgroundColor: 'var(--jp-layout-color2)',
-                  borderRadius: '4px',
-                  display: 'inline-block',
-                  marginLeft: '0px',
-                  marginTop: '8px',
-                  marginBottom: '2px',
-                  padding: '2px 6px'
-                }}
-              >
+              <Box sx={{ display: 'flex', alignItems: 'center', marginTop: '8px', marginBottom: '2px' }}>
                 <Typography
                   color={'var(--jp-ui-font-color1)'}
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '1em'
+                    fontSize: '1em',
+                    marginRight: '4px'
                   }}
                 >
-                  {`Using ${referenceSource}...`}
+                  Using
                 </Typography>
+                {referenceSource.split(',').map((ref, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      backgroundColor: 'var(--jp-layout-color2)',
+                      borderRadius: '4px',
+                      display: 'inline-block',
+                      marginLeft: '0px',
+                      padding: '2px 6px',
+                      marginRight: '4px'
+                    }}
+                  >
+                    <Typography
+                      color={'var(--jp-ui-font-color1)'}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '1em'
+                      }}
+                    >
+                      {ref.trim()}
+                    </Typography>
+                  </Box>
+                ))}
               </Box>
             )}
             <RendermimeMarkdown
