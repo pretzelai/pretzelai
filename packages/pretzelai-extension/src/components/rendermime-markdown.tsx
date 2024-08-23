@@ -1,10 +1,3 @@
-/* -----------------------------------------------------------------------------
-| Copyright (c) Jupyter Development Team.
-| Distributed under the terms of the Modified BSD License.
-|----------------------------------------------------------------------------*/
-// This file is a modified version of the original file from Jupyter AI.
-// https://github.com/jupyterlab/jupyter-ai/blob/main/packages/jupyter-ai/src/components/rendermime-markdown.tsx
-
 import React, { useEffect, useState } from 'react';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { CodeToolbar, CodeToolbarProps } from './code-blocks/code-toolbar';
@@ -12,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { Box, Tooltip } from '@mui/material';
 import { imageIcon } from '@jupyterlab/ui-components';
-
 
 interface IImageIconProps {
   base64Image: string;
@@ -33,7 +25,9 @@ function ImageIcon({ base64Image }: IImageIconProps): JSX.Element {
       <Box
         sx={{
           display: 'inline-flex',
-          marginLeft: '4px',
+          marginLeft: 0,
+          height: '16px',
+          width: '16px',
           cursor: 'pointer',
           '&:hover': {
             opacity: 0.7,
@@ -123,11 +117,12 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
         return createPortal(<CodeToolbar {...codeToolbarProps} />, codeToolbarRoot);
       })}
       {props.images && props.images.length > 0 && (
-        <div style={{ marginTop: '4px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', marginTop: '4px' }}>
+          <p style={{ margin: 0, marginRight: '5px', fontWeight: 'bold', fontStyle: 'italic' }}>Attached images:</p>
           {props.images.map((base64Image, index) => (
             <ImageIcon key={index} base64Image={base64Image} />
           ))}
-        </div>
+        </span>
       )}
     </div>
   );
