@@ -307,7 +307,7 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   font-size: 0.8rem;
 }
 
-.jp-pretzelai-rendermime-markdown .jp-RenderedHTMLCommon>* {
+.jp-pretzelai-rendermime-markdown .jp-RenderedHTMLCommon > * {
   padding: 0;
   margin: 0;
 }
@@ -322,7 +322,7 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   font-size: 0.775rem;
 }
 
-#jp-right-stack .jp-pretzelai-rendermime-markdown pre>code {
+#jp-right-stack .jp-pretzelai-rendermime-markdown pre > code {
   background-color: inherit;
   overflow-x: inherit;
   white-space: inherit;
@@ -341,7 +341,7 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   margin-left: 70px;
 }
 
-#jp-right-stack>.lm-Widget {
+#jp-right-stack > .lm-Widget {
   min-width: 450px !important;
 }
 
@@ -443,7 +443,7 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
     opacity: 0.5;
   }
 
-  .Mui-checked+.MuiSwitch-track {
+  .Mui-checked + .MuiSwitch-track {
     background-color: var(--jp-brand-color1);
     opacity: 0.8;
   }
@@ -535,11 +535,11 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   background-color: transparent !important;
 }
 
-.pretzelParentContainerAI>div:not(.fixed) {
+.pretzelParentContainerAI > div:not(.fixed) {
   transition: all 0.3s ease;
 }
 
-.pretzelParentContainerAI>div.fixed {
+.pretzelParentContainerAI > div.fixed {
   position: fixed;
   bottom: 0;
   width: 100%;
@@ -622,7 +622,7 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   padding: 4px 5px !important;
 }
 
-#pretzelai-chat-panel div.lines-content.monaco-editor-background div.contentWidgets>div {
+#pretzelai-chat-panel div.lines-content.monaco-editor-background div.contentWidgets > div {
   font-size: 0.75rem !important;
 }
 
@@ -634,4 +634,10 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
 #pretzelai-chat-panel h6 {
   padding-top: 10px;
   padding-bottom: 5px;
+}
+
+#pretzelai-chat-panel div img {
+  max-width: 100%;
+  max-height: 70vh;
+  display: block;
 }
