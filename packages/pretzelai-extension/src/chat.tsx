@@ -35,6 +35,7 @@ import {
   PRETZEL_FOLDER,
   readEmbeddings
 } from './utils';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 loader.config({ monaco }); // BUG FIX - WAS PICKING UP OLD VERSION OF MONACO FROM JSDELIVR
 
 const pretzelIcon = new LabIcon({
@@ -636,6 +637,11 @@ export function Chat({
     }
   };
 
+  const removeImage = useCallback((indexToRemove: number) => {
+    setBase64Images(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
+    setHoveredImage(null);
+  }, []);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
@@ -689,12 +695,16 @@ export function Chat({
           {base64Images.map((base64Image, index) => (
             <Box
               key={index}
-              onMouseEnter={() => setHoveredImage(base64Image)}
-              onMouseLeave={() => setHoveredImage(null)}
               sx={{
-                cursor: 'pointer',
+                position: 'relative',
+                display: 'inline-block',
+                margin: '0 4px 4px 0',
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  backgroundColor: 'var(--jp-layout-color3)'
+                  transform: 'scale(1.05)',
+                  '& .delete-icon': {
+                    opacity: 1,
+                  }
                 }
               }}
             >
@@ -706,6 +716,43 @@ export function Chat({
                   color: 'var(--jp-ui-font-color1)',
                 }}
               />
+              <Box
+                className="delete-icon"
+                sx={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -8,
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--jp-layout-color3)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  opacity: 0,
+                  transition: 'all 0.2s ease-in-out',
+                  border: '2px solid var(--jp-layout-color1)',
+                  '&:hover': {
+                    backgroundColor: 'var(--jp-layout-color4)',
+                  }
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeImage(index);
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: 'var(--jp-ui-font-color1)',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </Typography>
+              </Box>
             </Box>
           ))}
         </Box>
