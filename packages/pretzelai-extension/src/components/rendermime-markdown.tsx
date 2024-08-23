@@ -1,44 +1,91 @@
-import React, { useEffect, useState } from 'react';
-import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { CodeToolbar, CodeToolbarProps } from './code-blocks/code-toolbar';
-import { createPortal } from 'react-dom';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { Box, Tooltip } from '@mui/material';
+import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { imageIcon } from '@jupyterlab/ui-components';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import { Box, IconButton, Modal, Tooltip } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { CodeToolbar, CodeToolbarProps } from './code-blocks/code-toolbar';
 
 interface IImageIconProps {
   base64Image: string;
 }
 
 function ImageIcon({ base64Image }: IImageIconProps): JSX.Element {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setZoom(1);
+  };
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 3));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.1));
 
   return (
-    <Tooltip
-      title={
-        <Box sx={{ maxWidth: '300px', maxHeight: '300px' }}>
-          <img src={base64Image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+    <>
+      <Tooltip title="Click to view image">
+        <Box
+          sx={{
+            display: 'inline-flex',
+            marginLeft: 0,
+            height: '16px',
+            width: '16px',
+            cursor: 'pointer',
+            '&:hover': {
+              opacity: 0.7,
+            },
+          }}
+          onClick={handleOpenModal}
+        >
+          <imageIcon.react width="16px" height="16px" />
         </Box>
-      }
-      open={isHovered}
-    >
-      <Box
-        sx={{
-          display: 'inline-flex',
-          marginLeft: 0,
-          height: '16px',
-          width: '16px',
-          cursor: 'pointer',
-          '&:hover': {
-            opacity: 0.7,
-          },
-        }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+      </Tooltip>
+      <Modal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        aria-labelledby="image-modal"
+        aria-describedby="image-modal-description"
       >
-        <imageIcon.react width="16px" height="16px" />
-      </Box>
-    </Tooltip>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            overflow: 'auto',
+          }}
+        >
+          <img
+            src={base64Image}
+            alt="Preview"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              transform: `scale(${zoom})`,
+              transition: 'transform 0.2s',
+            }}
+          />
+          <Box sx={{ position: 'absolute', top: 10, right: 10 }}>
+            <IconButton onClick={handleZoomIn} color="primary">
+              <ZoomInIcon />
+            </IconButton>
+            <IconButton onClick={handleZoomOut} color="primary">
+              <ZoomOutIcon />
+            </IconButton>
+          </Box>
+        </Box>
+      </Modal>
+    </>
   );
 }
 
