@@ -10,6 +10,43 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { CodeToolbar, CodeToolbarProps } from './code-blocks/code-toolbar';
 import { createPortal } from 'react-dom';
 import { INotebookTracker } from '@jupyterlab/notebook';
+import { Box, Tooltip } from '@mui/material';
+import { imageIcon } from '@jupyterlab/ui-components';
+
+
+interface IImageIconProps {
+  base64Image: string;
+}
+
+function ImageIcon({ base64Image }: IImageIconProps): JSX.Element {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Tooltip
+      title={
+        <Box sx={{ maxWidth: '300px', maxHeight: '300px' }}>
+          <img src={base64Image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </Box>
+      }
+      open={isHovered}
+    >
+      <Box
+        sx={{
+          display: 'inline-flex',
+          marginLeft: '4px',
+          cursor: 'pointer',
+          '&:hover': {
+            opacity: 0.7,
+          },
+        }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <imageIcon.react width="16px" height="16px" />
+      </Box>
+    </Tooltip>
+  );
+}
 
 const MD_MIME_TYPE = 'text/markdown';
 const RENDERMIME_MD_CLASS = 'jp-pretzelai-rendermime-markdown';
@@ -19,6 +56,7 @@ type RendermimeMarkdownProps = {
   rmRegistry: IRenderMimeRegistry;
   notebookTracker: INotebookTracker | null;
   role?: string;
+  images?: string[];
 };
 
 function escapeLatexDelimiters(text: string) {
@@ -84,6 +122,13 @@ function RendermimeMarkdownBase(props: RendermimeMarkdownProps): JSX.Element {
         const [codeToolbarRoot, codeToolbarProps] = codeToolbarDefn;
         return createPortal(<CodeToolbar {...codeToolbarProps} />, codeToolbarRoot);
       })}
+      {props.images && props.images.length > 0 && (
+        <div style={{ marginTop: '4px' }}>
+          {props.images.map((base64Image, index) => (
+            <ImageIcon key={index} base64Image={base64Image} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

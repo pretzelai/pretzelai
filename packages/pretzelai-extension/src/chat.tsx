@@ -707,6 +707,10 @@ export function Chat({
               }
               notebookTracker={notebookTracker}
               role={message.role}
+              images={Array.isArray(message.content)
+                ? (message.content as Array<any>).filter((item: any) => item.type === 'image').map((item: any) => item.data as string)
+                : []
+              }
             />
           </Box>
         ))}
