@@ -637,6 +637,14 @@ export function Chat({
     }
   };
 
+  const handleImageLoad = (event) => {
+    const chatPanel = document.querySelector('#pretzelai-chat-panel');
+    if (chatPanel) {
+      event.target.style.maxHeight = `${Math.floor(chatPanel.clientHeight * 0.7)}px`;
+    }
+  };
+
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
@@ -683,7 +691,7 @@ export function Chat({
       <Box sx={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
         {hoveredImage && (
           <Box sx={{ marginBottom: 1 }}>
-            <img src={hoveredImage} alt="Preview" style={{ maxWidth: '100%', display: 'block' }} />
+            <img src={hoveredImage} alt="Preview" style={{ maxWidth: '100%', display: 'block' }} onLoad={handleImageLoad} />
           </Box>
         )}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, margin: '0 0 0 10px' }}>
