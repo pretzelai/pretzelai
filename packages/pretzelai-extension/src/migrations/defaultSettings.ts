@@ -8,7 +8,7 @@
  * the root of the project) are licensed under AGPLv3.
  */
 
-import { returnDefaults_1_1 } from './migrate_1_0_to_1_1';
+import { returnDefaults, returnDefaults_1_1 } from './migration_functions';
 
 export const getDefaultSettings = (version: string) => {
   switch (version) {
@@ -16,6 +16,6 @@ export const getDefaultSettings = (version: string) => {
       return returnDefaults_1_1();
     // Add more cases for future versions
     default:
-      return returnDefaults_1_1(); // Fallback to the latest version
+      return returnDefaults(); // Fallback to the latest version
   }
 };
