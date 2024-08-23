@@ -21,6 +21,7 @@ function SplashScreen() {
   const isMac = /Mac/i.test(navigator.userAgent);
   const keyCombination = isMac ? 'Cmd + K' : 'Ctrl + K';
   const keyCombinationSidepanel = isMac ? 'Ctrl + Cmd + B' : 'Ctrl + Alt + B';
+  const isPretzelAIHostedVersion = window.location.hostname.includes('pretzelai.app');
 
   return (
     <div id="splash-screen">
@@ -47,22 +48,44 @@ function SplashScreen() {
             Go to <strong>Settings &gt; Pretzel AI Settings</strong> to configure AI models and services.
           </li>
         </ul>
-        <p style={{ marginTop: '30px' }}>
-          To better understand how users are using the new AI codegen features, we collect anonymized telemetry strictly
-          related to the AI features. We also collect the AI prompt (but not your code) which can be disabled in Pretzel
-          AI Settings.
-        </p>
-        <p>
-          We use cookies to make sure we remember you between browser sessions. Do you consent to the use of cookies for
-          this purpose?
-        </p>
+        {isPretzelAIHostedVersion ? (
+          <>
+            <p>
+              By using our free Service, you consent to our{' '}
+              <a href="https://withpretzel.com/termsandconditions" target="_blank" rel="noreferrer">
+                Terms & Conditions
+              </a>
+              , which include collection of session recordings and analytics data. There is no opt-out option available
+              for users of the free version.
+            </p>
+            <p>
+              If you wish to opt out of data collection, you may upgrade to our paid version. The paid version offers an
+              opt-out feature for session recordings and analytics. For more information and to upgrade, please visit{' '}
+              <a href="https://subscription.pretzelai.app">https://subscription.pretzelai.app</a>
+            </p>
+          </>
+        ) : (
+          <>
+            <p style={{ marginTop: '30px' }}>
+              To better understand how users are using the new AI codegen features, we collect anonymized telemetry
+              strictly related to the AI features. We also collect the AI prompt (but not your code) which can be
+              disabled in Pretzel AI Settings.
+            </p>
+            <p>
+              We use cookies to make sure we remember you between browser sessions. Do you consent to the use of cookies
+              for this purpose?
+            </p>
+          </>
+        )}
         <div className="splash-buttons">
           <div id="splash-accept" className="button" onClick={() => handleConsent('Yes')} role="button" tabIndex={0}>
             Accept
           </div>
-          <div id="splash-reject" className="button" onClick={() => handleConsent('No')} role="button" tabIndex={0}>
-            Reject
-          </div>
+          {!isPretzelAIHostedVersion && (
+            <div id="splash-reject" className="button" onClick={() => handleConsent('No')} role="button" tabIndex={0}>
+              Reject
+            </div>
+          )}
         </div>
       </div>
     </div>
