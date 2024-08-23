@@ -61,7 +61,7 @@ function SplashScreen() {
             <p>
               If you wish to opt out of data collection, you may upgrade to our paid version. The paid version offers an
               opt-out feature for session recordings and analytics. For more information and to upgrade, please visit{' '}
-              <a href="https://subscription.pretzelai.app">https://subscription.pretzelai.app</a>
+              <a href="https://withpretzel.com/subscribe">https://withpretzel.com/subscribe</a>
             </p>
           </>
         ) : (

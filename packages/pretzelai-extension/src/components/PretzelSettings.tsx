@@ -848,7 +848,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             <Grid item xs={6}>
               <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
                 We use telemetry to improve our product {'https://withpretzel.com/termsandconditions'}.
-                {!isSubscribed && 'To disable telemetry, upgrade at https://subscription.pretzelai.app'}
+                {!isSubscribed && 'To disable telemetry, upgrade at https://withpretzel.com/subscribe'}
               </InputLabel>
             </Grid>
             <Grid item xs={6}>
