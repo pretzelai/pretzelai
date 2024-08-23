@@ -18,6 +18,8 @@ import { ServerConnection } from '@jupyterlab/services';
 import { LabIcon } from '@jupyterlab/ui-components';
 import MistralClient from '@mistralai/mistralai';
 import { Editor, loader, Monaco } from '@monaco-editor/react';
+import ImageIcon from '@mui/icons-material/Image';
+import UploadIcon from '@mui/icons-material/Upload';
 import { Box, Chip, Typography } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { OpenAI } from 'openai';
@@ -566,7 +568,8 @@ export function Chat({
       // Add placeholder
       const placeholder =
         `Ask AI (toggle with: ${keyCombination}).\n` +
-        `Use Esc to jump back to cell. Shift + Enter for newline.\n` +
+        `Shift + Enter for newline. Esc to jump back to cell.\n` +
+        `Paste image from clipboard with ${isMac ? 'Cmd+V' : 'Ctrl+V'}.\n` +
         `Current cell and other relevant cells are available as context to the AI.`;
 
       placeholderWidgetRef.current = new PlaceholderContentWidget(placeholder, editor);
@@ -667,6 +670,34 @@ export function Chat({
     setBase64Images(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
     setHoveredImage(null);
   }, []);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+              const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
+              setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
+            }
+          };
+          img.src = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Please upload a valid image file.');
+      }
+    }
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -919,6 +950,27 @@ export function Chat({
                   Navigate to the next chat in history
                   <br />
                   Shortcut: <strong>{historyNextKeyCombination}</strong>
+                </div>
+              </div>
+              <div className="upload-image-button-container">
+                <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="image-upload"
+                  type="file"
+                  onChange={handleImageUpload}
+                />
+                <button
+                  className="pretzelInputSubmitButton"
+                  title="Upload Image"
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                >
+                  <UploadIcon />
+                </button>
+                <div className="tooltip">
+                  Upload an image.
+                  <br />
+                  Paste image from clipboard with <strong>{isMac ? 'Cmd+V' : 'Ctrl+V'}</strong>
                 </div>
               </div>
             </Box>

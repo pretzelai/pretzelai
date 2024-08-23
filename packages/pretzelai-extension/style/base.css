@@ -361,7 +361,8 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
 #pretzelai-chat-panel .submit-button-container,
 #pretzelai-chat-panel .clear-button-container,
 #pretzelai-chat-panel .history-prev-button-container,
-#pretzelai-chat-panel .history-next-button-container {
+#pretzelai-chat-panel .history-next-button-container,
+#pretzelai-chat-panel .upload-image-button-container {
   position: relative;
   display: inline-block;
 }
@@ -369,7 +370,8 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
 #pretzelai-chat-panel .submit-button-container .tooltip,
 #pretzelai-chat-panel .clear-button-container .tooltip,
 #pretzelai-chat-panel .history-prev-button-container .tooltip,
-#pretzelai-chat-panel .history-next-button-container .tooltip {
+#pretzelai-chat-panel .history-next-button-container .tooltip,
+#pretzelai-chat-panel .upload-image-button-container .tooltip {
   position: absolute;
   top: -40px;
   left: 50%;
@@ -392,10 +394,25 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   top: -55px;
 }
 
+#pretzelai-chat-panel .submit-button-container .tooltip {
+  transform: translateX(-18%) !important;
+  top: -55px;
+}
+
+#pretzelai-chat-panel .upload-image-button-container button {
+  padding: 2px 2px 1px 2px !important;
+}
+
+#pretzelai-chat-panel .upload-image-button-container svg {
+  width: 20px;
+  height: 20px;
+}
+
 #pretzelai-chat-panel .submit-button-container:hover .tooltip,
 #pretzelai-chat-panel .clear-button-container:hover .tooltip,
 #pretzelai-chat-panel .history-prev-button-container:hover .tooltip,
-#pretzelai-chat-panel .history-next-button-container:hover .tooltip {
+#pretzelai-chat-panel .history-next-button-container:hover .tooltip,
+#pretzelai-chat-panel .upload-image-button-container:hover .tooltip {
   visibility: visible;
   opacity: 1;
 }
