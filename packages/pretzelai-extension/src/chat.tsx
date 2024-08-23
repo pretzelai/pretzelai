@@ -35,7 +35,6 @@ import {
   PRETZEL_FOLDER,
   readEmbeddings
 } from './utils';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 loader.config({ monaco }); // BUG FIX - WAS PICKING UP OLD VERSION OF MONACO FROM JSDELIVR
 
 const pretzelIcon = new LabIcon({
@@ -170,6 +169,7 @@ export function Chat({
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
   const [base64Images, setBase64Images] = useState<string[]>([]);
+  const base64ImagesRef = useRef<string[]>([]);
   const [hoveredImage, setHoveredImage] = useState<string | null>(null);
 
   const fetchChatHistory = async () => {
@@ -321,6 +321,10 @@ export function Chat({
     }
   }, []);
 
+  useEffect(() => {
+    base64ImagesRef.current = base64Images;
+  }, [base64Images]);
+
   const onSend = async (editorValueFromEvent = editorValue) => {
     if (editorValueFromEvent.trim() === '' || isAiGenerating) {
       return;
@@ -339,10 +343,12 @@ export function Chat({
 
     const newMessage = {
       id: String(messages.length + 1),
-      content: base64Images.length > 0
+      // we need to use a Ref here because of the closure created by handleEditorDidMount
+      // that meant that when we used shortcuts, the updates state was not accessed
+      content: base64ImagesRef.current.length > 0
         ? [
           { type: "text", text: inputMarkdown },
-          ...base64Images.map(base64Image => ({
+          ...base64ImagesRef.current.map(base64Image => ({
             type: "image",
             data: base64Image
           }))
