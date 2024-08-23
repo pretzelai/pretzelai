@@ -8,14 +8,26 @@
  * the root of the project) are licensed under AGPLv3.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ReactWidget } from '@jupyterlab/apputils';
-import { LabIcon } from '@jupyterlab/ui-components';
-import pretzelSvg from '../style/icons/pretzel.svg';
-import { Box, Typography } from '@mui/material';
-import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
-import { INotebookTracker } from '@jupyterlab/notebook';
+import { OpenAIClient } from '@azure/openai';
 import { ILabShell, JupyterFrontEnd } from '@jupyterlab/application';
+import { IThemeManager, ReactWidget } from '@jupyterlab/apputils';
+import { URLExt } from '@jupyterlab/coreutils';
+import { INotebookTracker } from '@jupyterlab/notebook';
+import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
+import { ServerConnection } from '@jupyterlab/services';
+import { LabIcon } from '@jupyterlab/ui-components';
+import MistralClient from '@mistralai/mistralai';
+import { Editor, loader, Monaco } from '@monaco-editor/react';
+import { Box, Chip, Typography } from '@mui/material';
+import * as monaco from 'monaco-editor';
+import { OpenAI } from 'openai';
+import posthog from 'posthog-js';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import pretzelSvg from '../style/icons/pretzel.svg';
+import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
+import { RendermimeMarkdown } from './components/rendermime-markdown';
+import { globalState } from './globalState';
+import { Embedding } from './prompt';
 import {
   completionFunctionProvider,
   getSelectedCode,
@@ -23,21 +35,7 @@ import {
   PRETZEL_FOLDER,
   readEmbeddings
 } from './utils';
-import { RendermimeMarkdown } from './components/rendermime-markdown';
-import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { OpenAI } from 'openai';
-import { OpenAIClient } from '@azure/openai';
-import { URLExt } from '@jupyterlab/coreutils';
-import { ServerConnection } from '@jupyterlab/services';
-import posthog from 'posthog-js';
-import MistralClient from '@mistralai/mistralai';
-import { IThemeManager } from '@jupyterlab/apputils';
-import { globalState } from './globalState';
-import { Embedding } from './prompt';
-import * as monaco from 'monaco-editor';
-import { loader } from '@monaco-editor/react';
 loader.config({ monaco }); // BUG FIX - WAS PICKING UP OLD VERSION OF MONACO FROM JSDELIVR
-import { Editor, Monaco } from '@monaco-editor/react';
 
 const pretzelIcon = new LabIcon({
   name: 'pretzelai::chat',
@@ -171,6 +169,7 @@ export function Chat({
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
   const [base64Images, setBase64Images] = useState<string[]>([]);
+  const [hoveredImage, setHoveredImage] = useState<string | null>(null);
 
   const fetchChatHistory = async () => {
     const notebook = notebookTracker?.currentWidget;
@@ -681,128 +680,159 @@ export function Chat({
         <div ref={messagesEndRef} />
       </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '6px',
-            border: '1px solid var(--jp-border-color1)',
-            background: 'var(--vscode-editor-background)'
-          }}
-        >
-          <Editor
-            height="100px"
-            defaultLanguage="markdown"
-            value={editorValue}
-            onChange={handleEditorChange}
-            onMount={handleEditorDidMount}
-            theme={document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark'}
-            options={{
-              minimap: { enabled: false },
-              suggestOnTriggerCharacters: true,
-              wordBasedSuggestions: 'off',
-              parameterHints: { enabled: false },
-              quickSuggestions: {
-                other: false,
-                comments: false,
-                strings: false
-              },
-              lineNumbers: 'off',
-              glyphMargin: false,
-              lineDecorationsWidth: 0,
-              lineNumbersMinChars: 0,
-              folding: false,
-              wordWrap: 'on',
-              wrappingIndent: 'same',
-              automaticLayout: true,
-              overviewRulerBorder: false,
-              hideCursorInOverviewRuler: true,
-              overviewRulerLanes: 0,
-              renderLineHighlight: 'none',
-              readOnly: isAiGenerating
-            }}
-          />
-        </Box>
-        {isAiGenerating ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-            <button className="remove-button" onClick={cancelGeneration} title="Cancel">
-              Cancel <span style={{ fontSize: '0.8em' }}>Esc</span>
-            </button>
-            <Typography
-              sx={{
-                marginRight: 'var(--jp-ui-margin, 10px)',
-                marginTop: 'var(--jp-ui-margin, 10px)',
-                fontSize: '0.885rem'
-              }}
-            >
-              Generating AI response...
-            </Typography>
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-            <div className="submit-button-container">
-              <button className="pretzelInputSubmitButton" onClick={() => onSend(editorValue)} title="Submit ↵">
-                Submit <span style={{ fontSize: '0.8em' }}>↵</span>
-              </button>
-              <div className="tooltip">
-                Submit the message to the AI
-                <br />
-                Shortcut: <strong>Enter</strong>
-                <br />
-                Submit without context: <strong>{isMac ? 'Option' : 'Alt'}+Enter</strong>
-              </div>
-
-            </div>
-            <div className="clear-button-container">
-              <button className="pretzelInputSubmitButton" onClick={clearChat} title="Clear (Esc)">
-                Clear <span style={{ fontSize: '0.8em' }}>{isMac ? '⌘' : '^'}Esc</span>
-              </button>
-              <div className="tooltip">
-                Start a new chat. Previous chat will be saved.
-                <br />
-                Shortcut: <strong>{isMac ? 'Cmd+Esc' : 'Ctrl+Esc'}</strong>
-              </div>
-            </div>
-            <div className="history-prev-button-container">
-              <button
-                className="pretzelInputSubmitButton"
-                onClick={() => restoreChat(-1)}
-                title={`Previous (${historyPrevKeyCombination})`}
-              >
-                {'<'}
-              </button>
-              <div className="tooltip">
-                Navigate to the previous chat in history
-                <br />
-                Shortcut: <strong>{historyPrevKeyCombination}</strong>
-              </div>
-            </div>
-            <Typography
-              sx={{
-                marginRight: 'var(--jp-ui-margin, 10px)',
-                marginTop: 'var(--jp-ui-margin, 10px)',
-                fontSize: '0.885rem'
-              }}
-            >
-              History
-            </Typography>
-            <div className="history-next-button-container">
-              <button
-                className="pretzelInputSubmitButton"
-                onClick={() => restoreChat(1)}
-                title={`Next (${historyNextKeyCombination})`}
-              >
-                {'>'}
-              </button>
-              <div className="tooltip">
-                Navigate to the next chat in history
-                <br />
-                Shortcut: <strong>{historyNextKeyCombination}</strong>
-              </div>
-            </div>
+      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+        {hoveredImage && (
+          <Box sx={{ marginBottom: 1 }}>
+            <img src={hoveredImage} alt="Preview" style={{ maxWidth: '100%', display: 'block' }} />
           </Box>
         )}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, margin: '0 0 0 10px' }}>
+          {base64Images.map((base64Image, index) => (
+            <Box
+              key={index}
+              onMouseEnter={() => setHoveredImage(base64Image)}
+              onMouseLeave={() => setHoveredImage(null)}
+              sx={{
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'var(--jp-layout-color3)'
+                }
+              }}
+            >
+              <Chip
+                label={`Image ${index + 1}`}
+                size="small"
+                sx={{
+                  backgroundColor: 'var(--jp-layout-color2)',
+                  color: 'var(--jp-ui-font-color1)',
+                }}
+              />
+            </Box>
+          ))}
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '6px',
+              border: '1px solid var(--jp-border-color1)',
+              background: 'var(--vscode-editor-background)'
+            }}
+          >
+            <Editor
+              height="100px"
+              defaultLanguage="markdown"
+              value={editorValue}
+              onChange={handleEditorChange}
+              onMount={handleEditorDidMount}
+              theme={document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark'}
+              options={{
+                minimap: { enabled: false },
+                suggestOnTriggerCharacters: true,
+                wordBasedSuggestions: 'off',
+                parameterHints: { enabled: false },
+                quickSuggestions: {
+                  other: false,
+                  comments: false,
+                  strings: false
+                },
+                lineNumbers: 'off',
+                glyphMargin: false,
+                lineDecorationsWidth: 0,
+                lineNumbersMinChars: 0,
+                folding: false,
+                wordWrap: 'on',
+                wrappingIndent: 'same',
+                automaticLayout: true,
+                overviewRulerBorder: false,
+                hideCursorInOverviewRuler: true,
+                overviewRulerLanes: 0,
+                renderLineHighlight: 'none',
+                readOnly: isAiGenerating
+              }}
+            />
+          </Box>
+          {isAiGenerating ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+              <button className="remove-button" onClick={cancelGeneration} title="Cancel">
+                Cancel <span style={{ fontSize: '0.8em' }}>Esc</span>
+              </button>
+              <Typography
+                sx={{
+                  marginRight: 'var(--jp-ui-margin, 10px)',
+                  marginTop: 'var(--jp-ui-margin, 10px)',
+                  fontSize: '0.885rem'
+                }}
+              >
+                Generating AI response...
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+              <div className="submit-button-container">
+                <button className="pretzelInputSubmitButton" onClick={() => onSend(editorValue)} title="Submit ↵">
+                  Submit <span style={{ fontSize: '0.8em' }}>↵</span>
+                </button>
+                <div className="tooltip">
+                  Submit the message to the AI
+                  <br />
+                  Shortcut: <strong>Enter</strong>
+                  <br />
+                  Submit without context: <strong>{isMac ? 'Option' : 'Alt'}+Enter</strong>
+                </div>
+
+              </div>
+              <div className="clear-button-container">
+                <button className="pretzelInputSubmitButton" onClick={clearChat} title="Clear (Esc)">
+                  Clear <span style={{ fontSize: '0.8em' }}>{isMac ? '⌘' : '^'}Esc</span>
+                </button>
+                <div className="tooltip">
+                  Start a new chat. Previous chat will be saved.
+                  <br />
+                  Shortcut: <strong>{isMac ? 'Cmd+Esc' : 'Ctrl+Esc'}</strong>
+                </div>
+              </div>
+              <div className="history-prev-button-container">
+                <button
+                  className="pretzelInputSubmitButton"
+                  onClick={() => restoreChat(-1)}
+                  title={`Previous (${historyPrevKeyCombination})`}
+                >
+                  {'<'}
+                </button>
+                <div className="tooltip">
+                  Navigate to the previous chat in history
+                  <br />
+                  Shortcut: <strong>{historyPrevKeyCombination}</strong>
+                </div>
+              </div>
+              <Typography
+                sx={{
+                  marginRight: 'var(--jp-ui-margin, 10px)',
+                  marginTop: 'var(--jp-ui-margin, 10px)',
+                  fontSize: '0.885rem'
+                }}
+              >
+                History
+              </Typography>
+              <div className="history-next-button-container">
+                <button
+                  className="pretzelInputSubmitButton"
+                  onClick={() => restoreChat(1)}
+                  title={`Next (${historyNextKeyCombination})`}
+                >
+                  {'>'}
+                </button>
+                <div className="tooltip">
+                  Navigate to the next chat in history
+                  <br />
+                  Shortcut: <strong>{historyNextKeyCombination}</strong>
+                </div>
+              </div>
+            </Box>
+          )}
+        </Box>
       </Box>
     </Box>
   );
