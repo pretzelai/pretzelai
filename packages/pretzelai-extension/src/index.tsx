@@ -36,21 +36,27 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 import { PretzelSettings } from './components/PretzelSettings';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { migrateSettings } from './migrations/migrations';
-import { getDefaultSettings } from './migrations/defaultSettings';
+import { returnDefaults } from './migrations/migration_functions';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { globalState } from './globalState';
 import { debounce } from 'lodash';
 
-function initializePosthog(cookiesEnabled: boolean) {
-  posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
-    api_host: 'https://d2yfaqny8nshvd.cloudfront.net',
-    persistence: cookiesEnabled ? 'localStorage+cookie' : 'memory',
-    autocapture: false,
-    capture_pageview: false,
-    capture_pageleave: false,
-    mask_all_text: true,
-    disable_session_recording: true
-  });
+function initializePosthog(cookiesEnabled: boolean, fullTelemetry: boolean) {
+  if (fullTelemetry) {
+    posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
+      api_host: 'https://d2yfaqny8nshvd.cloudfront.net'
+    });
+  } else {
+    posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
+      api_host: 'https://d2yfaqny8nshvd.cloudfront.net',
+      persistence: cookiesEnabled ? 'localStorage+cookie' : 'memory',
+      autocapture: false,
+      capture_pageview: false,
+      capture_pageleave: false,
+      mask_all_text: true,
+      disable_session_recording: true
+    });
+  }
 }
 
 const NUMBER_OF_SIMILAR_CELLS = 3;
@@ -149,10 +155,11 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
 
-    type PretzelSettings = ReturnType<typeof getDefaultSettings>;
+    type PretzelSettings = ReturnType<typeof returnDefaults>;
     let pretzelSettingsJSON: PretzelSettings | null = null;
 
     let posthogPromptTelemetry: boolean = true;
+    let posthogGeneralTelemetry: boolean = true;
     let isAIEnabled: boolean = false;
     let promptHistoryStack: FixedSizeStack<string> = new FixedSizeStack<string>(50, '', '');
 
@@ -256,9 +263,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     async function loadSettings(updateFunc?: () => void) {
       try {
         const settings = await settingRegistry.load(PLUGIN_ID);
-        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as ReturnType<
-          typeof getDefaultSettings
-        > | null;
+        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as ReturnType<typeof returnDefaults> | null;
 
         if (pretzelSettingsJSON) {
           // Extract settings from pretzelSettingsJSON
@@ -299,11 +304,12 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           // Posthog settings
           posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
+          posthogGeneralTelemetry = features.posthogTelemetry?.posthogGeneralTelemetry?.enabled ?? true;
 
           const cookieSettings = await settingRegistry.load('@jupyterlab/apputils-extension:notification');
           const posthogCookieConsent = cookieSettings.get('posthogCookieConsent').composite as string;
 
-          initializePosthog(posthogCookieConsent === 'Yes');
+          initializePosthog(posthogCookieConsent === 'Yes', posthogGeneralTelemetry);
           setAIEnabled();
           updateFunc?.();
           loadAIClient();
