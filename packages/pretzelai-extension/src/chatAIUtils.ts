@@ -52,7 +52,9 @@ export const generateChatPrompt = async (
   }
 
   if (selectedCode || activeCellCode) {
-    setReferenceSource(selectedCode ? 'Selected code' : 'Current cell code');
+    const referenceSource = selectedCode ? 'Selected code' : 'Current cell';
+    setReferenceSource(prev => (prev ? prev + ', ' + referenceSource : referenceSource));
+
     output += `My question is related to this part of the code, answer me in a short and concise manner:
 \`\`\`python
 ${selectedCode || activeCellCode}
@@ -60,7 +62,8 @@ ${selectedCode || activeCellCode}
   }
 
   if (topSimilarities && topSimilarities.length > 0) {
-    setReferenceSource(selectedCode || activeCellCode ? 'Current code, Related cells' : 'Related cells');
+    // setReferenceSource(selectedCode || activeCellCode ? 'Current code, Related cells' : 'Related cells');
+    setReferenceSource(prev => (prev ? prev + ', Related cells' : 'Related cells'));
     output += `Cells containing related content are:
 \`\`\`python
 ${topSimilarities.join('\n```\n```python\n')}

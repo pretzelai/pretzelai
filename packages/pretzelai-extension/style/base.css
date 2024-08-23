@@ -394,8 +394,8 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   top: -55px;
 }
 
-#pretzelai-chat-panel .submit-button-container .tooltip {
-  transform: translateX(-18%) !important;
+#pretzelai-chat-panel .upload-image-button-container .tooltip {
+  transform: translateX(-50%) !important;
   top: -55px;
 }
 
