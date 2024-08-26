@@ -7,17 +7,18 @@
  * Contributions by contributors listed in the PRETZEL_CONTRIBUTORS file (found at
  * the root of the project) are licensed under AGPLv3.
  */
-import React, { useEffect, useRef, useState } from 'react';
-import { Editor, Monaco } from '@monaco-editor/react';
-import { Cell, ICellModel } from '@jupyterlab/cells';
-import posthog from 'posthog-js';
-import { completionFunctionProvider, FixedSizeStack } from '../utils';
-import { LabIcon } from '@jupyterlab/ui-components';
-import promptHistorySvg from '../../style/icons/prompt-history.svg';
-import 'monaco-editor/min/vs/editor/editor.main.css';
-import * as monaco from 'monaco-editor';
-import { globalState } from '../globalState';
 import { IThemeManager } from '@jupyterlab/apputils';
+import { Cell, ICellModel } from '@jupyterlab/cells';
+import { LabIcon } from '@jupyterlab/ui-components';
+import { Editor, Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
+import 'monaco-editor/min/vs/editor/editor.main.css';
+import posthog from 'posthog-js';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import promptHistorySvg from '../../style/icons/prompt-history.svg';
+import { globalState } from '../globalState';
+import { completionFunctionProvider, FixedSizeStack } from '../utils';
+import { Box, Chip, Tooltip, Typography } from '@mui/material';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
@@ -210,6 +211,9 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
 
+  const [base64Images, setBase64Images] = useState<string[]>([]);
+  const base64ImagesRef = useRef<string[]>([]);
+
   useEffect(() => {
     if (editorRef.current && placeholderWidgetRef.current) {
       placeholderWidgetRef.current.dispose();
@@ -219,6 +223,42 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       );
     }
   }, [isAIEnabled, placeholderEnabled, placeholderDisabled]);
+
+  useEffect(() => {
+    base64ImagesRef.current = base64Images;
+  }, [base64Images]);
+
+  const handlePaste = useCallback((editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
+    const clipboardData = event.clipboardEvent?.clipboardData;
+    if (clipboardData) {
+      const items = clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          if (blob) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  ctx.drawImage(img, 0, 0);
+                  const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
+                  setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
+                }
+              };
+              img.src = e.target?.result as string;
+            };
+            reader.readAsDataURL(blob);
+          }
+        }
+      }
+    }
+  }, []);
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
@@ -359,6 +399,10 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
     });
 
+    editor.onDidPaste((e) => {
+      handlePaste(editor, e);
+    });
+
     editor.focus();
   };
 
@@ -393,8 +437,96 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     });
   }, [activeCell]);
 
+  const removeImage = useCallback((indexToRemove: number) => {
+    setBase64Images(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
+  }, []);
+
+  const handleSubmitWithImages = () => {
+    const currentPrompt = editorRef.current.getValue();
+    const messageContent = base64Images.length > 0
+      ? [
+        { type: "text", text: currentPrompt },
+        ...base64Images.map(base64Image => ({
+          type: "image",
+          data: base64Image
+        }))
+      ]
+      : currentPrompt;
+    handleSubmit(messageContent);
+  };
+
   return (
     <div className="input-container">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, margin: '0 0 0 10px' }}>
+        {base64Images.map((base64Image, index) => (
+          <Tooltip
+            key={index}
+            title={<img src={base64Image} alt="Preview" style={{ maxWidth: '200px', maxHeight: '200px' }} />}
+            arrow
+          >
+            <Box
+              sx={{
+                position: 'relative',
+                display: 'inline-block',
+                margin: '0 4px 4px 0',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                  '& .delete-icon': {
+                    opacity: 1,
+                  }
+                }
+              }}
+            >
+              <Chip
+                label="Image"
+                size="small"
+                sx={{
+                  backgroundColor: 'var(--jp-layout-color2)',
+                  color: 'var(--jp-ui-font-color1)',
+                }}
+              />
+              <Box
+                className="delete-icon"
+                sx={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -8,
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--jp-layout-color3)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  opacity: 0,
+                  transition: 'all 0.2s ease-in-out',
+                  border: '2px solid var(--jp-layout-color1)',
+                  '&:hover': {
+                    backgroundColor: 'var(--jp-layout-color4)',
+                  }
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeImage(index);
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: 'var(--jp-ui-font-color1)',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </Typography>
+              </Box>
+            </Box>
+          </Tooltip>
+        ))}
+      </Box>
       <div className="pretzelInputField">
         <Editor
           height="100px"
@@ -428,6 +560,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           }}
         />
       </div>
+
       <div className="input-field-buttons-container">
         <SubmitButton
           handleClick={() => {
@@ -435,7 +568,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
               event_type: 'click',
               method: 'submit'
             });
-            handleSubmit(editorValue);
+            handleSubmitWithImages();
           }}
           isDisabled={!isAIEnabled}
           buttonText={submitButtonText}
