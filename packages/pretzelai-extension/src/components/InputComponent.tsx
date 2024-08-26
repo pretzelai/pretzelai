@@ -17,7 +17,7 @@ import posthog from 'posthog-js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import { globalState } from '../globalState';
-import { completionFunctionProvider, FixedSizeStack, PromptMessage } from '../utils';
+import { completionFunctionProvider, FixedSizeStack, PromptMessage, PromptMessageItem } from '../utils';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
 
 interface ISubmitButtonProps {
@@ -268,7 +268,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     if (initialPrompt) {
       editor.setValue(initialPrompt[0].text);
       // Check if initialPrompt contains any images and set them to base64Images
-      const imagePrompts = initialPrompt.filter(prompt => prompt.type === 'image');
+      const imagePrompts = initialPrompt.filter((prompt): prompt is { type: "image"; data: string } => prompt.type === 'image');
       if (imagePrompts.length > 0) {
         const newBase64Images = imagePrompts.map(prompt => prompt.data);
         setBase64Images(newBase64Images);
@@ -428,7 +428,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       const oldPromptMessage: PromptMessage = promptHistoryStack.get(index);
       const textContent = oldPromptMessage[0].text;
       setEditorValue(textContent);
-      const imagePrompts = oldPromptMessage.filter(prompt => prompt.type === 'image');
+      const imagePrompts = oldPromptMessage.filter((prompt): prompt is { type: "image"; data: string } => prompt.type === 'image');
+
       if (imagePrompts.length > 0) {
         const newBase64Images = imagePrompts.map(prompt => prompt.data);
         setBase64Images(newBase64Images);
