@@ -162,7 +162,7 @@ const fetchSubscriptionStatus = async () => {
     const emailMatch = url.match(/\/user\/([^/]+)\/lab/);
     const email = emailMatch ? decodeURIComponent(emailMatch[1]) : null;
 
-    const response = await fetch('https://issubscribed.pretzelai.app', {
+    const response = await fetch('https://api.pretzelai.app/subscribed', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
