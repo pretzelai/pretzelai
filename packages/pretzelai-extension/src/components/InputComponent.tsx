@@ -17,7 +17,7 @@ import posthog from 'posthog-js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import { globalState } from '../globalState';
-import { completionFunctionProvider, FixedSizeStack } from '../utils';
+import { completionFunctionProvider, FixedSizeStack, PromptMessage } from '../utils';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
 
 interface ISubmitButtonProps {
@@ -183,11 +183,11 @@ interface IInputComponentProps {
   isAIEnabled: boolean;
   placeholderEnabled: string;
   placeholderDisabled: string;
-  handleSubmit: (input: string, images: any[]) => void;
+  handleSubmit: (input: string, base64Images: string[]) => void;
   handleRemove: () => void;
-  promptHistoryStack: FixedSizeStack<string>;
+  promptHistoryStack: FixedSizeStack<PromptMessage>;
   setInputView: (view: any) => void;
-  initialPrompt: string;
+  initialPrompt: PromptMessage;
   activeCell: Cell<ICellModel>;
   themeManager: IThemeManager | null;
 }
@@ -204,7 +204,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   activeCell,
   themeManager
 }) => {
-  const [editorValue, setEditorValue] = useState(initialPrompt);
+  const [editorValue, setEditorValue] = useState(initialPrompt[0].text);
   const [submitButtonText, setSubmitButtonText] = useState('Generate');
   const [, setPromptHistoryIndex] = useState<number>(0);
   const editorRef = useRef<any>(null);
@@ -266,7 +266,14 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
     // Set initial text in the editor
     if (initialPrompt) {
-      editor.setValue(initialPrompt);
+      editor.setValue(initialPrompt[0].text);
+      // Check if initialPrompt contains any images and set them to base64Images
+      const imagePrompts = initialPrompt.filter(prompt => prompt.type === 'image');
+      if (imagePrompts.length > 0) {
+        const newBase64Images = imagePrompts.map(prompt => prompt.data);
+        setBase64Images(newBase64Images);
+        base64ImagesRef.current = newBase64Images;
+      }
       const model = editor.getModel();
       if (model) {
         const lastLineNumber = model.getLineCount();
@@ -364,7 +371,13 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             handlePromptHistory(finalIndex);
             const currentPrompt = editor.getValue();
             if (currentPrompt && prevIndex === 0) {
-              promptHistoryStack.push(currentPrompt);
+              const promptEntry: PromptMessage = [{ type: 'text', text: currentPrompt }];
+              if (base64Images.length > 0) {
+                base64Images.forEach(image => {
+                  promptEntry.push({ type: 'image', data: image });
+                });
+              }
+              promptHistoryStack.push(promptEntry);
               finalIndex += 1;
             }
             return finalIndex;
@@ -412,8 +425,18 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   const handlePromptHistory = (index: number) => {
     if (index >= 0 && index < promptHistoryStack.length) {
-      const oldPrompt = promptHistoryStack.get(index);
-      setEditorValue(oldPrompt);
+      const oldPromptMessage: PromptMessage = promptHistoryStack.get(index);
+      const textContent = oldPromptMessage[0].text;
+      setEditorValue(textContent);
+      const imagePrompts = oldPromptMessage.filter(prompt => prompt.type === 'image');
+      if (imagePrompts.length > 0) {
+        const newBase64Images = imagePrompts.map(prompt => prompt.data);
+        setBase64Images(newBase64Images);
+        base64ImagesRef.current = newBase64Images;
+      } else {
+        setBase64Images([]);
+        base64ImagesRef.current = [];
+      }
       editorRef.current?.focus();
     }
     return index;
@@ -441,17 +464,15 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   const handleSubmitWithImages = () => {
     const currentPrompt = editorRef.current.getValue();
-    const images = base64Images.length > 0
-      ? [
-        { type: "text", text: currentPrompt },
-        ...base64Images.map(base64Image => ({
-          type: "image",
-          data: base64Image
-        }))
-      ]
-      : [];
-    promptHistoryStack.push(currentPrompt);
-    handleSubmit(currentPrompt, images);
+    const promptHistoryItem = [
+      { type: "text", text: currentPrompt },
+      ...base64Images.map(image => ({ type: "image", data: image }))
+    ] as PromptMessage;
+    promptHistoryStack.push(promptHistoryItem);
+    // Clear base64Images after submitting
+    setBase64Images([]);
+    base64ImagesRef.current = [];
+    handleSubmit(currentPrompt, base64Images);
   };
 
   const getMaxTooltipSize = () => {

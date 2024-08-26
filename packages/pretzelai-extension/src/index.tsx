@@ -18,7 +18,7 @@ import OpenAI from 'openai';
 import MistralClient from '@mistralai/mistralai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { deleteExistingEmbeddings, FixedSizeStack, getAvailableVariables, getEmbeddings, PLUGIN_ID } from './utils';
+import { deleteExistingEmbeddings, FixedSizeStack, getAvailableVariables, getEmbeddings, PLUGIN_ID, PromptMessage } from './utils';
 
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
@@ -154,7 +154,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let posthogPromptTelemetry: boolean = true;
     let isAIEnabled: boolean = false;
-    let promptHistoryStack: FixedSizeStack<string> = new FixedSizeStack<string>(50, '', '');
+    let promptHistoryStack: FixedSizeStack<PromptMessage> = new FixedSizeStack<PromptMessage>(50, [{ type: 'text', text: '' }], [{ type: 'text', text: '' }]);
 
     const showSplashScreen = async (consent: string) => {
       if (consent === 'None') {
