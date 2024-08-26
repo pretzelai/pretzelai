@@ -17,7 +17,7 @@ import posthog from 'posthog-js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import { globalState } from '../globalState';
-import { completionFunctionProvider, FixedSizeStack, PromptMessage, PromptMessageItem } from '../utils';
+import { completionFunctionProvider, FixedSizeStack, PromptMessage } from '../utils';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
 
 interface ISubmitButtonProps {
