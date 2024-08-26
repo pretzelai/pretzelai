@@ -183,7 +183,7 @@ interface IInputComponentProps {
   isAIEnabled: boolean;
   placeholderEnabled: string;
   placeholderDisabled: string;
-  handleSubmit: (input: string) => void;
+  handleSubmit: (input: string, images: any[]) => void;
   handleRemove: () => void;
   promptHistoryStack: FixedSizeStack<string>;
   setInputView: (view: any) => void;
@@ -341,9 +341,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             event_value: 'enter',
             method: 'submit'
           });
-          const currentPrompt = editor.getValue();
-          promptHistoryStack.push(currentPrompt);
-          handleSubmit(currentPrompt);
+          handleSubmitWithImages();
         }
       }
 
@@ -443,7 +441,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   const handleSubmitWithImages = () => {
     const currentPrompt = editorRef.current.getValue();
-    const messageContent = base64Images.length > 0
+    const images = base64Images.length > 0
       ? [
         { type: "text", text: currentPrompt },
         ...base64Images.map(base64Image => ({
@@ -451,81 +449,91 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           data: base64Image
         }))
       ]
-      : currentPrompt;
-    handleSubmit(messageContent);
+      : [];
+    promptHistoryStack.push(currentPrompt);
+    handleSubmit(currentPrompt, images);
+  };
+
+  const getMaxTooltipSize = () => {
+    const maxWidth = window.innerWidth * 0.5; // 50% of the window width
+    const maxHeight = window.innerHeight * 0.5; // 50% of the window height
+    return { maxWidth, maxHeight };
   };
 
   return (
     <div className="input-container">
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, margin: '0 0 0 10px' }}>
-        {base64Images.map((base64Image, index) => (
-          <Tooltip
-            key={index}
-            title={<img src={base64Image} alt="Preview" style={{ maxWidth: '200px', maxHeight: '200px' }} />}
-            arrow
-          >
-            <Box
-              sx={{
-                position: 'relative',
-                display: 'inline-block',
-                margin: '0 4px 4px 0',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  transform: 'scale(1.05)',
-                  '& .delete-icon': {
-                    opacity: 1,
-                  }
-                }
-              }}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, marginTop: '-5px' }}>
+        {base64Images.map((base64Image, index) => {
+          const { maxWidth, maxHeight } = getMaxTooltipSize();
+          return (
+            <Tooltip
+              key={index}
+              title={<img src={base64Image} alt="Preview" style={{ maxWidth, maxHeight }} />}
+              arrow
             >
-              <Chip
-                label="Image"
-                size="small"
-                sx={{
-                  backgroundColor: 'var(--jp-layout-color2)',
-                  color: 'var(--jp-ui-font-color1)',
-                }}
-              />
               <Box
-                className="delete-icon"
                 sx={{
-                  position: 'absolute',
-                  top: -8,
-                  right: -8,
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--jp-layout-color3)',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  opacity: 0,
+                  position: 'relative',
+                  display: 'inline-block',
+                  margin: '0 4px 4px 0',
                   transition: 'all 0.2s ease-in-out',
-                  border: '2px solid var(--jp-layout-color1)',
                   '&:hover': {
-                    backgroundColor: 'var(--jp-layout-color4)',
+                    transform: 'scale(1.05)',
+                    '& .delete-icon': {
+                      opacity: 1,
+                    }
                   }
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeImage(index);
                 }}
               >
-                <Typography
+                <Chip
+                  label="Image"
+                  size="small"
                   sx={{
+                    backgroundColor: 'var(--jp-layout-color2)',
                     color: 'var(--jp-ui-font-color1)',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    lineHeight: 1,
+                  }}
+                />
+                <Box
+                  className="delete-icon"
+                  sx={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--jp-layout-color3)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    opacity: 0,
+                    transition: 'all 0.2s ease-in-out',
+                    border: '2px solid var(--jp-layout-color1)',
+                    '&:hover': {
+                      backgroundColor: 'var(--jp-layout-color4)',
+                    }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(index);
                   }}
                 >
-                  ×
-                </Typography>
+                  <Typography
+                    sx={{
+                      color: 'var(--jp-ui-font-color1)',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          </Tooltip>
-        ))}
+            </Tooltip>
+          );
+        })}
       </Box>
       <div className="pretzelInputField">
         <Editor
