@@ -32,7 +32,7 @@ export interface IProvidersInfo {
 
 export function getProvidersInfo(version: string): IProvidersInfo {
   switch (version) {
-    case '1.1':
+    default:
       return {
         'Pretzel AI': {
           displayName: 'Pretzel AI Server',
@@ -225,7 +225,5 @@ export function getProvidersInfo(version: string): IProvidersInfo {
           }
         }
       };
-    default:
-      return {};
   }
 }

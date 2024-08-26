@@ -10,32 +10,36 @@
 
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
-function addMissingSettings(settings: any, defaultSettings: any): any {
-  const target = structuredClone(settings);
-  const source = defaultSettings;
+function addMissingSettings(target, source) {
+  const clonedTarget = structuredClone(target);
   for (const key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
-      if (!(key in target)) {
-        target[key] = structuredClone(source[key]);
+      if (!(key in clonedTarget)) {
+        clonedTarget[key] = structuredClone(source[key]);
       } else if (typeof source[key] === 'object' && source[key] !== null) {
-        if (typeof target[key] !== 'object' || target[key] === null) {
-          target[key] = {};
+        if (typeof clonedTarget[key] !== 'object' || clonedTarget[key] === null) {
+          clonedTarget[key] = {};
         }
-        addMissingSettings(target[key], source[key]);
+        clonedTarget[key] = addMissingSettings(clonedTarget[key], source[key]);
       }
     }
   }
+  return clonedTarget;
 }
 
-function addPropertiesMigration(settings: any, migration_name: string): any {
+function addPropertiesMigration(settings, migration_name) {
   const newSettings = addMissingSettings(settings, returnDefaults()) as ReturnType<typeof returnDefaults>;
   newSettings.version = migration_name.split('_to_')[1];
   return newSettings;
 }
 
 export const migration_functions = {
-  // To just add properties in your migration just add the props to the returnDefaults function
-  '1.1_to_1.2': (settings: any) => addPropertiesMigration(settings, '1.1_to_1.2'),
+  // To just add properties in your migration:
+  // 1. Add the props to the returnDefaults function
+  // 2. Update the version in returnDefaults function
+  // 3. Update the version in schema/plugin.json
+  // 4. Add the migration function here with addPropertiesMigration same as '1_1_to_1_2'
+  '1.1_to_1.2': settings => addPropertiesMigration(settings, '1.1_to_1.2'),
 
   '1.0_to_1.1': async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): Promise<any> {
     const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
@@ -116,7 +120,7 @@ export const migration_functions = {
 
 export function returnDefaults() {
   return {
-    version: '1.1',
+    version: '1.2',
     features: {
       inlineCompletion: {
         enabled: true,
