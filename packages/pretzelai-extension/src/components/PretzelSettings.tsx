@@ -119,7 +119,7 @@ const CustomSelect = styled(Select)(({ theme }) => ({
 const SettingsContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2),
   color: 'var(--jp-ui-font-color0)',
-  maxWidth: '800px',
+  maxWidth: '1000px',
   margin: '0 auto',
   '& .MuiTypography-root': {
     color: 'var(--jp-ui-font-color0)'
@@ -847,8 +847,21 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           <>
             <Grid item xs={6}>
               <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-                We use telemetry to improve our product {'https://withpretzel.com/termsandconditions'}.
-                {!isSubscribed && 'To disable telemetry, upgrade at https://withpretzel.com/subscribe'}
+                We use telemetry to improve our product.
+                <br />
+                For more information, visit:{' '}
+                <a href="https://withpretzel.com/termsandconditions" target="_blank" rel="noopener noreferrer">
+                  https://withpretzel.com/termsandconditions
+                </a>
+                {!isSubscribed && (
+                  <>
+                    <br />
+                    To disable telemetry, upgrade at:{' '}
+                    <a href="https://withpretzel.com/subscribe" target="_blank" rel="noopener noreferrer">
+                      https://withpretzel.com/subscribe
+                    </a>
+                  </>
+                )}
               </InputLabel>
             </Grid>
             <Grid item xs={6}>
@@ -1042,7 +1055,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           display: 'flex',
           justifyContent: 'space-between',
           width: '100%',
-          maxWidth: '800px'
+          maxWidth: '1000px'
         }}
       >
         <Button variant="outlined" color="secondary" onClick={handleRestoreDefaults}>
