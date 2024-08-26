@@ -57,7 +57,6 @@
 }
 
 .input-container {
-  margin-top: var(--jp-ui-margin, 10px);
   margin-left: 72px;
   display: flex;
   flex-direction: column;
@@ -66,6 +65,10 @@
 .input-field-buttons-container {
   display: flex;
   flex-direction: row;
+}
+
+.pretzelParentContainerAI {
+  margin-top: 10px;
 }
 
 .pretzelInputField {
