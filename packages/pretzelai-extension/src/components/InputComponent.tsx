@@ -272,7 +272,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       if (imagePrompts.length > 0) {
         const newBase64Images = imagePrompts.map(prompt => prompt.data);
         setBase64Images(newBase64Images);
-        base64ImagesRef.current = newBase64Images;
       }
       const model = editor.getModel();
       if (model) {
@@ -465,15 +464,14 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   const handleSubmitWithImages = () => {
     const currentPrompt = editorRef.current.getValue();
+    const base64ImagesCopy = [...base64ImagesRef.current];
     const promptHistoryItem = [
       { type: "text", text: currentPrompt },
-      ...base64Images.map(image => ({ type: "image", data: image }))
+      ...base64ImagesCopy.map(image => ({ type: "image", data: image }))
     ] as PromptMessage;
     promptHistoryStack.push(promptHistoryItem);
-    // Clear base64Images after submitting
     setBase64Images([]);
-    base64ImagesRef.current = [];
-    handleSubmit(currentPrompt, base64Images);
+    handleSubmit(currentPrompt, base64ImagesCopy);
   };
 
   const getMaxTooltipSize = () => {
