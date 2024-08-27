@@ -123,7 +123,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     const placeholderEnabled =
       `Ask AI. Use ${rightSidebarShortcut} to toggle AI Chat sidebar.\n` +
-      'Mention @variable in prompt to reference variables/dataframes. Paste image by pressing Cmd + V/Ctrl + V.\n' +
+      'Mention @variable in prompt to reference variables/dataframes.\n' +
       'Use ↑ / ↓ to cycle through prompt history for current notebook.\n' +
       'Shift + Enter for new line.';
 
@@ -619,6 +619,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
           posthogPromptTelemetry={posthogPromptTelemetry}
           themeManager={themeManager}
+          pretzelSettingsJSON={pretzelSettingsJSON}
         />
       );
       parentContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -689,6 +690,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
               posthogPromptTelemetry={posthogPromptTelemetry}
               themeManager={themeManager}
+              pretzelSettingsJSON={pretzelSettingsJSON}
             />
           );
         }

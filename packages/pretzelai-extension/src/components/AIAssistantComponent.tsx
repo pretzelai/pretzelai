@@ -28,6 +28,7 @@ import { python } from '@codemirror/lang-python';
 import { highlightSpecialChars } from '@codemirror/view';
 import { jupyterTheme } from '@jupyterlab/codemirror';
 import { debounce } from 'lodash';
+import { getDefaultSettings } from '../migrations/defaultSettings';
 
 function applyDiffToEditor(
   editor: CodeMirrorEditor,
@@ -104,6 +105,7 @@ interface IAIAssistantComponentProps {
   posthogPromptTelemetry: boolean;
   themeManager: IThemeManager | null;
   onPromptHistoryUpdate: (newPrompt: PromptMessage) => Promise<void>;
+  pretzelSettingsJSON: ReturnType<typeof getDefaultSettings> | null;
 }
 
 export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props => {
@@ -465,6 +467,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           placeholderDisabled={props.placeholderDisabled}
           themeManager={props.themeManager}
           onPromptHistoryUpdate={props.onPromptHistoryUpdate}
+          pretzelSettingsJSON={props.pretzelSettingsJSON}
         />
       )}
       {streamingDone && diffView && (

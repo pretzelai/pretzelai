@@ -20,6 +20,8 @@ import { globalState } from '../globalState';
 import { completionFunctionProvider, FixedSizeStack, PromptMessage } from '../utils';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
+import { getDefaultSettings } from '../migrations/defaultSettings';
+import { getProvidersInfo } from '../migrations/providerInfo';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
@@ -193,6 +195,7 @@ interface IInputComponentProps {
   activeCell: Cell<ICellModel>;
   themeManager: IThemeManager | null;
   onPromptHistoryUpdate: (newPrompt: PromptMessage) => Promise<void>;
+  pretzelSettingsJSON: ReturnType<typeof getDefaultSettings> | null;
 }
 
 const InputComponent: React.FC<IInputComponentProps> = ({
@@ -206,7 +209,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   initialPrompt,
   activeCell,
   themeManager,
-  onPromptHistoryUpdate
+  onPromptHistoryUpdate,
+  pretzelSettingsJSON
 }) => {
   const [editorValue, setEditorValue] = useState(initialPrompt[0].text);
   const [submitButtonText, setSubmitButtonText] = useState('Generate');
@@ -218,15 +222,35 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   const [base64Images, setBase64Images] = useState<string[]>([]);
   const base64ImagesRef = useRef<string[]>([]);
 
+  const [canBeUsedForImages, setCanBeUsedForImages] = useState(false);
+  const canBeUsedForImagesRef = useRef(false);
+
+  useEffect(() => {
+    const currentSettingsVersion = pretzelSettingsJSON?.version;
+    if (currentSettingsVersion) {
+      const providerInfo = getProvidersInfo(currentSettingsVersion);
+      const aiChatModelProvider = pretzelSettingsJSON.features.aiChat.modelProvider;
+      const aiChatModelString = pretzelSettingsJSON.features.aiChat.modelString;
+      setCanBeUsedForImages(providerInfo[aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
+    }
+  }, [pretzelSettingsJSON]);
+
+  useEffect(() => {
+    canBeUsedForImagesRef.current = canBeUsedForImages;
+  }, [canBeUsedForImages]);
+
   useEffect(() => {
     if (editorRef.current && placeholderWidgetRef.current) {
       placeholderWidgetRef.current.dispose();
+      const updatedPlaceholderEnabled = canBeUsedForImages
+        ? `${placeholderEnabled} Paste image by pressing Cmd + V/Ctrl + V.`
+        : placeholderEnabled;
       placeholderWidgetRef.current = new PlaceholderContentWidget(
-        isAIEnabled ? placeholderEnabled : placeholderDisabled,
+        isAIEnabled ? updatedPlaceholderEnabled : placeholderDisabled,
         editorRef.current
       );
     }
-  }, [isAIEnabled, placeholderEnabled, placeholderDisabled]);
+  }, [isAIEnabled, placeholderEnabled, placeholderDisabled, canBeUsedForImages]);
 
   useEffect(() => {
     base64ImagesRef.current = base64Images;
@@ -234,7 +258,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   const handlePaste = useCallback((editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
     const clipboardData = event.clipboardEvent?.clipboardData;
-    if (clipboardData) {
+    if (clipboardData && canBeUsedForImagesRef.current) {
       const items = clipboardData.items;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
@@ -262,7 +286,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         }
       }
     }
-  }, []);
+  }, [canBeUsedForImagesRef.current]);
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
@@ -637,27 +661,29 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           buttonText={submitButtonText}
         />
         <RemoveButton handleClick={handleRemove} />
-        <div className="upload-image-button-container">
-          <input
-            accept="image/*"
-            style={{ display: 'none' }}
-            id="image-upload"
-            type="file"
-            onChange={handleImageUpload}
-          />
-          <button
-            className="pretzelInputSubmitButton"
-            title="Upload Image"
-            onClick={() => document.getElementById('image-upload')?.click()}
-          >
-            <UploadIcon />
-          </button>
-          <div className="tooltip">
-            Upload an image.
-            <br />
-            Paste image from clipboard with <strong>{isMac ? 'Cmd+V' : 'Ctrl+V'}</strong>
+        {canBeUsedForImages && (
+          <div className="upload-image-button-container">
+            <input
+              accept="image/*"
+              style={{ display: 'none' }}
+              id="image-upload"
+              type="file"
+              onChange={handleImageUpload}
+            />
+            <button
+              className="pretzelInputSubmitButton"
+              title="Upload Image"
+              onClick={() => document.getElementById('image-upload')?.click()}
+            >
+              <UploadIcon />
+            </button>
+            <div className="tooltip">
+              Upload an image.
+              <br />
+              Paste image from clipboard with <strong>{isMac ? 'Cmd+V' : 'Ctrl+V'}</strong>
+            </div>
           </div>
-        </div>
+        )}
         <PromptHistoryButton
           handleClick={() => {
             posthog.capture('Prompt History via Button Click', {
