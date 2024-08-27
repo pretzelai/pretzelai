@@ -239,18 +239,20 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     canBeUsedForImagesRef.current = canBeUsedForImages;
   }, [canBeUsedForImages]);
 
+
+  // FIXME: Not sure if this will ever fire for isAIEnabled, placeholderEnabled, placeholderDisabled
   useEffect(() => {
+    const updatedPlaceholderEnabled = canBeUsedForImagesRef.current
+      ? `${placeholderEnabled} Paste image by pressing ${isMac ? 'Cmd + V' : 'Ctrl + V'}.`
+      : placeholderEnabled;
     if (editorRef.current && placeholderWidgetRef.current) {
       placeholderWidgetRef.current.dispose();
-      const updatedPlaceholderEnabled = canBeUsedForImages
-        ? `${placeholderEnabled} Paste image by pressing Cmd + V/Ctrl + V.`
-        : placeholderEnabled;
       placeholderWidgetRef.current = new PlaceholderContentWidget(
         isAIEnabled ? updatedPlaceholderEnabled : placeholderDisabled,
         editorRef.current
       );
     }
-  }, [isAIEnabled, placeholderEnabled, placeholderDisabled, canBeUsedForImages]);
+  }, [isAIEnabled, placeholderEnabled, placeholderDisabled, canBeUsedForImagesRef.current]);
 
   useEffect(() => {
     base64ImagesRef.current = base64Images;
@@ -309,8 +311,11 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
     }
 
+    const updatedPlaceholderEnabled = canBeUsedForImagesRef.current
+      ? `${placeholderEnabled} Paste image by pressing ${isMac ? 'Cmd + V' : 'Ctrl + V'}.`
+      : placeholderEnabled;
     placeholderWidgetRef.current = new PlaceholderContentWidget(
-      isAIEnabled ? placeholderEnabled : placeholderDisabled,
+      isAIEnabled ? updatedPlaceholderEnabled : placeholderDisabled,
       editor
     );
 

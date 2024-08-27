@@ -717,7 +717,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         aiClient,
         codeMatchThreshold,
         posthogPromptTelemetry,
-        themeManager
+        themeManager,
+        pretzelSettingsJSON
       });
       newSidePanel.id = 'pretzelai-chat-panel';
       newSidePanel.node.classList.add('chat-sidepanel');

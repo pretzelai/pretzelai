@@ -28,6 +28,7 @@ import pretzelSvg from '../style/icons/pretzel.svg';
 import { CHAT_SYSTEM_MESSAGE, chatAIStream } from './chatAIUtils';
 import { RendermimeMarkdown } from './components/rendermime-markdown';
 import { globalState } from './globalState';
+import { getDefaultSettings } from './migrations/defaultSettings';
 import { Embedding } from './prompt';
 import {
   completionFunctionProvider,
@@ -36,6 +37,7 @@ import {
   PRETZEL_FOLDER,
   readEmbeddings
 } from './utils';
+import { getProvidersInfo } from './migrations/providerInfo';
 loader.config({ monaco }); // BUG FIX - WAS PICKING UP OLD VERSION OF MONACO FROM JSDELIVR
 
 const pretzelIcon = new LabIcon({
@@ -135,6 +137,7 @@ interface IChatProps {
   codeMatchThreshold: number;
   posthogPromptTelemetry: boolean;
   themeManager: IThemeManager;
+  pretzelSettingsJSON: ReturnType<typeof getDefaultSettings> | null;
 }
 
 export function Chat({
@@ -155,7 +158,8 @@ export function Chat({
   aiClient,
   codeMatchThreshold,
   posthogPromptTelemetry,
-  themeManager
+  themeManager,
+  pretzelSettingsJSON
 }: IChatProps): JSX.Element {
   const [messages, setMessages] = useState(initialMessage);
   const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
@@ -172,6 +176,20 @@ export function Chat({
   const [base64Images, setBase64Images] = useState<string[]>([]);
   const base64ImagesRef = useRef<string[]>([]);
   const [hoveredImage, setHoveredImage] = useState<string | null>(null);
+  const [canBeUsedForImages, setCanBeUsedForImages] = useState(false);
+  const canBeUsedForImagesRef = useRef(false);
+
+  useEffect(() => {
+    const currentSettingsVersion = pretzelSettingsJSON?.version;
+    if (currentSettingsVersion) {
+      const providerInfo = getProvidersInfo(currentSettingsVersion);
+      setCanBeUsedForImages(providerInfo[aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
+    }
+  }, [pretzelSettingsJSON, aiChatModelProvider, aiChatModelString]);
+
+  useEffect(() => {
+    canBeUsedForImagesRef.current = canBeUsedForImages;
+  }, [canBeUsedForImages]);
 
   const fetchChatHistory = async () => {
     const notebook = notebookTracker?.currentWidget;
@@ -287,7 +305,7 @@ export function Chat({
 
   const handlePaste = useCallback((editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
     const clipboardData = event.clipboardEvent?.clipboardData;
-    if (clipboardData) {
+    if (clipboardData && canBeUsedForImagesRef.current) {
       const items = clipboardData.items;
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
@@ -312,26 +330,10 @@ export function Chat({
             };
             reader.readAsDataURL(blob);
           }
-        } else if (item.type === 'text/plain') {
-          item.getAsString((text) => {
-            if (editorRef.current) {
-              const position = editorRef.current.getPosition();
-              editorRef.current.executeEdits('paste', [{
-                range: new monaco.Range(
-                  position!.lineNumber,
-                  position!.column,
-                  position!.lineNumber,
-                  position!.column
-                ),
-                text: text,
-                forceMoveMarkers: true
-              }]);
-            }
-          });
         }
       }
     }
-  }, []);
+  }, [canBeUsedForImagesRef]);
 
   useEffect(() => {
     base64ImagesRef.current = base64Images;
@@ -568,7 +570,7 @@ export function Chat({
       const placeholder =
         `Ask AI (toggle with: ${keyCombination}).\n` +
         `Shift + Enter for newline. Esc to jump back to cell.\n` +
-        `Paste image from clipboard with ${isMac ? 'Cmd+V' : 'Ctrl+V'}.\n` +
+        `${canBeUsedForImagesRef.current ? `Paste image from clipboard with ${isMac ? 'Cmd+V' : 'Ctrl+V'}.\n` : ''}` +
         `Current cell and other relevant cells are available as context to the AI.`;
 
       placeholderWidgetRef.current = new PlaceholderContentWidget(placeholder, editor);
@@ -958,27 +960,29 @@ export function Chat({
                   Shortcut: <strong>{historyNextKeyCombination}</strong>
                 </div>
               </div>
-              <div className="upload-image-button-container">
-                <input
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  id="image-upload"
-                  type="file"
-                  onChange={handleImageUpload}
-                />
-                <button
-                  className="pretzelInputSubmitButton"
-                  title="Upload Image"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                >
-                  <UploadIcon />
-                </button>
-                <div className="tooltip">
-                  Upload an image.
-                  <br />
-                  Paste image from clipboard with <strong>{isMac ? 'Cmd+V' : 'Ctrl+V'}</strong>
+              {canBeUsedForImages && (
+                <div className="upload-image-button-container">
+                  <input
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    id="image-upload"
+                    type="file"
+                    onChange={handleImageUpload}
+                  />
+                  <button
+                    className="pretzelInputSubmitButton"
+                    title="Upload Image"
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                  >
+                    <UploadIcon />
+                  </button>
+                  <div className="tooltip">
+                    Upload an image.
+                    <br />
+                    Paste image from clipboard with <strong>{isMac ? 'Cmd+V' : 'Ctrl+V'}</strong>
+                  </div>
                 </div>
-              </div>
+              )}
             </Box>
           )}
         </Box>
