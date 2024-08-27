@@ -668,6 +668,11 @@ export function Chat({
   const removeImage = useCallback((indexToRemove: number) => {
     setBase64Images(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
     setHoveredImage(null);
+    // Reset the file input
+    const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   }, []);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -696,6 +701,8 @@ export function Chat({
         alert('Please upload a valid image file.');
       }
     }
+    // Clear the file input after upload
+    event.target.value = '';
   };
 
   return (
@@ -764,7 +771,7 @@ export function Chat({
             <img src={hoveredImage} alt="Preview" />
           </Box>
         )}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, margin: '0 0 0 10px' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, margin: '5px 0 0 10px' }}>
           {base64Images.map((base64Image, index) => (
             <Box
               key={index}
@@ -831,7 +838,7 @@ export function Chat({
             </Box>
           ))}
         </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, paddingTop: 0 }}>
           <Box
             sx={{
               display: 'flex',

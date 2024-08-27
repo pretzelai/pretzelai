@@ -123,8 +123,8 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     const placeholderEnabled =
       `Ask AI. Use ${rightSidebarShortcut} to toggle AI Chat sidebar.\n` +
-      'Mention @variable in prompt to reference variables/dataframes.\n' +
-      'Use ↑ / ↓ to cycle through prompt history for current browser session.\n' +
+      'Mention @variable in prompt to reference variables/dataframes. Paste image by pressing Cmd + V/Ctrl + V.\n' +
+      'Use ↑ / ↓ to cycle through prompt history for current notebook.\n' +
       'Shift + Enter for new line.';
 
     let aiChatModelProvider = '';
