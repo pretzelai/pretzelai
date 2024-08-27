@@ -103,6 +103,7 @@ interface IAIAssistantComponentProps {
   numberOfSimilarCells: number;
   posthogPromptTelemetry: boolean;
   themeManager: IThemeManager | null;
+  onPromptHistoryUpdate: (newPrompt: PromptMessage) => Promise<void>;
 }
 
 export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props => {
@@ -463,6 +464,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           placeholderEnabled={props.placeholderEnabled}
           placeholderDisabled={props.placeholderDisabled}
           themeManager={props.themeManager}
+          onPromptHistoryUpdate={props.onPromptHistoryUpdate}
         />
       )}
       {streamingDone && diffView && (

@@ -190,6 +190,7 @@ interface IInputComponentProps {
   initialPrompt: PromptMessage;
   activeCell: Cell<ICellModel>;
   themeManager: IThemeManager | null;
+  onPromptHistoryUpdate: (newPrompt: PromptMessage) => Promise<void>;
 }
 
 const InputComponent: React.FC<IInputComponentProps> = ({
@@ -202,7 +203,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   setInputView,
   initialPrompt,
   activeCell,
-  themeManager
+  themeManager,
+  onPromptHistoryUpdate
 }) => {
   const [editorValue, setEditorValue] = useState(initialPrompt[0].text);
   const [submitButtonText, setSubmitButtonText] = useState('Generate');
@@ -462,14 +464,15 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     setBase64Images(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
   }, []);
 
-  const handleSubmitWithImages = () => {
+  const handleSubmitWithImages = async () => {
     const currentPrompt = editorRef.current.getValue();
     const base64ImagesCopy = [...base64ImagesRef.current];
     const promptHistoryItem = [
       { type: "text", text: currentPrompt },
       ...base64ImagesCopy.map(image => ({ type: "image", data: image }))
     ] as PromptMessage;
-    promptHistoryStack.push(promptHistoryItem);
+
+    await onPromptHistoryUpdate(promptHistoryItem);
     setBase64Images([]);
     handleSubmit(currentPrompt, base64ImagesCopy);
   };

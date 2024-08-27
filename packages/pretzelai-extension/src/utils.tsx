@@ -703,17 +703,18 @@ export type PromptMessageItem =
 export type PromptMessage = [{ type: "text"; text: string }, ...PromptMessageItem[]];
 
 export class FixedSizeStack<T> {
-  public stack: T[] = [];
+  public stack: T[];
   public maxSize: number;
   public startSentinel: T;
   public endSentinel: T;
 
-  constructor(maxSize: number, startSentinel: T, endSentinel: T) {
+  constructor(maxSize: number, startSentinel: T, endSentinel: T, stack: T[] = []) {
     this.maxSize = maxSize + 2; // Add two extra spaces for the sentinels
     this.startSentinel = startSentinel;
     this.endSentinel = endSentinel;
-    this.stack.push(startSentinel); // Add the start sentinel
-    this.stack.push(endSentinel); // Add the end sentinel
+    // Take the top maxSize values from the stack
+    const trimmedStack = stack.slice(0, maxSize);
+    this.stack = [startSentinel, ...trimmedStack, endSentinel]; // Initialize stack with start sentinel, provided items, and end sentinel
   }
 
   push(item: T): void {
@@ -725,6 +726,10 @@ export class FixedSizeStack<T> {
 
   get length(): number {
     return this.stack.length; // Exclude the sentinels from the length
+  }
+
+  get stackWithoutSentinels(): T[] {
+    return this.stack.slice(1, -1); // Exclude the sentinels from the stack
   }
 
   get(index: number): T {
@@ -857,3 +862,118 @@ export const completionFunctionProvider = (model, position) => {
       }))
   };
 };
+
+const PROMPT_HISTORY_FILE = 'prompt_history.json';
+
+export async function savePromptHistory(
+  app: JupyterFrontEnd,
+  notebookTracker: INotebookTracker,
+  promptHistoryStack: FixedSizeStack<PromptMessage>
+): Promise<void> {
+  const notebook = notebookTracker.currentWidget;
+  if (!notebook?.model) return;
+
+  const currentNotebookPath = notebook.context.path;
+  const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
+  const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+  const promptHistoryPath = `${currentDir}/${PRETZEL_FOLDER}/${PROMPT_HISTORY_FILE}`;
+  const newDirPath = `${currentDir}/${PRETZEL_FOLDER}`;
+
+  // try to read the file
+  const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', promptHistoryPath);
+  const response = await ServerConnection.makeRequest(
+    requestUrl,
+    { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+    app.serviceManager.serverSettings
+  );
+
+  // if the file exists, update it
+  if (response.ok) {
+    // read the file
+    const file = await app.serviceManager.contents.get(promptHistoryPath);
+    try {
+      // parse existing contents in the file. It may be
+      const existingPromptHistory = file.content ? JSON.parse(file.content) : {};
+      // update the file with the new prompt history
+      existingPromptHistory[notebookName] = promptHistoryStack.stackWithoutSentinels;
+      // save the updated contents to the file
+      await app.serviceManager.contents.save(promptHistoryPath, {
+        type: 'file',
+        format: 'text',
+        content: JSON.stringify(existingPromptHistory)
+      });
+    } catch (error) {
+      console.error('Error parsing embeddings JSON:', error);
+      // something is broken with the file, update it with the new prompt history
+      await app.serviceManager.contents.save(promptHistoryPath, {
+        type: 'file',
+        format: 'text',
+        content: JSON.stringify({
+          [notebookName]: promptHistoryStack.stackWithoutSentinels
+        })
+      });
+    }
+  } else {
+    // the file does not exist - we need to create it
+    // first, check if directory exists, if not create it
+    const requestUrlFolder = URLExt.join(
+      app.serviceManager.serverSettings.baseUrl,
+      'api/contents',
+      encodeURIComponent(newDirPath)
+    );
+    const initFolder = {
+      method: 'PUT',
+      body: JSON.stringify({ type: 'directory', path: newDirPath }),
+      headers: { 'Content-Type': 'application/json' }
+    };
+
+    try {
+      // this line is like get_or_create for directory
+      const response = await ServerConnection.makeRequest(requestUrlFolder, initFolder, app.serviceManager.serverSettings);
+      if (!response.ok) {
+        throw new Error(`Error creating directory: ${response}`);
+      } else {
+        // directory created successfully, now we create the file and save the prompt history
+        try {
+          // save the contents to the new file
+          await app.serviceManager.contents.save(promptHistoryPath, {
+            type: 'file',
+            format: 'text',
+            content: JSON.stringify({
+              [notebookName]: promptHistoryStack.stackWithoutSentinels
+            })
+          });
+        } catch (error) {
+          console.error('Error saving prompt history:', error);
+        }
+      } // end of else
+    } catch (error) {
+      console.error('Error creating directory:', error);
+    }
+  }
+}
+
+export async function loadPromptHistory(
+  app: JupyterFrontEnd,
+  notebookTracker: INotebookTracker
+): Promise<PromptMessage[]> {
+  const notebook = notebookTracker.currentWidget;
+  if (!notebook?.model) return [];
+
+  const currentNotebookPath = notebook.context.path;
+  const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
+  const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+  const promptHistoryPath = `${currentDir}/${PRETZEL_FOLDER}/${PROMPT_HISTORY_FILE}`;
+
+  try {
+    const file = await app.serviceManager.contents.get(promptHistoryPath);
+    const allPromptHistory = JSON.parse(file.content);
+    return allPromptHistory[notebookName] || [];
+  } catch (error) {
+    // file does not exist or the JSON is malformed
+    // we do nothing here - the user will see an empty prompt history
+    // the file will be created/updated on the next save
+    console.error('Error loading prompt history:', error);
+    return [];
+  }
+}
