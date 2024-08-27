@@ -33,24 +33,30 @@ import { AIAssistantComponent } from './components/AIAssistantComponent';
 import { ICompletionProviderManager } from '@jupyterlab/completer';
 import { PretzelInlineProvider } from './PretzelInlineProvider';
 import { IMainMenu } from '@jupyterlab/mainmenu';
-import { PretzelSettings } from './components/PretzelSettings';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { migrateSettings } from './migrations/migrations';
-import { getDefaultSettings } from './migrations/defaultSettings';
+import { PretzelSettingsType } from './migrations/defaultSettings';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { globalState } from './globalState';
 import { debounce } from 'lodash';
+import { PretzelSettings } from './components/PretzelSettings';
 
-function initializePosthog(cookiesEnabled: boolean) {
-  posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
-    api_host: 'https://d2yfaqny8nshvd.cloudfront.net',
-    persistence: cookiesEnabled ? 'localStorage+cookie' : 'memory',
-    autocapture: false,
-    capture_pageview: false,
-    capture_pageleave: false,
-    mask_all_text: true,
-    disable_session_recording: true
-  });
+function initializePosthog(cookiesEnabled: boolean, fullTelemetry: boolean) {
+  if (fullTelemetry) {
+    posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
+      api_host: 'https://d2yfaqny8nshvd.cloudfront.net'
+    });
+  } else {
+    posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
+      api_host: 'https://d2yfaqny8nshvd.cloudfront.net',
+      persistence: cookiesEnabled ? 'localStorage+cookie' : 'memory',
+      autocapture: false,
+      capture_pageview: false,
+      capture_pageleave: false,
+      mask_all_text: true,
+      disable_session_recording: true
+    });
+  }
 }
 
 const NUMBER_OF_SIMILAR_CELLS = 3;
@@ -149,10 +155,10 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let aiClient: OpenAI | OpenAIClient | MistralClient | null = null;
 
-    type PretzelSettings = ReturnType<typeof getDefaultSettings>;
-    let pretzelSettingsJSON: PretzelSettings | null = null;
+    let pretzelSettingsJSON: PretzelSettingsType | null = null;
 
     let posthogPromptTelemetry: boolean = true;
+    let posthogGeneralTelemetry: boolean = true;
     let isAIEnabled: boolean = false;
     let promptHistoryStack: FixedSizeStack<PromptMessage>;
 
@@ -250,7 +256,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     async function loadSettings(updateFunc?: () => void) {
       try {
         const settings = await settingRegistry.load(PLUGIN_ID);
-        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as ReturnType<typeof getDefaultSettings> | null;
+        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as PretzelSettingsType | null;
 
         if (pretzelSettingsJSON) {
           // Extract settings from pretzelSettingsJSON
@@ -291,11 +297,12 @@ const extension: JupyterFrontEndPlugin<void> = {
 
           // Posthog settings
           posthogPromptTelemetry = features.posthogTelemetry?.posthogPromptTelemetry?.enabled ?? true;
+          posthogGeneralTelemetry = features.posthogTelemetry?.posthogGeneralTelemetry?.enabled ?? true;
 
           const cookieSettings = await settingRegistry.load('@jupyterlab/apputils-extension:notification');
           const posthogCookieConsent = cookieSettings.get('posthogCookieConsent').composite as string;
 
-          initializePosthog(posthogCookieConsent === 'Yes');
+          initializePosthog(posthogCookieConsent === 'Yes', posthogGeneralTelemetry);
           setAIEnabled();
           updateFunc?.();
           loadAIClient();
@@ -321,7 +328,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         // first migrate if needed
         const settings = await settingRegistry.load(PLUGIN_ID);
         if (Object.keys(settings.get('pretzelSettingsJSON').composite as any).length) {
-          pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as PretzelSettings;
+          pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as PretzelSettingsType;
         }
         let pretzelSettingsJSONVersion = settings.get('pretzelSettingsJSONVersion').composite as string;
 

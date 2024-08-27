@@ -116,7 +116,7 @@
     "pretzelSettingsJSONVersion": {
       "type": "string",
       "title": "Pretzel Settings Schema Version",
-      "default": "1.1"
+      "default": "1.2"
     }
   },
   "additionalProperties": true
