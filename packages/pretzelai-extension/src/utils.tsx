@@ -420,6 +420,7 @@ const setupStream = async ({
   openAiApiKey,
   openAiBaseUrl,
   prompt,
+  base64Images,
   azureBaseUrl,
   azureApiKey,
   deploymentId,
@@ -434,6 +435,7 @@ const setupStream = async ({
   openAiApiKey?: string;
   openAiBaseUrl?: string;
   prompt: string;
+  base64Images: string[];
   azureBaseUrl?: string;
   azureApiKey?: string;
   deploymentId?: string;
@@ -444,8 +446,29 @@ const setupStream = async ({
   groqApiKey?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
+  let content: string | any[] = prompt; // FIXME: any is pretty complex here, leaving it for now
+  if (base64Images.length > 0) {
+    if (aiChatModelProvider === 'OpenAI' || aiChatModelProvider === 'Pretzel AI') {
+      content = [
+        { type: 'text', text: prompt },
+        ...base64Images.map(image => ({ type: 'image_url', image_url: { url: image } }))
+      ];
+    } else if (aiChatModelProvider === 'Anthropic') {
+      content = [
+        { type: 'text', text: prompt },
+        ...base64Images.map(image => ({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: image.split(',')[0].split(':')[1].split(';')[0],
+            data: image.split(',')[1]
+          }
+        }))
+      ];
+    }
+  }
 
-  if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && prompt) {
+  if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && content) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
@@ -453,12 +476,7 @@ const setupStream = async ({
     });
     stream = await openai.chat.completions.create({
       model: aiChatModelString,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
+      messages: [{ role: 'user', content: content }],
       stream: true
     });
   } else if (aiChatModelProvider === 'Pretzel AI') {
@@ -472,7 +490,7 @@ const setupStream = async ({
         messages: [
           {
             role: 'user',
-            content: prompt
+            content: content
           }
         ]
       })
@@ -494,11 +512,11 @@ const setupStream = async ({
         }
       }
     };
-  } else if (aiChatModelProvider === 'Azure' && prompt && azureBaseUrl && azureApiKey && deploymentId) {
+  } else if (aiChatModelProvider === 'Azure' && content && azureBaseUrl && azureApiKey && deploymentId) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
     // FIXME: the aiChatModelString has no effect since the model name is the deploymentId
     // we need to validate this in settings at some point
-    const result = await client.getCompletions(deploymentId, [prompt]);
+    const result = await client.getCompletions(deploymentId, [content as string]); // content can only be string for Azure
 
     stream = {
       async *[Symbol.asyncIterator]() {
@@ -507,11 +525,11 @@ const setupStream = async ({
         }
       }
     };
-  } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && aiChatModelString && prompt) {
+  } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && aiChatModelString && content) {
     const client = new MistralClient(mistralApiKey);
     const chatStream = await client.chatStream({
       model: aiChatModelString,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: content }]
     });
 
     stream = {
@@ -521,12 +539,12 @@ const setupStream = async ({
         }
       }
     };
-  } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && prompt) {
-    const messages = [{ role: 'user', content: prompt }];
+  } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && content) {
+    const messages = [{ role: 'user', content: content }];
     const stream = await streamAnthropicCompletion(anthropicApiKey, messages, aiChatModelString);
 
     return stream;
-  } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl && aiChatModelString && prompt) {
+  } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl && aiChatModelString && content) {
     const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
       method: 'POST',
       headers: {
@@ -534,7 +552,7 @@ const setupStream = async ({
       },
       body: JSON.stringify({
         model: aiChatModelString,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: content }],
         stream: true
       })
     });
@@ -561,11 +579,11 @@ const setupStream = async ({
         }
       }
     };
-  } else if (aiChatModelProvider === 'Groq' && groqApiKey && aiChatModelString && prompt) {
+  } else if (aiChatModelProvider === 'Groq' && groqApiKey && aiChatModelString && content) {
     const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
     const chatStream = await groq.chat.completions.create({
       model: aiChatModelString,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'user', content: content }],
       stream: true
     });
 
@@ -589,6 +607,7 @@ export const generateAIStream = async ({
   aiClient,
   embeddings,
   userInput,
+  base64Images,
   oldCodeForPrompt,
   traceback,
   notebookTracker,
@@ -612,6 +631,7 @@ export const generateAIStream = async ({
   aiClient: OpenAI | OpenAIClient | MistralClient | null;
   embeddings: Embedding[];
   userInput: string;
+  base64Images: string[];
   oldCodeForPrompt: string;
   traceback: string;
   notebookTracker: INotebookTracker;
@@ -663,6 +683,7 @@ export const generateAIStream = async ({
     openAiApiKey,
     openAiBaseUrl,
     prompt,
+    base64Images,
     azureBaseUrl,
     azureApiKey,
     deploymentId,
@@ -674,18 +695,26 @@ export const generateAIStream = async ({
   });
 };
 
+
+export type PromptMessageItem =
+  | { type: "text"; text: string }
+  | { type: "image"; data: string };
+
+export type PromptMessage = [{ type: "text"; text: string }, ...PromptMessageItem[]];
+
 export class FixedSizeStack<T> {
-  public stack: T[] = [];
+  public stack: T[];
   public maxSize: number;
   public startSentinel: T;
   public endSentinel: T;
 
-  constructor(maxSize: number, startSentinel: T, endSentinel: T) {
+  constructor(maxSize: number, startSentinel: T, endSentinel: T, stack: T[] = []) {
     this.maxSize = maxSize + 2; // Add two extra spaces for the sentinels
     this.startSentinel = startSentinel;
     this.endSentinel = endSentinel;
-    this.stack.push(startSentinel); // Add the start sentinel
-    this.stack.push(endSentinel); // Add the end sentinel
+    // Take the top maxSize values from the stack
+    const trimmedStack = stack.slice(0, maxSize);
+    this.stack = [startSentinel, ...trimmedStack, endSentinel]; // Initialize stack with start sentinel, provided items, and end sentinel
   }
 
   push(item: T): void {
@@ -697,6 +726,10 @@ export class FixedSizeStack<T> {
 
   get length(): number {
     return this.stack.length; // Exclude the sentinels from the length
+  }
+
+  get stackWithoutSentinels(): T[] {
+    return this.stack.slice(1, -1); // Exclude the sentinels from the stack
   }
 
   get(index: number): T {
@@ -829,3 +862,118 @@ export const completionFunctionProvider = (model, position) => {
       }))
   };
 };
+
+const PROMPT_HISTORY_FILE = 'prompt_history.json';
+
+export async function savePromptHistory(
+  app: JupyterFrontEnd,
+  notebookTracker: INotebookTracker,
+  promptHistoryStack: FixedSizeStack<PromptMessage>
+): Promise<void> {
+  const notebook = notebookTracker.currentWidget;
+  if (!notebook?.model) return;
+
+  const currentNotebookPath = notebook.context.path;
+  const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
+  const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+  const promptHistoryPath = `${currentDir}/${PRETZEL_FOLDER}/${PROMPT_HISTORY_FILE}`;
+  const newDirPath = `${currentDir}/${PRETZEL_FOLDER}`;
+
+  // try to read the file
+  const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', promptHistoryPath);
+  const response = await ServerConnection.makeRequest(
+    requestUrl,
+    { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+    app.serviceManager.serverSettings
+  );
+
+  // if the file exists, update it
+  if (response.ok) {
+    // read the file
+    const file = await app.serviceManager.contents.get(promptHistoryPath);
+    try {
+      // parse existing contents in the file. It may be
+      const existingPromptHistory = file.content ? JSON.parse(file.content) : {};
+      // update the file with the new prompt history
+      existingPromptHistory[notebookName] = promptHistoryStack.stackWithoutSentinels;
+      // save the updated contents to the file
+      await app.serviceManager.contents.save(promptHistoryPath, {
+        type: 'file',
+        format: 'text',
+        content: JSON.stringify(existingPromptHistory)
+      });
+    } catch (error) {
+      console.error('Error parsing embeddings JSON:', error);
+      // something is broken with the file, update it with the new prompt history
+      await app.serviceManager.contents.save(promptHistoryPath, {
+        type: 'file',
+        format: 'text',
+        content: JSON.stringify({
+          [notebookName]: promptHistoryStack.stackWithoutSentinels
+        })
+      });
+    }
+  } else {
+    // the file does not exist - we need to create it
+    // first, check if directory exists, if not create it
+    const requestUrlFolder = URLExt.join(
+      app.serviceManager.serverSettings.baseUrl,
+      'api/contents',
+      encodeURIComponent(newDirPath)
+    );
+    const initFolder = {
+      method: 'PUT',
+      body: JSON.stringify({ type: 'directory', path: newDirPath }),
+      headers: { 'Content-Type': 'application/json' }
+    };
+
+    try {
+      // this line is like get_or_create for directory
+      const response = await ServerConnection.makeRequest(requestUrlFolder, initFolder, app.serviceManager.serverSettings);
+      if (!response.ok) {
+        throw new Error(`Error creating directory: ${response}`);
+      } else {
+        // directory created successfully, now we create the file and save the prompt history
+        try {
+          // save the contents to the new file
+          await app.serviceManager.contents.save(promptHistoryPath, {
+            type: 'file',
+            format: 'text',
+            content: JSON.stringify({
+              [notebookName]: promptHistoryStack.stackWithoutSentinels
+            })
+          });
+        } catch (error) {
+          console.error('Error saving prompt history:', error);
+        }
+      } // end of else
+    } catch (error) {
+      console.error('Error creating directory:', error);
+    }
+  }
+}
+
+export async function loadPromptHistory(
+  app: JupyterFrontEnd,
+  notebookTracker: INotebookTracker
+): Promise<PromptMessage[]> {
+  const notebook = notebookTracker.currentWidget;
+  if (!notebook?.model) return [];
+
+  const currentNotebookPath = notebook.context.path;
+  const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
+  const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
+  const promptHistoryPath = `${currentDir}/${PRETZEL_FOLDER}/${PROMPT_HISTORY_FILE}`;
+
+  try {
+    const file = await app.serviceManager.contents.get(promptHistoryPath);
+    const allPromptHistory = JSON.parse(file.content);
+    return allPromptHistory[notebookName] || [];
+  } catch (error) {
+    // file does not exist or the JSON is malformed
+    // we do nothing here - the user will see an empty prompt history
+    // the file will be created/updated on the next save
+    console.error('Error loading prompt history:', error);
+    return [];
+  }
+}

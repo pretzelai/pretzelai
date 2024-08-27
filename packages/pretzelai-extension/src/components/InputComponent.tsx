@@ -7,17 +7,21 @@
  * Contributions by contributors listed in the PRETZEL_CONTRIBUTORS file (found at
  * the root of the project) are licensed under AGPLv3.
  */
-import React, { useEffect, useRef, useState } from 'react';
-import { Editor, Monaco } from '@monaco-editor/react';
-import { Cell, ICellModel } from '@jupyterlab/cells';
-import posthog from 'posthog-js';
-import { completionFunctionProvider, FixedSizeStack } from '../utils';
-import { LabIcon } from '@jupyterlab/ui-components';
-import promptHistorySvg from '../../style/icons/prompt-history.svg';
-import 'monaco-editor/min/vs/editor/editor.main.css';
-import * as monaco from 'monaco-editor';
-import { globalState } from '../globalState';
 import { IThemeManager } from '@jupyterlab/apputils';
+import { Cell, ICellModel } from '@jupyterlab/cells';
+import { LabIcon } from '@jupyterlab/ui-components';
+import { Editor, Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
+import 'monaco-editor/min/vs/editor/editor.main.css';
+import posthog from 'posthog-js';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import promptHistorySvg from '../../style/icons/prompt-history.svg';
+import { globalState } from '../globalState';
+import { completionFunctionProvider, FixedSizeStack, PromptMessage } from '../utils';
+import { Box, Chip, Tooltip, Typography } from '@mui/material';
+import UploadIcon from '@mui/icons-material/Upload';
+import { getDefaultSettings } from '../migrations/defaultSettings';
+import { getProvidersInfo } from '../migrations/providerInfo';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
@@ -178,17 +182,20 @@ class PlaceholderContentWidget {
   }
 }
 
+const isMac = /Mac/i.test(navigator.userAgent);
 interface IInputComponentProps {
   isAIEnabled: boolean;
   placeholderEnabled: string;
   placeholderDisabled: string;
-  handleSubmit: (input: string) => void;
+  handleSubmit: (input: string, base64Images: string[]) => void;
   handleRemove: () => void;
-  promptHistoryStack: FixedSizeStack<string>;
+  promptHistoryStack: FixedSizeStack<PromptMessage>;
   setInputView: (view: any) => void;
-  initialPrompt: string;
+  initialPrompt: PromptMessage;
   activeCell: Cell<ICellModel>;
   themeManager: IThemeManager | null;
+  onPromptHistoryUpdate: (newPrompt: PromptMessage) => Promise<void>;
+  pretzelSettingsJSON: ReturnType<typeof getDefaultSettings> | null;
 }
 
 const InputComponent: React.FC<IInputComponentProps> = ({
@@ -201,24 +208,87 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   setInputView,
   initialPrompt,
   activeCell,
-  themeManager
+  themeManager,
+  onPromptHistoryUpdate,
+  pretzelSettingsJSON
 }) => {
-  const [editorValue, setEditorValue] = useState(initialPrompt);
+  const [editorValue, setEditorValue] = useState(initialPrompt[0].text);
   const [submitButtonText, setSubmitButtonText] = useState('Generate');
   const [, setPromptHistoryIndex] = useState<number>(0);
   const editorRef = useRef<any>(null);
 
   const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
 
+  const [base64Images, setBase64Images] = useState<string[]>([]);
+  const base64ImagesRef = useRef<string[]>([]);
+
+  const [canBeUsedForImages, setCanBeUsedForImages] = useState(false);
+  const canBeUsedForImagesRef = useRef(false);
+
   useEffect(() => {
+    const currentSettingsVersion = pretzelSettingsJSON?.version;
+    if (currentSettingsVersion) {
+      const providerInfo = getProvidersInfo(currentSettingsVersion);
+      const aiChatModelProvider = pretzelSettingsJSON.features.aiChat.modelProvider;
+      const aiChatModelString = pretzelSettingsJSON.features.aiChat.modelString;
+      setCanBeUsedForImages(providerInfo[aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
+    }
+  }, [pretzelSettingsJSON]);
+
+  useEffect(() => {
+    canBeUsedForImagesRef.current = canBeUsedForImages;
+  }, [canBeUsedForImages]);
+
+
+  // FIXME: Not sure if this will ever fire for isAIEnabled, placeholderEnabled, placeholderDisabled
+  useEffect(() => {
+    const updatedPlaceholderEnabled = canBeUsedForImagesRef.current
+      ? `${placeholderEnabled} Paste image by pressing ${isMac ? 'Cmd + V' : 'Ctrl + V'}.`
+      : placeholderEnabled;
     if (editorRef.current && placeholderWidgetRef.current) {
       placeholderWidgetRef.current.dispose();
       placeholderWidgetRef.current = new PlaceholderContentWidget(
-        isAIEnabled ? placeholderEnabled : placeholderDisabled,
+        isAIEnabled ? updatedPlaceholderEnabled : placeholderDisabled,
         editorRef.current
       );
     }
-  }, [isAIEnabled, placeholderEnabled, placeholderDisabled]);
+  }, [isAIEnabled, placeholderEnabled, placeholderDisabled, canBeUsedForImagesRef.current]);
+
+  useEffect(() => {
+    base64ImagesRef.current = base64Images;
+  }, [base64Images]);
+
+  const handlePaste = useCallback((editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
+    const clipboardData = event.clipboardEvent?.clipboardData;
+    if (clipboardData && canBeUsedForImagesRef.current) {
+      const items = clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          if (blob) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  ctx.drawImage(img, 0, 0);
+                  const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
+                  setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
+                }
+              };
+              img.src = e.target?.result as string;
+            };
+            reader.readAsDataURL(blob);
+          }
+        }
+      }
+    }
+  }, [canBeUsedForImagesRef.current]);
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
@@ -226,7 +296,13 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
     // Set initial text in the editor
     if (initialPrompt) {
-      editor.setValue(initialPrompt);
+      editor.setValue(initialPrompt[0].text);
+      // Check if initialPrompt contains any images and set them to base64Images
+      const imagePrompts = initialPrompt.filter((prompt): prompt is { type: "image"; data: string } => prompt.type === 'image');
+      if (imagePrompts.length > 0) {
+        const newBase64Images = imagePrompts.map(prompt => prompt.data);
+        setBase64Images(newBase64Images);
+      }
       const model = editor.getModel();
       if (model) {
         const lastLineNumber = model.getLineCount();
@@ -235,8 +311,11 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
     }
 
+    const updatedPlaceholderEnabled = canBeUsedForImagesRef.current
+      ? `${placeholderEnabled} Paste image by pressing ${isMac ? 'Cmd + V' : 'Ctrl + V'}.`
+      : placeholderEnabled;
     placeholderWidgetRef.current = new PlaceholderContentWidget(
-      isAIEnabled ? placeholderEnabled : placeholderDisabled,
+      isAIEnabled ? updatedPlaceholderEnabled : placeholderDisabled,
       editor
     );
 
@@ -301,9 +380,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             event_value: 'enter',
             method: 'submit'
           });
-          const currentPrompt = editor.getValue();
-          promptHistoryStack.push(currentPrompt);
-          handleSubmit(currentPrompt);
+          handleSubmitWithImages();
         }
       }
 
@@ -326,7 +403,13 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             handlePromptHistory(finalIndex);
             const currentPrompt = editor.getValue();
             if (currentPrompt && prevIndex === 0) {
-              promptHistoryStack.push(currentPrompt);
+              const promptEntry: PromptMessage = [{ type: 'text', text: currentPrompt }];
+              if (base64Images.length > 0) {
+                base64Images.forEach(image => {
+                  promptEntry.push({ type: 'image', data: image });
+                });
+              }
+              promptHistoryStack.push(promptEntry);
               finalIndex += 1;
             }
             return finalIndex;
@@ -359,6 +442,10 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
     });
 
+    editor.onDidPaste((e) => {
+      handlePaste(editor, e);
+    });
+
     editor.focus();
   };
 
@@ -370,8 +457,19 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   const handlePromptHistory = (index: number) => {
     if (index >= 0 && index < promptHistoryStack.length) {
-      const oldPrompt = promptHistoryStack.get(index);
-      setEditorValue(oldPrompt);
+      const oldPromptMessage: PromptMessage = promptHistoryStack.get(index);
+      const textContent = oldPromptMessage[0].text;
+      setEditorValue(textContent);
+      const imagePrompts = oldPromptMessage.filter((prompt): prompt is { type: "image"; data: string } => prompt.type === 'image');
+
+      if (imagePrompts.length > 0) {
+        const newBase64Images = imagePrompts.map(prompt => prompt.data);
+        setBase64Images(newBase64Images);
+        base64ImagesRef.current = newBase64Images;
+      } else {
+        setBase64Images([]);
+        base64ImagesRef.current = [];
+      }
       editorRef.current?.focus();
     }
     return index;
@@ -393,8 +491,134 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     });
   }, [activeCell]);
 
+  const removeImage = useCallback((indexToRemove: number) => {
+    setBase64Images(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
+  }, []);
+
+  const handleSubmitWithImages = async () => {
+    const currentPrompt = editorRef.current.getValue();
+    const base64ImagesCopy = [...base64ImagesRef.current];
+    const promptHistoryItem = [
+      { type: "text", text: currentPrompt },
+      ...base64ImagesCopy.map(image => ({ type: "image", data: image }))
+    ] as PromptMessage;
+
+    await onPromptHistoryUpdate(promptHistoryItem);
+    setBase64Images([]);
+    handleSubmit(currentPrompt, base64ImagesCopy);
+  };
+
+  const getMaxTooltipSize = () => {
+    const maxWidth = window.innerWidth * 0.5; // 50% of the window width
+    const maxHeight = window.innerHeight * 0.5; // 50% of the window height
+    return { maxWidth, maxHeight };
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+              const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
+              setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
+            }
+          };
+          img.src = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Please upload a valid image file.');
+      }
+    }
+    // Clear the file input after upload
+    event.target.value = '';
+  };
+
   return (
     <div className="input-container">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, marginTop: '-5px' }}>
+        {base64Images.map((base64Image, index) => {
+          const { maxWidth, maxHeight } = getMaxTooltipSize();
+          return (
+            <Tooltip
+              key={index}
+              title={<img src={base64Image} alt="Preview" style={{ maxWidth, maxHeight }} />}
+              arrow
+            >
+              <Box
+                sx={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  margin: '0 4px 4px 0',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                    '& .delete-icon': {
+                      opacity: 1,
+                    }
+                  }
+                }}
+              >
+                <Chip
+                  label="Image"
+                  size="small"
+                  sx={{
+                    backgroundColor: 'var(--jp-layout-color2)',
+                    color: 'var(--jp-ui-font-color1)',
+                  }}
+                />
+                <Box
+                  className="delete-icon"
+                  sx={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--jp-layout-color3)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    opacity: 0,
+                    transition: 'all 0.2s ease-in-out',
+                    border: '2px solid var(--jp-layout-color1)',
+                    '&:hover': {
+                      backgroundColor: 'var(--jp-layout-color4)',
+                    }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(index);
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      color: 'var(--jp-ui-font-color1)',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </Typography>
+                </Box>
+              </Box>
+            </Tooltip>
+          );
+        })}
+      </Box>
       <div className="pretzelInputField">
         <Editor
           height="100px"
@@ -428,6 +652,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           }}
         />
       </div>
+
       <div className="input-field-buttons-container">
         <SubmitButton
           handleClick={() => {
@@ -435,12 +660,35 @@ const InputComponent: React.FC<IInputComponentProps> = ({
               event_type: 'click',
               method: 'submit'
             });
-            handleSubmit(editorValue);
+            handleSubmitWithImages();
           }}
           isDisabled={!isAIEnabled}
           buttonText={submitButtonText}
         />
         <RemoveButton handleClick={handleRemove} />
+        {canBeUsedForImages && (
+          <div className="upload-image-button-container">
+            <input
+              accept="image/*"
+              style={{ display: 'none' }}
+              id="image-upload"
+              type="file"
+              onChange={handleImageUpload}
+            />
+            <button
+              className="pretzelInputSubmitButton"
+              title="Upload Image"
+              onClick={() => document.getElementById('image-upload')?.click()}
+            >
+              <UploadIcon />
+            </button>
+            <div className="tooltip">
+              Upload an image.
+              <br />
+              Paste image from clipboard with <strong>{isMac ? 'Cmd+V' : 'Ctrl+V'}</strong>
+            </div>
+          </div>
+        )}
         <PromptHistoryButton
           handleClick={() => {
             posthog.capture('Prompt History via Button Click', {

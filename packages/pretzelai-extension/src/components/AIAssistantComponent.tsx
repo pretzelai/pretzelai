@@ -9,7 +9,7 @@
 
 import React, { useEffect, useState } from 'react';
 import InputComponent from './InputComponent';
-import { FixedSizeStack, generateAIStream, getSelectedCode, readEmbeddings } from '../utils';
+import { FixedSizeStack, generateAIStream, getSelectedCode, PromptMessage, readEmbeddings } from '../utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import OpenAI from 'openai';
 import { OpenAIClient } from '@azure/openai';
@@ -28,6 +28,7 @@ import { python } from '@codemirror/lang-python';
 import { highlightSpecialChars } from '@codemirror/view';
 import { jupyterTheme } from '@jupyterlab/codemirror';
 import { debounce } from 'lodash';
+import { getDefaultSettings } from '../migrations/defaultSettings';
 
 function applyDiffToEditor(
   editor: CodeMirrorEditor,
@@ -93,7 +94,7 @@ interface IAIAssistantComponentProps {
   traceback: string;
   placeholderEnabled: string;
   placeholderDisabled: string;
-  promptHistoryStack: FixedSizeStack<string>;
+  promptHistoryStack: FixedSizeStack<PromptMessage>;
   isAIEnabled: boolean;
   handleRemove: () => void;
   notebookTracker: INotebookTracker;
@@ -103,12 +104,14 @@ interface IAIAssistantComponentProps {
   numberOfSimilarCells: number;
   posthogPromptTelemetry: boolean;
   themeManager: IThemeManager | null;
+  onPromptHistoryUpdate: (newPrompt: PromptMessage) => Promise<void>;
+  pretzelSettingsJSON: ReturnType<typeof getDefaultSettings> | null;
 }
 
 export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props => {
   const [showInputComponent, setShowInputComponent] = useState(true);
   const [showStatusElement, setShowStatusElement] = useState(true);
-  const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
+  const [initialPrompt, setInitialPrompt] = useState<PromptMessage | null>(null);
 
   const [stream, setStream] = useState<AsyncIterable<any> | null>(null);
   const [statusElementText, setStatusElementText] = useState<string>('');
@@ -300,10 +303,10 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   useEffect(() => {
     if (props.notebookTracker.activeCell?.model.getMetadata('isPromptEdit')) {
-      setInitialPrompt(props.promptHistoryStack.get(1) || '');
+      setInitialPrompt(props.promptHistoryStack.get(1) || [{ type: 'text', text: '' }]);
       props.notebookTracker.activeCell.model.setMetadata('isPromptEdit', false);
     } else {
-      setInitialPrompt(''); // Set to empty string if no edit is needed
+      setInitialPrompt([{ type: 'text', text: '' }]); // Set to empty string if no edit is needed
     }
   }, []);
 
@@ -325,6 +328,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         aiClient: props.aiClient,
         embeddings: embeddings,
         userInput: '',
+        base64Images: [],
         oldCodeForPrompt: oldCode,
         traceback: props.traceback,
         notebookTracker: props.notebookTracker,
@@ -363,7 +367,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     }
   };
 
-  const handleSubmit = async (userInput: string) => {
+  const handleSubmit = async (userInput: string, base64Images: string[]) => {
     const { extractedCode } = getSelectedCode(props.notebookTracker);
 
     let activeCell = props.notebookTracker.activeCell;
@@ -394,6 +398,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           aiClient: props.aiClient,
           embeddings: embeddings,
           userInput,
+          base64Images,
           oldCodeForPrompt,
           traceback: '',
           notebookTracker: props.notebookTracker,
@@ -455,12 +460,14 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           handleSubmit={handleSubmit}
           handleRemove={props.handleRemove}
           promptHistoryStack={props.promptHistoryStack}
-          setInputView={() => {}}
+          setInputView={() => { }}
           initialPrompt={initialPrompt}
           activeCell={props.notebookTracker.activeCell!}
           placeholderEnabled={props.placeholderEnabled}
           placeholderDisabled={props.placeholderDisabled}
           themeManager={props.themeManager}
+          onPromptHistoryUpdate={props.onPromptHistoryUpdate}
+          pretzelSettingsJSON={props.pretzelSettingsJSON}
         />
       )}
       {streamingDone && diffView && (

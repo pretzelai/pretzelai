@@ -18,7 +18,7 @@ import OpenAI from 'openai';
 import MistralClient from '@mistralai/mistralai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { deleteExistingEmbeddings, FixedSizeStack, getAvailableVariables, getEmbeddings, PLUGIN_ID } from './utils';
+import { deleteExistingEmbeddings, FixedSizeStack, getAvailableVariables, getEmbeddings, loadPromptHistory, PLUGIN_ID, PromptMessage, savePromptHistory } from './utils';
 
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
@@ -124,7 +124,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     const placeholderEnabled =
       `Ask AI. Use ${rightSidebarShortcut} to toggle AI Chat sidebar.\n` +
       'Mention @variable in prompt to reference variables/dataframes.\n' +
-      'Use ↑ / ↓ to cycle through prompt history for current browser session.\n' +
+      'Use ↑ / ↓ to cycle through prompt history for current notebook.\n' +
       'Shift + Enter for new line.';
 
     let aiChatModelProvider = '';
@@ -154,7 +154,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     let posthogPromptTelemetry: boolean = true;
     let isAIEnabled: boolean = false;
-    let promptHistoryStack: FixedSizeStack<string> = new FixedSizeStack<string>(50, '', '');
+    let promptHistoryStack: FixedSizeStack<PromptMessage>;
 
     const showSplashScreen = async (consent: string) => {
       if (consent === 'None') {
@@ -166,13 +166,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       // check to make sure we have all the settings set
       if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString) {
         isAIEnabled = true;
-      } else if (
-        aiChatModelProvider === 'Azure' &&
-        azureBaseUrl &&
-        azureDeploymentName &&
-        azureApiKey &&
-        aiChatModelString
-      ) {
+      } else if (aiChatModelProvider === 'Azure' && azureBaseUrl && azureDeploymentName && azureApiKey && aiChatModelString) {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && mistralModel) {
         isAIEnabled = true;
@@ -256,9 +250,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     async function loadSettings(updateFunc?: () => void) {
       try {
         const settings = await settingRegistry.load(PLUGIN_ID);
-        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as ReturnType<
-          typeof getDefaultSettings
-        > | null;
+        pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as ReturnType<typeof getDefaultSettings> | null;
 
         if (pretzelSettingsJSON) {
           // Extract settings from pretzelSettingsJSON
@@ -315,6 +307,15 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     }
 
+    const initializePromptHistory = async () => {
+      if (!notebookTracker.currentWidget?.model) {
+        setTimeout(initializePromptHistory, 1000);
+        return;
+      }
+      const savedHistory = await loadPromptHistory(app, notebookTracker);
+      promptHistoryStack = new FixedSizeStack<PromptMessage>(100, [{ type: 'text', text: '' }], [{ type: 'text', text: '' }], savedHistory);
+    };
+
     async function migrateAndSetSettings(): Promise<void> {
       try {
         // first migrate if needed
@@ -335,6 +336,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         // then load settings at startup
         await loadSettings();
         await ollamaLoad();
+        await initializePromptHistory();
       } catch (error) {
         console.error('Error migrating and setting settings:', error);
       }
@@ -556,6 +558,11 @@ const extension: JupyterFrontEndPlugin<void> = {
       };
     }
 
+    const handlePromptHistoryUpdate = async (newPrompt: PromptMessage) => {
+      promptHistoryStack.push(newPrompt);
+      await savePromptHistory(app, notebookTracker, promptHistoryStack);
+    };
+
     async function handleFixError(cellModel: CodeCellModel) {
       const outputs = cellModel.outputs as OutputAreaModel;
       let traceback = findErrorOutput(outputs)!.toJSON().traceback;
@@ -602,6 +609,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           placeholderEnabled={placeholderEnabled}
           placeholderDisabled={placeholderDisabled}
           promptHistoryStack={promptHistoryStack}
+          onPromptHistoryUpdate={handlePromptHistoryUpdate}
           isAIEnabled={isAIEnabled}
           handleRemove={handleRemove}
           notebookTracker={notebookTracker}
@@ -611,6 +619,7 @@ const extension: JupyterFrontEndPlugin<void> = {
           numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
           posthogPromptTelemetry={posthogPromptTelemetry}
           themeManager={themeManager}
+          pretzelSettingsJSON={pretzelSettingsJSON}
         />
       );
       parentContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -671,6 +680,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               placeholderEnabled={placeholderEnabled}
               placeholderDisabled={placeholderDisabled}
               promptHistoryStack={promptHistoryStack}
+              onPromptHistoryUpdate={handlePromptHistoryUpdate}
               isAIEnabled={isAIEnabled}
               handleRemove={handleRemove}
               notebookTracker={notebookTracker}
@@ -680,6 +690,7 @@ const extension: JupyterFrontEndPlugin<void> = {
               numberOfSimilarCells={NUMBER_OF_SIMILAR_CELLS}
               posthogPromptTelemetry={posthogPromptTelemetry}
               themeManager={themeManager}
+              pretzelSettingsJSON={pretzelSettingsJSON}
             />
           );
         }
@@ -706,7 +717,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         aiClient,
         codeMatchThreshold,
         posthogPromptTelemetry,
-        themeManager
+        themeManager,
+        pretzelSettingsJSON
       });
       newSidePanel.id = 'pretzelai-chat-panel';
       newSidePanel.node.classList.add('chat-sidepanel');

@@ -22,7 +22,7 @@ export const fixCode = (code: string) => {
     finalCode = finalCode.slice(0, endBackticksIndex).trim();
   }
   // Replace '!pip install' with '%pip install'
-  finalCode = finalCode.replace(/^!pip install/gm, '%pip install');
+  finalCode = finalCode.replace(/^!pip install/gm, '%pip install -q');
   return finalCode;
 };
 

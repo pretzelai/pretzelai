@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /*
  * Copyright (c) Pretzel AI GmbH.
  * This file is part of the Pretzel project and is licensed under the
@@ -15,13 +16,14 @@ import Groq from 'groq-sdk';
 import { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
 import { processVariables } from './utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
+import { Dispatch, SetStateAction } from 'react';
 
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
 
 export const generateChatPrompt = async (
   lastContent: string,
-  setReferenceSource: (source: string) => void,
+  setReferenceSource: Dispatch<SetStateAction<string>>,
   notebookTracker: INotebookTracker | null,
   topSimilarities?: string[],
   activeCellCode?: string,
@@ -39,7 +41,7 @@ export const generateChatPrompt = async (
   let output = `${processedInput}\n`;
 
   if (!selectedCode && !activeCellCode && (!topSimilarities || topSimilarities.length === 0)) {
-    setReferenceSource('No specific code context');
+    setReferenceSource(prev => (prev ? prev : 'No context'));
     output += `My main question is the above. Your goal is to answer my question briefly and don't mention the code unless necessary.\n`;
   }
 
@@ -50,7 +52,9 @@ export const generateChatPrompt = async (
   }
 
   if (selectedCode || activeCellCode) {
-    setReferenceSource(selectedCode ? 'Selected code' : 'Current cell code');
+    const referenceSource = selectedCode ? 'Selected code' : 'Current cell';
+    setReferenceSource(prev => (prev ? prev + ', ' + referenceSource : referenceSource));
+
     output += `My question is related to this part of the code, answer me in a short and concise manner:
 \`\`\`python
 ${selectedCode || activeCellCode}
@@ -58,7 +62,8 @@ ${selectedCode || activeCellCode}
   }
 
   if (topSimilarities && topSimilarities.length > 0) {
-    setReferenceSource(selectedCode || activeCellCode ? 'Current code and related cells' : 'Related cells in notebook');
+    // setReferenceSource(selectedCode || activeCellCode ? 'Current code, Related cells' : 'Related cells');
+    setReferenceSource(prev => (prev ? prev + ', Related cells' : 'Related cells'));
     output += `Cells containing related content are:
 \`\`\`python
 ${topSimilarities.join('\n```\n```python\n')}
@@ -66,6 +71,52 @@ ${topSimilarities.join('\n```\n```python\n')}
   }
 
   return output;
+};
+
+const processMessages = (messages: any[], provider: string, model: string): any[] => {
+  const processedMessages: any[] = [];
+
+  for (const message of messages) {
+    if (!Array.isArray(message.content)) {
+      processedMessages.push(message);
+      continue;
+    }
+
+    if (provider !== 'OpenAI' && provider !== 'Anthropic' && provider !== 'Pretzel AI') {
+      // If the provider doesn't support images, only keep the text content
+      const textContent = message.content.find(item => item.type === 'text')?.text || '';
+      processedMessages.push({ ...message, content: textContent });
+      continue;
+    }
+
+    // Process messages for image-supporting models
+    let processedContent: any[] = [];
+    for (const item of message.content) {
+      if (item.type === 'text') {
+        processedContent.push({ type: 'text', text: item.text });
+      } else if (item.type === 'image') {
+        if (provider === 'Anthropic') {
+          processedContent.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: item.data.split(',')[0].split(':')[1].split(';')[0],
+              data: item.data.split(',')[1]
+            }
+          });
+        } else if (provider === 'OpenAI' || provider === 'Pretzel AI') {
+          processedContent.push({
+            type: 'image_url',
+            image_url: { url: item.data }
+          });
+        } else {
+          throw new Error('Invalid provider');
+        }
+      }
+    }
+    processedMessages.push({ ...message, content: processedContent });
+  }
+  return processedMessages;
 };
 
 export const chatAIStream = async ({
@@ -102,35 +153,51 @@ export const chatAIStream = async ({
   ollamaBaseUrl?: string;
   groqApiKey?: string;
   renderChat: (message: string) => void;
-  messages: OpenAI.ChatCompletionMessage[];
+  messages: any[]; // types are too complex
   topSimilarities: string[];
   activeCellCode?: string;
   selectedCode?: string;
-  setReferenceSource: (source: string) => void;
+  setReferenceSource: Dispatch<SetStateAction<string>>;
   setIsAiGenerating: (isGenerating: boolean) => void;
   signal: AbortSignal;
   notebookTracker: INotebookTracker | null;
 }): Promise<void> => {
-  const lastContent = messages[messages.length - 1].content as string;
-  const lastContentWithInjection = await generateChatPrompt(
-    lastContent,
+  const lastMessageContent = messages[messages.length - 1].content;
+
+  // FIXME: This should be handled at each provider level, this is a workaround
+  if (aiChatModelProvider === 'OpenAI' || aiChatModelProvider === 'Anthropic' || aiChatModelProvider === 'Pretzel AI') {
+    if (Array.isArray(lastMessageContent)) {
+      setReferenceSource(prevSource => (prevSource ? `${prevSource}, Image` : 'Image'));
+    }
+  }
+
+  // Process the last message to add context
+  const lastMessageText = Array.isArray(lastMessageContent) ? lastMessageContent[0].text : lastMessageContent;
+  const lastMessageTextWithInjection = await generateChatPrompt(
+    lastMessageText,
     setReferenceSource,
     notebookTracker,
     topSimilarities,
     activeCellCode,
     selectedCode
   );
-  const messagesWithInjection = [...messages.slice(0, -1), { role: 'user', content: lastContentWithInjection }];
+  const updatedLastMessageContent = Array.isArray(lastMessageContent)
+    ? [{ type: 'text', text: lastMessageTextWithInjection }, ...lastMessageContent.slice(1)]
+    : lastMessageTextWithInjection;
+  const updatedMessages = [...messages.slice(0, -1), { role: 'user', content: updatedLastMessageContent }];
+  const processedMessages = processMessages(updatedMessages, aiChatModelProvider, aiChatModelString);
+
   if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && messages) {
     const openai = new OpenAI({
       apiKey: openAiApiKey,
       dangerouslyAllowBrowser: true,
       baseURL: openAiBaseUrl ? openAiBaseUrl : undefined
     });
+
     const stream = await openai.chat.completions.create(
       {
         model: aiChatModelString,
-        messages: messagesWithInjection as ChatCompletionMessage[],
+        messages: processedMessages as ChatCompletionMessage[],
         stream: true
       },
       {
@@ -152,7 +219,7 @@ export const chatAIStream = async ({
     messages
   ) {
     const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
-    const events = await client.streamChatCompletions(deploymentId, messagesWithInjection as ChatCompletionMessage[]);
+    const events = await client.streamChatCompletions(deploymentId, processedMessages as ChatCompletionMessage[]);
     for await (const event of events) {
       for (const choice of event.choices) {
         if (choice.delta?.content) {
@@ -169,7 +236,7 @@ export const chatAIStream = async ({
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        messages: messagesWithInjection
+        messages: processedMessages
       }),
       signal
     });
@@ -191,7 +258,7 @@ export const chatAIStream = async ({
     const client = new MistralClient(mistralApiKey);
 
     // Convert messagesWithInjection to the required Message[] type
-    const convertedMessages = messagesWithInjection.map(msg => ({
+    const convertedMessages = processedMessages.map(msg => ({
       role: msg.role,
       content: msg.content || ''
     }));
@@ -209,7 +276,7 @@ export const chatAIStream = async ({
     setReferenceSource('');
     setIsAiGenerating(false);
   } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && messages) {
-    const filteredMessages = messagesWithInjection.filter((msg, index) => index !== 1);
+    const filteredMessages = processedMessages.filter((msg, index) => index !== 1);
     const stream = await streamAnthropicCompletion(anthropicApiKey, filteredMessages, aiChatModelString);
 
     for await (const chunk of stream) {
@@ -227,7 +294,7 @@ export const chatAIStream = async ({
       },
       body: JSON.stringify({
         model: aiChatModelString,
-        messages: messagesWithInjection,
+        messages: processedMessages,
         stream: true
       }),
       signal
@@ -256,7 +323,7 @@ export const chatAIStream = async ({
     const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
     const stream = await groq.chat.completions.create({
       model: aiChatModelString,
-      messages: messagesWithInjection as ChatCompletionMessageParam[],
+      messages: processedMessages as ChatCompletionMessageParam[],
       stream: true
     });
 
