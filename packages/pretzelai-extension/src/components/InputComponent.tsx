@@ -19,6 +19,7 @@ import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import { globalState } from '../globalState';
 import { completionFunctionProvider, FixedSizeStack, PromptMessage } from '../utils';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
+import UploadIcon from '@mui/icons-material/Upload';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
@@ -179,6 +180,7 @@ class PlaceholderContentWidget {
   }
 }
 
+const isMac = /Mac/i.test(navigator.userAgent);
 interface IInputComponentProps {
   isAIEnabled: boolean;
   placeholderEnabled: string;
@@ -483,6 +485,36 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     return { maxWidth, maxHeight };
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+              const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
+              setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
+            }
+          };
+          img.src = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Please upload a valid image file.');
+      }
+    }
+    // Clear the file input after upload
+    event.target.value = '';
+  };
+
   return (
     <div className="input-container">
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, marginTop: '-5px' }}>
@@ -605,6 +637,27 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           buttonText={submitButtonText}
         />
         <RemoveButton handleClick={handleRemove} />
+        <div className="upload-image-button-container">
+          <input
+            accept="image/*"
+            style={{ display: 'none' }}
+            id="image-upload"
+            type="file"
+            onChange={handleImageUpload}
+          />
+          <button
+            className="pretzelInputSubmitButton"
+            title="Upload Image"
+            onClick={() => document.getElementById('image-upload')?.click()}
+          >
+            <UploadIcon />
+          </button>
+          <div className="tooltip">
+            Upload an image.
+            <br />
+            Paste image from clipboard with <strong>{isMac ? 'Cmd+V' : 'Ctrl+V'}</strong>
+          </div>
+        </div>
         <PromptHistoryButton
           handleClick={() => {
             posthog.capture('Prompt History via Button Click', {

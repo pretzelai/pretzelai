@@ -26,7 +26,7 @@ function ImageIcon({ base64Image }: IImageIconProps): JSX.Element {
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.1));
 
   return (
-    <>
+    <div style={{ marginRight: '5px' }}>
       <Tooltip title="Click to view image">
         <Box
           sx={{
@@ -85,7 +85,7 @@ function ImageIcon({ base64Image }: IImageIconProps): JSX.Element {
           </Box>
         </Box>
       </Modal>
-    </>
+    </div>
   );
 }
 

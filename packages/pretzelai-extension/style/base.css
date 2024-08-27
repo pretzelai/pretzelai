@@ -661,3 +661,40 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   max-height: 70vh;
   display: block;
 }
+
+.upload-image-button-container {
+  position: relative;
+  display: inline-block;
+}
+
+.upload-image-button-container .tooltip {
+  position: absolute;
+  top: -55px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--jp-layout-color1);
+  color: var(--jp-ui-font-color1);
+  padding: 5px;
+  border-radius: var(--jp-border-radius);
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  border: 1px solid var(--jp-border-color1);
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.upload-image-button-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.upload-image-button-container button {
+  padding: 2px 2px 1px 2px !important;
+}
+
+.upload-image-button-container svg {
+  width: 20px;
+  height: 20px;
+}

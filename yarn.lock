@@ -2437,7 +2437,7 @@ __metadata:
 
 "@jupyterlab/application-extension@file:../packages/application-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 4.2.10
-  resolution: "@jupyterlab/application-extension@file:../packages/application-extension#../packages/application-extension::hash=8ad82d&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/application-extension@file:../packages/application-extension#../packages/application-extension::hash=05de6f&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@jupyterlab/application": ^4.2.10
     "@jupyterlab/apputils": ^4.3.0
@@ -2454,7 +2454,7 @@ __metadata:
     "@lumino/disposable": ^2.1.2
     "@lumino/widgets": ^2.3.2
     react: ^18.2.0
-  checksum: 989726f17b04ef785a178c3b86ce69612aeb0b9a8ecf21ef1ebc0af55fe39b719d28655678e8a7d9b85ce83e78af5ff415f81b1c72d804c4067cf445032cd8d2
+  checksum: 8d6959decb60862eedc80ba75fcad538227cf6802378a339b76d4941d24c0997348891e46a1e2a9a2919d1d1130f3f664ec17cb1ad6c2491ec522f88db992075
   languageName: node
   linkType: hard
 
@@ -4888,7 +4888,7 @@ __metadata:
 
 "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension::locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode":
   version: 0.2.2
-  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=0ebdb2&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
+  resolution: "@jupyterlab/pretzelai-extension@file:../packages/pretzelai-extension#../packages/pretzelai-extension::hash=9269b3&locator=%40jupyterlab%2Fapplication-top%40workspace%3Adev_mode"
   dependencies:
     "@azure/openai": ^1.0.0-beta.12
     "@codemirror/commands": ^6.3.3
@@ -4927,7 +4927,7 @@ __metadata:
     posthog-js: ^1.130.2
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 1269ca33e23b16a2ff1664c3ce41e8f8765fd73b65c037c642227c3d472ced243bece44eec5d5ba2133329c954df2c353edd3f363ca0d0a7f5e8cac013b6da59
+  checksum: 0a2bff386b79b9d36d1ef070db22aefd3aa7adf5888559b403f68bcab68d08469b2f7802d38e1c8db243353ce3ecd7680a7c82428ac2cece4748f010641f4be6
   languageName: node
   linkType: hard
 
