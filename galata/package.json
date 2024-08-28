@@ -44,7 +44,7 @@
     "test:update": "jlpm test:base:update && jlpm test:benchmark:update"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.2.10",
+    "@jupyterlab/application": "^4.2.11",
     "@jupyterlab/apputils": "^4.3.0",
     "@jupyterlab/coreutils": "^6.2.0",
     "@jupyterlab/debugger": "^4.2.0",
