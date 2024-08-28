@@ -8,7 +8,7 @@ When adding or changing settings, migrations are used to update settings from on
 
    - If the current version is 1.5, and you're making settings version 1.6, then you need to make a file called `migrate_1_5_to_1_6.ts`
    - In this file, create a function that returns default settings for 1.6: `returnDefaults_1_6`
-     - Usually, you can just copy the defaults of 1.5 (from `migrate_1_4_to_1_5`) and add/change any settings
+     - Usually, you can just copy the defaults of 1.5 (from `migrate_1_4_to_1_5.ts`) and add/change any settings
      - If you copy and paste old settings, remember to set the version to 1.6
      - If there are structural changes to the schema, you should be extra careful defining what the defaults look like
    - Write a function `migrate_1_5_to_1_6`
