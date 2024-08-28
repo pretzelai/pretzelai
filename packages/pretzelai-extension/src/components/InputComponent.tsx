@@ -230,7 +230,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     if (currentSettingsVersion) {
       const aiChatModelProvider = pretzelSettingsJSON.features.aiChat.modelProvider;
       const aiChatModelString = pretzelSettingsJSON.features.aiChat.modelString;
-      setCanBeUsedForImages(providersInfo[currentSettingsVersion][aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
+      setCanBeUsedForImages(providersInfo[aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
     }
   }, [pretzelSettingsJSON]);
 

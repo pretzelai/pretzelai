@@ -21,6 +21,15 @@ export async function migrate_1_1_to_1_2(pretzelSettingsJSON: ReturnType<typeof 
   return pretzelSettingsJSON;
 }
 
+type ModelInfo = {
+  name: string;
+  enabled: boolean;
+  showSetting: boolean;
+  settings: Record<string, any>;
+};
+
+type OllamaModels = { [key: string]: ModelInfo } | Record<string, never>;
+
 export function returnDefaults_1_2() {
   return {
     version: '1.2',
@@ -221,7 +230,7 @@ export function returnDefaults_1_2() {
             showSetting: true
           }
         },
-        models: {}
+        models: {} as OllamaModels
       },
       Groq: {
         name: 'Groq',

@@ -86,6 +86,15 @@ export async function migrate_1_0_to_1_1(settings: ISettingRegistry.ISettings): 
   return pretzelSettingsJSON;
 }
 
+type ModelInfo = {
+  name: string;
+  enabled: boolean;
+  showSetting: boolean;
+  settings: Record<string, any>;
+};
+
+type OllamaModels = { [key: string]: ModelInfo } | Record<string, never>;
+
 export function returnDefaults_1_1() {
   return {
     version: '1.1',
@@ -283,7 +292,7 @@ export function returnDefaults_1_1() {
             showSetting: true
           }
         },
-        models: {}
+        models: {} as OllamaModels
       },
       Groq: {
         name: 'Groq',
