@@ -35,7 +35,7 @@ import Tooltip from '@mui/material/Tooltip';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { getDefaultSettings } from '../migrations/defaultSettings';
 import { getCookie, PLUGIN_ID } from '../utils';
-import { getProvidersInfo } from '../migrations/providerInfo';
+import { providersInfo as defaultProvidersInfo } from '../migrations/providerInfo';
 import { IProvidersInfo } from '../migrations/providerInfo';
 import debounce from 'lodash/debounce';
 import Groq from 'groq-sdk';
@@ -119,7 +119,7 @@ const CustomSelect = styled(Select)(({ theme }) => ({
 const SettingsContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2),
   color: 'var(--jp-ui-font-color0)',
-  maxWidth: '800px',
+  maxWidth: '1000px',
   margin: '0 auto',
   '& .MuiTypography-root': {
     color: 'var(--jp-ui-font-color0)'
@@ -153,6 +153,30 @@ const ErrorContainer = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(2)
 }));
 
+const isPretzelAIHostedVersion = window.location.hostname.includes('pretzelai.app');
+
+// Function to fetch subscription status
+const fetchSubscriptionStatus = async () => {
+  try {
+    const url = window.location.href;
+    const emailMatch = url.match(/\/user\/([^/]+)\/lab/);
+    const email = emailMatch ? decodeURIComponent(emailMatch[1]) : null;
+
+    const response = await fetch('https://api.pretzelai.app/subscribed', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email })
+    });
+    const data = await response.json();
+    return data.isSubscribed;
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    return false;
+  }
+};
+
 export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegistry }) => {
   const [tempSettings, setTempSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -163,7 +187,14 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     aiChat: { provider: '', model: '' },
     inlineCompletion: { provider: '', model: '' }
   });
-  const [providersInfo, setProvidersInfo] = useState<IProvidersInfo>({});
+  const [providersInfo, setProvidersInfo] = useState<IProvidersInfo>(defaultProvidersInfo);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  useEffect(() => {
+    if (isPretzelAIHostedVersion) {
+      fetchSubscriptionStatus().then(isSubscribed => setIsSubscribed(isSubscribed));
+    }
+  }, []);
 
   useEffect(() => {
     if (Object.keys(validationErrors).length > 0) {
@@ -179,11 +210,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const loadSettings = async () => {
       const loadedSettings = await settingRegistry.load(PLUGIN_ID);
       const pretzelSettingsJSON = loadedSettings.get('pretzelSettingsJSON').composite as any;
-      const currentVersion = pretzelSettingsJSON.version || '1.1';
-      const providersInfo = getProvidersInfo(currentVersion);
-      // Update Ollama provider info for models
-      updateOllamaProviderInfo();
-
       setTempSettings(pretzelSettingsJSON);
       setSelectedModels({
         aiChat: {
@@ -195,7 +221,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           model: pretzelSettingsJSON.features.inlineCompletion.modelString
         }
       });
-      setProvidersInfo(providersInfo);
       setLoading(false);
     };
     loadSettings();
@@ -203,8 +228,8 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   const updateOllamaProviderInfo = () => {
     const ollamaInfo = providersInfo['Ollama'];
-    if (ollamaInfo) {
-      const ollamaModels = tempSettings.providers['Ollama'].models;
+    if (ollamaInfo && tempSettings && tempSettings.providers?.Ollama?.enabled) {
+      const ollamaModels = tempSettings.providers?.Ollama?.models;
       const updatedModels = {};
       for (const modelKey of Object.keys(ollamaModels)) {
         updatedModels[modelKey] = {
@@ -227,7 +252,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     if (tempSettings.providers?.Ollama?.models) {
       updateOllamaProviderInfo();
     }
-  }, [JSON.stringify(tempSettings?.providers?.Ollama?.models)]);
+  }, [JSON.stringify(tempSettings?.providers?.Ollama?.models), tempSettings]);
 
   useEffect(() => {
     const ollamaBaseUrl = tempSettings.providers?.Ollama?.apiSettings?.baseUrl?.value;
@@ -812,18 +837,56 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     <Box>
       <SectionTitle variant="h6">Other Settings</SectionTitle>
       <CompactGrid container spacing={1} alignItems="center">
-        <Grid item xs={6}>
-          <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-            Enable PostHog Prompt Telemetry
-          </InputLabel>
-        </Grid>
-        <Grid item xs={6}>
-          <Switch
-            size="small"
-            checked={tempSettings.features.posthogTelemetry.posthogPromptTelemetry.enabled}
-            onChange={e => handleChange('features.posthogTelemetry.posthogPromptTelemetry.enabled', e.target.checked)}
-          />
-        </Grid>
+        {isPretzelAIHostedVersion ? (
+          <>
+            <Grid item xs={6}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
+                We use telemetry to improve our product.
+                <br />
+                For more information, visit:{' '}
+                <a href="https://withpretzel.com/termsandconditions" target="_blank" rel="noopener noreferrer">
+                  https://withpretzel.com/termsandconditions
+                </a>
+                {!isSubscribed && (
+                  <>
+                    <br />
+                    To disable telemetry, upgrade at:{' '}
+                    <a href="https://withpretzel.com/subscribe" target="_blank" rel="noopener noreferrer">
+                      https://withpretzel.com/subscribe
+                    </a>
+                  </>
+                )}
+              </InputLabel>
+            </Grid>
+            <Grid item xs={6}>
+              <Switch
+                size="small"
+                disabled={!isSubscribed}
+                checked={tempSettings.features.posthogTelemetry.posthogGeneralTelemetry.enabled}
+                onChange={e =>
+                  handleChange('features.posthogTelemetry.posthogGeneralTelemetry.enabled', e.target.checked)
+                }
+              />
+            </Grid>
+          </>
+        ) : (
+          <>
+            <Grid item xs={6}>
+              <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
+                Enable PostHog Prompt Telemetry
+              </InputLabel>
+            </Grid>
+            <Grid item xs={6}>
+              <Switch
+                size="small"
+                checked={tempSettings.features.posthogTelemetry.posthogPromptTelemetry.enabled}
+                onChange={e =>
+                  handleChange('features.posthogTelemetry.posthogPromptTelemetry.enabled', e.target.checked)
+                }
+              />
+            </Grid>
+          </>
+        )}
       </CompactGrid>
     </Box>
   );
@@ -986,7 +1049,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
           display: 'flex',
           justifyContent: 'space-between',
           width: '100%',
-          maxWidth: '800px'
+          maxWidth: '1000px'
         }}
       >
         <Button variant="outlined" color="secondary" onClick={handleRestoreDefaults}>

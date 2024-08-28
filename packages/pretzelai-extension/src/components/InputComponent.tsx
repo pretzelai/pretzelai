@@ -21,7 +21,7 @@ import { completionFunctionProvider, FixedSizeStack, PromptMessage } from '../ut
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
 import { getDefaultSettings } from '../migrations/defaultSettings';
-import { getProvidersInfo } from '../migrations/providerInfo';
+import { providersInfo } from '../migrations/providerInfo';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
@@ -228,10 +228,9 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   useEffect(() => {
     const currentSettingsVersion = pretzelSettingsJSON?.version;
     if (currentSettingsVersion) {
-      const providerInfo = getProvidersInfo(currentSettingsVersion);
       const aiChatModelProvider = pretzelSettingsJSON.features.aiChat.modelProvider;
       const aiChatModelString = pretzelSettingsJSON.features.aiChat.modelString;
-      setCanBeUsedForImages(providerInfo[aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
+      setCanBeUsedForImages(providersInfo[currentSettingsVersion][aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
     }
   }, [pretzelSettingsJSON]);
 

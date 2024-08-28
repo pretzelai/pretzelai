@@ -9,13 +9,15 @@
  */
 
 import { migrate_1_0_to_1_1 } from './migrate_1_0_to_1_1';
+import { migrate_1_1_to_1_2 } from './migrate_1_1_to_1_2';
 
 interface IMigrationFunction {
   (settings: any): Promise<any>;
 }
 
 const migrations: { [key: string]: IMigrationFunction } = {
-  '1.0_to_1.1': migrate_1_0_to_1_1
+  '1.0_to_1.1': migrate_1_0_to_1_1,
+  '1.1_to_1.2': migrate_1_1_to_1_2
   // Add more migrations here as needed
 };
 

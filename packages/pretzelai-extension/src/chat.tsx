@@ -37,7 +37,7 @@ import {
   PRETZEL_FOLDER,
   readEmbeddings
 } from './utils';
-import { getProvidersInfo } from './migrations/providerInfo';
+import { providersInfo } from './migrations/providerInfo';
 loader.config({ monaco }); // BUG FIX - WAS PICKING UP OLD VERSION OF MONACO FROM JSDELIVR
 
 const pretzelIcon = new LabIcon({
@@ -182,8 +182,7 @@ export function Chat({
   useEffect(() => {
     const currentSettingsVersion = pretzelSettingsJSON?.version;
     if (currentSettingsVersion) {
-      const providerInfo = getProvidersInfo(currentSettingsVersion);
-      setCanBeUsedForImages(providerInfo[aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
+      setCanBeUsedForImages(providersInfo[aiChatModelProvider]?.models[aiChatModelString]?.canBeUsedForImages ?? false);
     }
   }, [pretzelSettingsJSON, aiChatModelProvider, aiChatModelString]);
 
