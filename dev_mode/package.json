@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab/application-top",
-  "version": "4.2.10",
+  "version": "4.2.11",
   "private": true,
   "license": "BSD-3-Clause",
   "scripts": {
@@ -228,7 +228,7 @@
   },
   "jupyterlab": {
     "name": "JupyterLab",
-    "version": "4.2.10",
+    "version": "4.2.11",
     "extensions": {
       "@jupyterlab/application-extension": "",
       "@jupyterlab/apputils-extension": "",
