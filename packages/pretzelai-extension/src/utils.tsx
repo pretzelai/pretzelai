@@ -162,11 +162,17 @@ export async function processVariables(
         varValues += `\n\`${variableName}\` is a DataFrame. Five random rows from this DataFrame are shown below as CSV:\n`;
         varValues += `\`\`\`\n${sampleRows}\n\`\`\`\n`;
       } else if (variableType?.includes('function')) {
-        const functionDefinition = await executeCode(notebookTracker!.currentWidget!.sessionContext!.session!.kernel!, `import inspect; print(inspect.getsource(${variableName}))`);
+        const functionDefinition = await executeCode(
+          notebookTracker!.currentWidget!.sessionContext!.session!.kernel!,
+          `import inspect; print(inspect.getsource(${variableName}))`
+        );
         varValues += `\n\`${variableName}\` is a function. Its definition is:\n`;
         varValues += `\`\`\`python\n${functionDefinition}\n\`\`\`\n`;
       } else if (variableType?.includes('type')) {
-        const classDefinition = await executeCode(notebookTracker!.currentWidget!.sessionContext!.session!.kernel!, `import inspect; print(inspect.getsource(${variableName}))`);
+        const classDefinition = await executeCode(
+          notebookTracker!.currentWidget!.sessionContext!.session!.kernel!,
+          `import inspect; print(inspect.getsource(${variableName}))`
+        );
         if (classDefinition) {
           varValues += `\n\`${variableName}\` is a class. Its definition is:\n`;
           varValues += `\`\`\`python\n${classDefinition}\n\`\`\`\n`;
@@ -695,12 +701,9 @@ export const generateAIStream = async ({
   });
 };
 
+export type PromptMessageItem = { type: 'text'; text: string } | { type: 'image'; data: string };
 
-export type PromptMessageItem =
-  | { type: "text"; text: string }
-  | { type: "image"; data: string };
-
-export type PromptMessage = [{ type: "text"; text: string }, ...PromptMessageItem[]];
+export type PromptMessage = [{ type: 'text'; text: string }, ...PromptMessageItem[]];
 
 export class FixedSizeStack<T> {
   public stack: T[];
@@ -929,7 +932,11 @@ export async function savePromptHistory(
 
     try {
       // this line is like get_or_create for directory
-      const response = await ServerConnection.makeRequest(requestUrlFolder, initFolder, app.serviceManager.serverSettings);
+      const response = await ServerConnection.makeRequest(
+        requestUrlFolder,
+        initFolder,
+        app.serviceManager.serverSettings
+      );
       if (!response.ok) {
         throw new Error(`Error creating directory: ${response}`);
       } else {
@@ -977,3 +984,5 @@ export async function loadPromptHistory(
     return [];
   }
 }
+
+export const isPretzelAIHostedVersion = window.location.hostname.includes('pretzelai.app');

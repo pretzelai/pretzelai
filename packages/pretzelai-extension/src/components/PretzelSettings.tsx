@@ -40,6 +40,7 @@ import debounce from 'lodash/debounce';
 import Groq from 'groq-sdk';
 import { ServerConnection } from '@jupyterlab/services';
 import { URLExt } from '@jupyterlab/coreutils';
+import { isPretzelAIHostedVersion } from '../utils';
 
 const AI_SERVICES_ORDER = ['OpenAI', 'Anthropic', 'Mistral', 'Groq', 'Ollama', 'Azure'];
 
@@ -151,8 +152,6 @@ const ErrorBox = styled(Box)(({ theme }) => ({
 const ErrorContainer = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(2)
 }));
-
-const isPretzelAIHostedVersion = window.location.hostname.includes('pretzelai.app');
 
 // Function to fetch subscription status
 const fetchSubscriptionStatus = async () => {
@@ -409,8 +408,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
                 }
               }
             };
-          }
-          else {
+          } else {
             return prevSettings;
           }
         });
@@ -438,8 +436,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
         current[pathParts[pathParts.length - 1]] = value;
         return updatedSettings;
-      }
-      else {
+      } else {
         return prevSettings;
       }
     });

@@ -9,6 +9,7 @@
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import * as React from 'react';
 import { Dialog } from '@jupyterlab/apputils';
+import { isPretzelAIHostedVersion } from './utils';
 
 let settingRegistry: ISettingRegistry;
 
@@ -21,7 +22,6 @@ function SplashScreen() {
   const isMac = /Mac/i.test(navigator.userAgent);
   const keyCombination = isMac ? 'Cmd + K' : 'Ctrl + K';
   const keyCombinationSidepanel = isMac ? 'Ctrl + Cmd + B' : 'Ctrl + Alt + B';
-  const isPretzelAIHostedVersion = window.location.hostname.includes('pretzelai.app');
 
   return (
     <div id="splash-screen">
