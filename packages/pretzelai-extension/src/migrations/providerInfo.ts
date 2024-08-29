@@ -6,32 +6,17 @@
  * Contributions by contributors listed in the PRETZEL_CONTRIBUTORS file (found at
  * the root of the project) are licensed under AGPLv3.
  */
-
-export interface IProviderInfo {
+type ModelInfo = {
   displayName: string;
   description: string;
-  models: {
-    [key: string]: {
-      displayName: string;
-      description: string;
-      canBeUsedForChat: boolean;
-      canBeUsedForInlineCompletion: boolean;
-      canBeUsedForImages: boolean;
-    };
-  };
-  apiSettings?: {
-    [key: string]: {
-      displayName: string;
-      description: string;
-    };
-  };
-}
+  canBeUsedForChat: boolean;
+  canBeUsedForInlineCompletion: boolean;
+  canBeUsedForImages: boolean;
+};
 
-export interface IProvidersInfo {
-  [key: string]: IProviderInfo;
-}
+export type ProviderInfoOllamaModels = { [key: string]: ModelInfo } | Record<string, never>;
 
-export const providersInfo: IProvidersInfo = {
+export const providersInfo = {
   'Pretzel AI': {
     displayName: 'Pretzel AI Server',
     description: 'Free AI service provided by Pretzel AI. No API key required.',
@@ -187,7 +172,7 @@ export const providersInfo: IProvidersInfo = {
   Ollama: {
     displayName: 'Ollama',
     description: 'Run open-source AI models locally.',
-    models: {},
+    models: {} as ProviderInfoOllamaModels,
     apiSettings: {
       baseUrl: {
         displayName: 'Base URL',

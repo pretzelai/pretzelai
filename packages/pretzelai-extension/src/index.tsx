@@ -18,7 +18,16 @@ import OpenAI from 'openai';
 import MistralClient from '@mistralai/mistralai';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
-import { deleteExistingEmbeddings, FixedSizeStack, getAvailableVariables, getEmbeddings, loadPromptHistory, PLUGIN_ID, PromptMessage, savePromptHistory } from './utils';
+import {
+  deleteExistingEmbeddings,
+  FixedSizeStack,
+  getAvailableVariables,
+  getEmbeddings,
+  loadPromptHistory,
+  PLUGIN_ID,
+  PromptMessage,
+  savePromptHistory
+} from './utils';
 
 import posthog from 'posthog-js';
 import { CodeCellModel } from '@jupyterlab/cells';
@@ -40,9 +49,10 @@ import { NotebookActions } from '@jupyterlab/notebook';
 import { globalState } from './globalState';
 import { debounce } from 'lodash';
 import { PretzelSettings } from './components/PretzelSettings';
+import { isPretzelAIHostedVersion } from './utils';
 
 function initializePosthog(cookiesEnabled: boolean, fullTelemetry: boolean) {
-  if (fullTelemetry) {
+  if (isPretzelAIHostedVersion && fullTelemetry) {
     posthog.init('phc_FnIUQkcrbS8sgtNFHp5kpMkSvL5ydtO1nd9mPllRQqZ', {
       api_host: 'https://d2yfaqny8nshvd.cloudfront.net'
     });
@@ -172,7 +182,13 @@ const extension: JupyterFrontEndPlugin<void> = {
       // check to make sure we have all the settings set
       if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString) {
         isAIEnabled = true;
-      } else if (aiChatModelProvider === 'Azure' && azureBaseUrl && azureDeploymentName && azureApiKey && aiChatModelString) {
+      } else if (
+        aiChatModelProvider === 'Azure' &&
+        azureBaseUrl &&
+        azureDeploymentName &&
+        azureApiKey &&
+        aiChatModelString
+      ) {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Mistral' && mistralApiKey && mistralModel) {
         isAIEnabled = true;
@@ -320,7 +336,12 @@ const extension: JupyterFrontEndPlugin<void> = {
         return;
       }
       const savedHistory = await loadPromptHistory(app, notebookTracker);
-      promptHistoryStack = new FixedSizeStack<PromptMessage>(100, [{ type: 'text', text: '' }], [{ type: 'text', text: '' }], savedHistory);
+      promptHistoryStack = new FixedSizeStack<PromptMessage>(
+        100,
+        [{ type: 'text', text: '' }],
+        [{ type: 'text', text: '' }],
+        savedHistory
+      );
     };
 
     async function migrateAndSetSettings(): Promise<void> {

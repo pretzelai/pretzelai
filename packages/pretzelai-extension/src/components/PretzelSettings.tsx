@@ -33,14 +33,14 @@ import InfoIcon from '@mui/icons-material/Info';
 import Tooltip from '@mui/material/Tooltip';
 
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { getDefaultSettings } from '../migrations/defaultSettings';
+import { getDefaultSettings, PretzelSettingsType } from '../migrations/defaultSettings';
 import { getCookie, PLUGIN_ID } from '../utils';
-import { providersInfo as defaultProvidersInfo } from '../migrations/providerInfo';
-import { IProvidersInfo } from '../migrations/providerInfo';
+import { providersInfo as defaultProvidersInfo, ProviderInfoOllamaModels } from '../migrations/providerInfo';
 import debounce from 'lodash/debounce';
 import Groq from 'groq-sdk';
 import { ServerConnection } from '@jupyterlab/services';
 import { URLExt } from '@jupyterlab/coreutils';
+import { isPretzelAIHostedVersion } from '../utils';
 
 const AI_SERVICES_ORDER = ['OpenAI', 'Anthropic', 'Mistral', 'Groq', 'Ollama', 'Azure'];
 
@@ -153,8 +153,6 @@ const ErrorContainer = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(2)
 }));
 
-const isPretzelAIHostedVersion = window.location.hostname.includes('pretzelai.app');
-
 // Function to fetch subscription status
 const fetchSubscriptionStatus = async () => {
   try {
@@ -178,7 +176,7 @@ const fetchSubscriptionStatus = async () => {
 };
 
 export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegistry }) => {
-  const [tempSettings, setTempSettings] = useState<any>({});
+  const [tempSettings, setTempSettings] = useState<PretzelSettingsType | null>(null);
   const [loading, setLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [isValidating, setIsValidating] = useState(false);
@@ -187,7 +185,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     aiChat: { provider: '', model: '' },
     inlineCompletion: { provider: '', model: '' }
   });
-  const [providersInfo, setProvidersInfo] = useState<IProvidersInfo>(defaultProvidersInfo);
+  const [providersInfo, setProvidersInfo] = useState(defaultProvidersInfo);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
@@ -230,14 +228,15 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const ollamaInfo = providersInfo['Ollama'];
     if (ollamaInfo && tempSettings && tempSettings.providers?.Ollama?.enabled) {
       const ollamaModels = tempSettings.providers?.Ollama?.models;
-      const updatedModels = {};
+      const updatedModels: ProviderInfoOllamaModels = {};
       for (const modelKey of Object.keys(ollamaModels)) {
         updatedModels[modelKey] = {
           displayName: `${modelKey}`,
           description:
             "Model provided by Ollama. Please see model documentation online to understand it's capabilities.",
           canBeUsedForChat: true,
-          canBeUsedForInlineCompletion: true
+          canBeUsedForInlineCompletion: true,
+          canBeUsedForImages: false
         };
       }
       ollamaInfo.models = updatedModels;
@@ -249,22 +248,22 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   };
 
   useEffect(() => {
-    if (tempSettings.providers?.Ollama?.models) {
+    if (tempSettings?.providers?.Ollama?.models) {
       updateOllamaProviderInfo();
     }
   }, [JSON.stringify(tempSettings?.providers?.Ollama?.models), tempSettings]);
 
   useEffect(() => {
-    const ollamaBaseUrl = tempSettings.providers?.Ollama?.apiSettings?.baseUrl?.value;
-    const ollamaEnabled = tempSettings.providers?.Ollama?.enabled;
+    const ollamaBaseUrl = tempSettings?.providers?.Ollama?.apiSettings?.baseUrl?.value;
+    const ollamaEnabled = tempSettings?.providers?.Ollama?.enabled;
     if (ollamaBaseUrl && ollamaEnabled) {
       fetchOllamaModels(ollamaBaseUrl);
     }
-  }, [tempSettings.providers?.Ollama?.enabled]);
+  }, [tempSettings?.providers?.Ollama?.enabled]);
 
   const handleRestoreDefaults = async () => {
-    const currentVersion = tempSettings.version || '1.1';
-    const defaultSettings = getDefaultSettings(currentVersion);
+    const currentVersion = tempSettings!.version;
+    const defaultSettings = getDefaultSettings(currentVersion) as PretzelSettingsType;
     setTempSettings(defaultSettings);
 
     // Save the default settings
@@ -291,16 +290,19 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   const getAvailableModels = () => {
     const models: string[] = [];
-    Object.entries(tempSettings.providers).forEach(([providerName, provider]: [string, any]) => {
-      if (provider.enabled) {
-        Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
-          if (model.enabled) {
-            models.push(`${providerName}:${modelName}`);
-          }
-        });
-      }
-    });
-    return models;
+    if (tempSettings) {
+      Object.entries(tempSettings.providers).forEach(([providerName, provider]: [string, any]) => {
+        if (provider.enabled) {
+          Object.entries(provider.models).forEach(([modelName, model]: [string, any]) => {
+            if (model.enabled) {
+              models.push(`${providerName}:${modelName}`);
+            }
+          });
+        }
+      });
+      return models;
+    }
+    return [];
   };
 
   const renderModelSelect = (featurePath: string) => (
@@ -320,7 +322,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         }}
       >
         {Object.entries(providersInfo).map(([providerName, providerInfo]) => {
-          if (tempSettings.providers[providerName]?.enabled) {
+          if (tempSettings?.providers[providerName]?.enabled) {
             return [
               <ListSubheader
                 key={providerName}
@@ -394,16 +396,22 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             showSetting: true
           };
         });
-        setTempSettings(prevSettings => ({
-          ...prevSettings,
-          providers: {
-            ...prevSettings.providers,
-            Ollama: {
-              ...prevSettings.providers.Ollama,
-              models: updatedOllamaModels
-            }
+        setTempSettings(prevSettings => {
+          if (prevSettings) {
+            return {
+              ...prevSettings,
+              providers: {
+                ...prevSettings.providers,
+                Ollama: {
+                  ...prevSettings.providers.Ollama,
+                  models: updatedOllamaModels
+                }
+              }
+            };
+          } else {
+            return prevSettings;
           }
-        }));
+        });
       }
     } catch (error) {
       console.error('Error fetching Ollama models:', error);
@@ -414,19 +422,23 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
 
   const handleChange = useCallback((path: string, value: any) => {
     setTempSettings(prevSettings => {
-      const updatedSettings = { ...prevSettings };
-      const pathParts = path.split('.');
-      let current = updatedSettings;
+      if (prevSettings) {
+        const updatedSettings = { ...prevSettings };
+        const pathParts = path.split('.');
+        let current = updatedSettings;
 
-      for (let i = 0; i < pathParts.length - 1; i++) {
-        if (!current[pathParts[i]]) {
-          current[pathParts[i]] = {};
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          if (!current[pathParts[i]]) {
+            current[pathParts[i]] = {};
+          }
+          current = current[pathParts[i]];
         }
-        current = current[pathParts[i]];
-      }
 
-      current[pathParts[pathParts.length - 1]] = value;
-      return updatedSettings;
+        current[pathParts[pathParts.length - 1]] = value;
+        return updatedSettings;
+      } else {
+        return prevSettings;
+      }
     });
   }, []);
 
@@ -449,12 +461,12 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         // Update selectedModels state to reflect the saved models
         setSelectedModels({
           aiChat: {
-            provider: tempSettings.features.aiChat.modelProvider,
-            model: tempSettings.features.aiChat.modelString
+            provider: tempSettings!.features.aiChat.modelProvider,
+            model: tempSettings!.features.aiChat.modelString
           },
           inlineCompletion: {
-            provider: tempSettings.features.inlineCompletion.modelProvider,
-            model: tempSettings.features.inlineCompletion.modelString
+            provider: tempSettings!.features.inlineCompletion.modelProvider,
+            model: tempSettings!.features.inlineCompletion.modelString
           }
         });
       } catch (error) {
@@ -468,7 +480,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const errors: Record<string, string> = {};
 
     const validateOpenAI = async () => {
-      const openAIProvider = tempSettings.providers.OpenAI;
+      const openAIProvider = tempSettings!.providers.OpenAI;
       if (openAIProvider?.enabled && openAIProvider?.apiSettings?.apiKey?.value) {
         try {
           const baseUrl = openAIProvider.apiSettings?.baseUrl?.value || 'https://api.openai.com';
@@ -490,7 +502,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     };
 
     const validateAzure = () => {
-      const azureProvider = tempSettings.providers.Azure;
+      const azureProvider = tempSettings!.providers.Azure;
       const apiKey = azureProvider?.apiSettings?.apiKey?.value;
       const baseUrl = azureProvider?.apiSettings?.baseUrl?.value;
       const deploymentName = azureProvider?.apiSettings?.deploymentName?.value;
@@ -518,7 +530,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     };
 
     const validateMistral = async () => {
-      const mistralProvider = tempSettings.providers.Mistral;
+      const mistralProvider = tempSettings!.providers.Mistral;
       if (mistralProvider?.enabled && mistralProvider?.apiSettings?.apiKey?.value) {
         try {
           const response = await fetch('https://api.mistral.ai/v1/models', {
@@ -546,7 +558,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     };
 
     const validateAnthropic = async () => {
-      const anthropicProvider = tempSettings.providers.Anthropic;
+      const anthropicProvider = tempSettings!.providers.Anthropic;
       if (anthropicProvider?.enabled && anthropicProvider?.apiSettings?.apiKey?.value) {
         try {
           const baseUrl = ServerConnection.makeSettings().baseUrl;
@@ -580,7 +592,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     };
 
     const validateOllama = async () => {
-      const ollamaProvider = tempSettings.providers.Ollama;
+      const ollamaProvider = tempSettings!.providers.Ollama;
       if (ollamaProvider?.enabled) {
         const baseUrl = ollamaProvider?.apiSettings?.baseUrl?.value;
         if (!baseUrl) {
@@ -609,7 +621,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     };
 
     const validateGroq = async () => {
-      const groqProvider = tempSettings.providers.Groq;
+      const groqProvider = tempSettings!.providers.Groq;
       if (groqProvider?.enabled && groqProvider?.apiSettings?.apiKey?.value) {
         try {
           const groq = new Groq({ apiKey: groqProvider.apiSettings.apiKey.value, dangerouslyAllowBrowser: true });
@@ -633,7 +645,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const validateModelApiKey = (featurePath: string) => {
       const { provider } = selectedModels[featurePath];
       if (provider !== 'Pretzel AI' && provider !== 'Ollama') {
-        const apiKey = tempSettings.providers[provider]?.apiSettings?.apiKey?.value;
+        const apiKey = tempSettings!.providers[provider]?.apiSettings?.apiKey?.value;
         if (!apiKey) {
           errors[`providers.${provider}.apiSettings.apiKey`] = `${provider} API key is required for the selected model`;
         }
@@ -660,8 +672,8 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     validateModel('inlineCompletion');
 
     const validateCodeMatchThreshold = () => {
-      const threshold = tempSettings.features.aiChat.codeMatchThreshold;
-      if (threshold === null || threshold === '') {
+      const threshold = tempSettings!.features.aiChat.codeMatchThreshold;
+      if (threshold === null) {
         errors['features.aiChat.codeMatchThreshold'] = 'Code match threshold is required';
       } else {
         const thresholdNumber = Number(threshold);
@@ -686,7 +698,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
   };
 
   const renderProviderSettings = (providerName: string) => {
-    const provider = tempSettings.providers[providerName];
+    const provider = tempSettings!.providers[providerName];
     const providerInfo = providersInfo[providerName];
     if (!provider || !providerInfo) return null;
 
@@ -782,7 +794,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             variant="outlined"
             size="small"
             type="text"
-            value={tempSettings.features.aiChat.codeMatchThreshold ?? ''}
+            value={tempSettings!.features.aiChat.codeMatchThreshold ?? ''}
             onChange={e => {
               const value = e.target.value;
               if (value === '' || (Number(value) >= 0 && Number(value) <= 100)) {
@@ -814,11 +826,11 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         <Grid item xs={6}>
           <Switch
             size="small"
-            checked={tempSettings.features.inlineCompletion.enabled}
+            checked={tempSettings!.features.inlineCompletion.enabled}
             onChange={e => handleChange('features.inlineCompletion.enabled', e.target.checked)}
           />
         </Grid>
-        {tempSettings.features.inlineCompletion.enabled && (
+        {tempSettings!.features.inlineCompletion.enabled && (
           <>
             <Grid item xs={6}>
               <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>Copilot Model</InputLabel>
@@ -862,7 +874,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
               <Switch
                 size="small"
                 disabled={!isSubscribed}
-                checked={tempSettings.features.posthogTelemetry.posthogGeneralTelemetry.enabled}
+                checked={tempSettings!.features.posthogTelemetry.posthogGeneralTelemetry.enabled}
                 onChange={e =>
                   handleChange('features.posthogTelemetry.posthogGeneralTelemetry.enabled', e.target.checked)
                 }
@@ -879,7 +891,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             <Grid item xs={6}>
               <Switch
                 size="small"
-                checked={tempSettings.features.posthogTelemetry.posthogPromptTelemetry.enabled}
+                checked={tempSettings!.features.posthogTelemetry.posthogPromptTelemetry.enabled}
                 onChange={e =>
                   handleChange('features.posthogTelemetry.posthogPromptTelemetry.enabled', e.target.checked)
                 }
@@ -928,7 +940,7 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         <SectionDivider sx={{ my: 2 }} />
         <SectionTitle variant="h6">Configure AI Services</SectionTitle>
         {AI_SERVICES_ORDER.map(providerName => {
-          const provider = tempSettings.providers[providerName];
+          const provider = tempSettings!.providers[providerName];
           const providerInfo = providersInfo[providerName];
           if (!provider || !providerInfo) return null;
           return (
