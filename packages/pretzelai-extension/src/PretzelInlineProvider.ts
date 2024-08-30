@@ -182,7 +182,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
         try {
           let completion;
           if (copilotProvider === 'Pretzel AI') {
-            const fetchResponse = await fetch('https://api.pretzelai.app/inline', {
+            const fetchResponse = await fetch('https://api.pretzelai.app/inline_v2', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
