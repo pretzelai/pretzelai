@@ -151,23 +151,23 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
         this.isFetching = true;
         this.isFetchingChanged.emit(true);
 
-        let prompt = this._prefixFromRequest(request);
+        let prefix = this._prefixFromRequest(request);
         const suffix = this._suffixFromRequest(request);
-        if (prompt.indexOf('\n') === -1 && !suffix) {
-          if ('import pandas as pd'.startsWith(prompt)) {
+        if (prefix.indexOf('\n') === -1 && !suffix) {
+          if ('import pandas as pd'.startsWith(prefix)) {
             resolve({
               items: [
                 {
-                  insertText: 'import pandas as pd'.slice(prompt.length)
+                  insertText: 'import pandas as pd'.slice(prefix.length)
                 }
               ]
             });
             return;
           }
-          prompt = `# python code for jupyter notebook\n\n${prompt}`;
+          prefix = `# python code for jupyter notebook\n\n${prefix}`;
         }
         const stops = ['\ndef', '\nclass'];
-        if (this._isMultiLine(prompt)) {
+        if (this._isMultiLine(prefix)) {
           stops.push('\n\n');
         } else {
           stops.push('\n');
@@ -182,7 +182,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
                 Accept: 'application/json'
               },
               body: JSON.stringify({
-                prompt,
+                prompt: prefix,
                 suffix,
                 // eslint-disable-next-line
                 max_tokens: 500,
@@ -196,7 +196,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
               model: copilotModel,
               stop: stops,
               // eslint-disable-next-line
-              max_tokens: this._isMultiLine(prompt) ? 500 : 100,
+              max_tokens: this._isMultiLine(prefix) ? 500 : 100,
               messages: [
                 {
                   role: 'system',
@@ -205,7 +205,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
                 {
                   role: 'user',
                   content: `\`\`\`python
-${prompt}[BLANK]${suffix}
+${prefix}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beggining of your response.`
@@ -225,7 +225,7 @@ Fill in the blank to complete the code block. Your response should include only 
                 },
                 body: JSON.stringify({
                   model: copilotModel,
-                  prompt,
+                  prompt: prefix,
                   suffix,
                   stop: stops,
                   // eslint-disable-next-line
@@ -247,7 +247,7 @@ Fill in the blank to complete the code block. Your response should include only 
                   {
                     role: 'user',
                     content: `\`\`\`python
-${prompt}[BLANK]${suffix}
+${prefix}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
@@ -264,7 +264,7 @@ Fill in the blank to complete the code block. Your response should include only 
             const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
             const result = await client.getCompletions(azureDeploymentName, [
               `\`\`\`python
-${prompt}[BLANK]${suffix}
+${prefix}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
@@ -275,7 +275,7 @@ Fill in the blank to complete the code block. Your response should include only 
               {
                 role: 'user',
                 content: `\`\`\`python
-${prompt}[BLANK]${suffix}
+${prefix}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
@@ -292,7 +292,7 @@ Fill in the blank to complete the code block. Your response should include only 
               {
                 role: 'user',
                 content: `\`\`\`python
-${prompt}[BLANK]${suffix}
+${prefix}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
@@ -334,7 +334,7 @@ Fill in the blank to complete the code block. Your response should include only 
             const groqResponse = await groq.chat.completions.create({
               model: copilotModel,
               stop: stops,
-              max_tokens: this._isMultiLine(prompt) ? 500 : 100,
+              max_tokens: this._isMultiLine(prefix) ? 500 : 100,
               messages: [
                 {
                   role: 'system',
@@ -343,7 +343,7 @@ Fill in the blank to complete the code block. Your response should include only 
                 {
                   role: 'user',
                   content: `\`\`\`python
-${prompt}[BLANK]${suffix}
+${prefix}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
@@ -359,7 +359,7 @@ Fill in the blank to complete the code block. Your response should include only 
               {
                 insertText: fixInlineCompletion({
                   completion,
-                  prefix: prompt,
+                  prefix,
                   suffix
                 })
               }
