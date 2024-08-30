@@ -35,15 +35,8 @@ export const fixInlineCompletion = ({
   prefix: string;
   suffix: string;
 }): string => {
-  // console.log('completion\n', completion);
-  // remove backticks
-  if (completion.startsWith('```python\n')) {
-    if (completion.endsWith('\n```')) {
-      completion = completion.slice(10, -4);
-    } else if (completion.endsWith('\n```\n')) {
-      completion = completion.slice(10, -5);
-    }
-  }
+  // Remove all occurrences of ```python and ```
+  completion = completion.replace(/```python\n?/g, '').replace(/```\n?/g, '');
   // OpenAI sometimes includes the prefix in the completion
   const prefixLastLine = prefix.split('\n').slice(-1)[0];
   if (completion.startsWith(prefixLastLine)) {
@@ -88,6 +81,14 @@ export const fixInlineCompletion = ({
       }
     }
   }
-  // console.log('completionfixed\n', completion);
+  // Add line break if the first 4 characters are spaces (gpt-4o)
+  if (prefixLastLine.trimEnd().endsWith(':')) {
+    if (completion.startsWith('    ')) {
+      completion = '\n' + completion;
+    }
+    if (!completion.startsWith('\n ') && !completion.startsWith(' ')) {
+      completion = '\n    ' + completion;
+    }
+  }
   return completion;
 };

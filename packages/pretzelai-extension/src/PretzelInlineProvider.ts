@@ -66,7 +66,8 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
 
   private _isMultiLine(prefix: string): boolean {
     const currentLine = prefix.split('\n').slice(-1)[0];
-    const prevLine = prefix.split('\n').slice(-2)[0];
+    const lines = prefix.split('\n');
+    const prevLine = lines.length > 1 ? prefix.split('\n').slice(-2)[0] : '';
 
     // If prev line is a function definition, multiline
     if ([':'].includes(prevLine?.trim().slice(-1)[0])) {
@@ -85,6 +86,9 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
       return false;
     }
     if (currentLine?.trimStart().startsWith('def')) {
+      if (currentLine?.trimEnd().endsWith('):')) {
+        return true;
+      }
       return false;
     }
     if (currentLine?.trimStart().startsWith('if')) {
@@ -152,7 +156,16 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
         this.isFetchingChanged.emit(true);
 
         let prompt = this._prefixFromRequest(request);
+
         const suffix = this._suffixFromRequest(request);
+
+        const stops = ['\ndef', '\nclass'];
+        if (this._isMultiLine(prompt)) {
+          stops.push('\n\n');
+        } else {
+          stops.push('\n');
+        }
+
         if (prompt.indexOf('\n') === -1 && !suffix) {
           if ('import pandas as pd'.startsWith(prompt)) {
             resolve({
@@ -165,12 +178,6 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
             return;
           }
           prompt = `# python code for jupyter notebook\n\n${prompt}`;
-        }
-        const stops = ['\ndef', '\nclass'];
-        if (this._isMultiLine(prompt)) {
-          stops.push('\n\n');
-        } else {
-          stops.push('\n');
         }
         try {
           let completion;
