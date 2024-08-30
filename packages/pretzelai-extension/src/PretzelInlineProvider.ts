@@ -122,6 +122,8 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     request: CompletionHandler.IRequest,
     context: IInlineCompletionContext
   ): Promise<IInlineCompletionList<IInlineCompletionItem>> {
+    console.log(context.widget.id);
+    console.log('fetch', request);
     clearTimeout(this.debounceTimer);
     const settings = await this.settingRegistry.load(PLUGIN_ID);
     const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
@@ -152,7 +154,10 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
         this.isFetchingChanged.emit(true);
 
         let prefix = this._prefixFromRequest(request);
+        console.log('🚀 ~ PretzelInlineProvider ~ this.debounceTimer=setTimeout ~ prefix:', prefix);
         const suffix = this._suffixFromRequest(request);
+        console.log('🚀 ~ PretzelInlineProvider ~ this.debounceTimer=setTimeout ~ suffix:', suffix);
+        console.log('🚀 ~ PretzelInlineProvider ~ this.debounceTimer=setTimeout ~ suffix:', suffix);
         if (prefix.indexOf('\n') === -1 && !suffix) {
           if ('import pandas as pd'.startsWith(prefix)) {
             resolve({
@@ -357,11 +362,7 @@ Fill in the blank to complete the code block. Your response should include only 
           resolve({
             items: [
               {
-                insertText: fixInlineCompletion({
-                  completion,
-                  prefix,
-                  suffix
-                })
+                insertText: completion
               }
             ]
           });

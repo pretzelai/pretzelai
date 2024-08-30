@@ -50,6 +50,7 @@ import { globalState } from './globalState';
 import { debounce } from 'lodash';
 import { PretzelSettings } from './components/PretzelSettings';
 import { isPretzelAIHostedVersion } from './utils';
+import { ICellModel } from '@jupyterlab/cells';
 
 function initializePosthog(cookiesEnabled: boolean, fullTelemetry: boolean) {
   if (isPretzelAIHostedVersion && fullTelemetry) {
@@ -81,7 +82,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     ISettingRegistry,
     ICompletionProviderManager,
     IMainMenu,
-    IThemeManager
+    IThemeManager,
+    ICompletionProviderManager
   ],
   optional: [ILayoutRestorer],
   activate: async (
@@ -93,6 +95,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     providerManager: ICompletionProviderManager,
     mainMenu: IMainMenu,
     themeManager: IThemeManager,
+    completionManager: ICompletionProviderManager,
     restorer: ILayoutRestorer | null
   ) => {
     const provider = new PretzelInlineProvider(notebookTracker, settingRegistry, app);
@@ -120,6 +123,49 @@ const extension: JupyterFrontEndPlugin<void> = {
         }
       }
     });
+
+    const triggerMiddleOfLineCompletion = (cell: ICellModel) => {
+      if (cell.type === 'code') {
+        const cursor = notebookTracker.activeCell!.editor!.getCursorPosition()!;
+        const text = cell.sharedModel.source.split('\n')[cursor.line];
+        const offset = cursor.column;
+        if (offset < text.length) {
+          const notebookPanel = notebookTracker.currentWidget;
+          if (notebookPanel) {
+            completionManager.inline!.invoke(notebookPanel.id);
+
+            providerManager.inline!.invoke(notebookPanel.id);
+
+            provider.fetch(
+              {
+                text,
+                offset
+              },
+              {
+                widget: notebookPanel,
+                triggerKind: 0
+              }
+            );
+          }
+        }
+      }
+    };
+
+    // Add this event listener to trigger completion when the active cell changes
+    notebookTracker.activeCellChanged.connect((_, cell) => {
+      if (cell) {
+        cell.model.contentChanged.connect(() => {
+          triggerMiddleOfLineCompletion(cell.model);
+        });
+      }
+    });
+
+    // Trigger completion for the initial active cell
+    if (notebookTracker.activeCell) {
+      notebookTracker.activeCell.model.contentChanged.connect(() => {
+        triggerMiddleOfLineCompletion(notebookTracker.activeCell!.model);
+      });
+    }
 
     // Change the shortcut to accept inline completion to the Tab key
     app.commands.addKeyBinding({
