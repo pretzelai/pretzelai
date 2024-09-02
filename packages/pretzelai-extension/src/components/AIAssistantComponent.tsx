@@ -118,6 +118,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   const [diffView, setDiffView] = useState<EditorView | null>(null);
   const [newCode, setNewCode] = useState<string>('');
+  const [oldCode, setOldCode] = useState<string>('');
   const [streamingDone, setStreamingDone] = useState<boolean>(false);
 
   const buttonsRef = React.useRef<HTMLDivElement>(null);
@@ -291,13 +292,18 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   useEffect(() => {
     if (props.notebookTracker.activeCell && diffView) {
-      diffView.dispatch({
-        changes: {
-          from: 0,
-          to: diffView.state.doc.length,
-          insert: newCode
-        }
-      });
+      const oldCodeLines = oldCode.split('\n');
+      const newCodeLines = newCode.split('\n');
+      if (newCodeLines.length > 1 && oldCodeLines.length > 1) {
+        const diffCode = [...newCodeLines.slice(0, -1), '', ...oldCodeLines.slice(newCodeLines.length)].join('\n');
+        diffView.dispatch({
+          changes: {
+            from: 0,
+            to: diffView.state.doc.length,
+            insert: diffCode
+          }
+        });
+      }
     }
   }, [newCode]);
 
@@ -321,6 +327,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       props.aiChatModelProvider
     );
     let oldCode = props.notebookTracker.activeCell!.model.sharedModel.source;
+    setOldCode(oldCode);
 
     try {
       const stream = await generateAIStream({
@@ -352,7 +359,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       const activeCell = props.notebookTracker.activeCell;
       if (activeCell) {
         const editor = activeCell.editor as CodeMirrorEditor;
-        const initialDiffView = applyDiffToEditor(editor, oldCode, '', props.app, false);
+        const initialDiffView = applyDiffToEditor(editor, oldCode, oldCode, props.app, false);
         setDiffView(initialDiffView);
       }
 
@@ -378,6 +385,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       setShowStatusElement(true);
       setStatusElementText('Calculating embeddings...');
       let oldCode = activeCell!.model.sharedModel.source;
+      setOldCode(oldCode);
 
       let oldCodeForPrompt = activeCell!.model.sharedModel.source;
       const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
@@ -420,7 +428,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         });
 
         const editor = activeCell!.editor as CodeMirrorEditor;
-        const initialDiffView = applyDiffToEditor(editor, oldCode, '', props.app, oldCode.trim() === '');
+        const initialDiffView = applyDiffToEditor(editor, oldCode, oldCode, props.app, oldCode.trim() === '');
         setDiffView(initialDiffView);
 
         setStream(stream);
@@ -460,7 +468,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           handleSubmit={handleSubmit}
           handleRemove={props.handleRemove}
           promptHistoryStack={props.promptHistoryStack}
-          setInputView={() => { }}
+          setInputView={() => {}}
           initialPrompt={initialPrompt}
           activeCell={props.notebookTracker.activeCell!}
           placeholderEnabled={props.placeholderEnabled}
