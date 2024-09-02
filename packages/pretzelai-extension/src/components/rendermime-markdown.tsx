@@ -1,6 +1,5 @@
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { imageIcon } from '@jupyterlab/ui-components';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { Box, IconButton, Modal, Tooltip } from '@mui/material';
