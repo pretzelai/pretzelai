@@ -6,7 +6,7 @@ export const ImagePreview = ({ base64Image }: { base64Image: string }): JSX.Elem
       src={base64Image}
       alt="Preview"
       style={{
-        width: '45px',
+        width: '40px',
         height: '40px',
         objectFit: 'cover',
         borderRadius: '4px',
