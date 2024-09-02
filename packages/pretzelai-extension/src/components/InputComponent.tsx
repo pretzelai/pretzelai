@@ -18,10 +18,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import promptHistorySvg from '../../style/icons/prompt-history.svg';
 import { globalState } from '../globalState';
 import { completionFunctionProvider, FixedSizeStack, PromptMessage } from '../utils';
-import { Box, Chip, Tooltip, Typography } from '@mui/material';
+import { Box, Tooltip, Typography } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
 import { getDefaultSettings } from '../migrations/defaultSettings';
 import { providersInfo } from '../migrations/providerInfo';
+import { ImagePreview } from './ImagePreview';
 
 interface ISubmitButtonProps {
   handleClick: () => void;
@@ -238,7 +239,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     canBeUsedForImagesRef.current = canBeUsedForImages;
   }, [canBeUsedForImages]);
 
-
   // FIXME: Not sure if this will ever fire for isAIEnabled, placeholderEnabled, placeholderDisabled
   useEffect(() => {
     const updatedPlaceholderEnabled = canBeUsedForImagesRef.current
@@ -257,37 +257,40 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     base64ImagesRef.current = base64Images;
   }, [base64Images]);
 
-  const handlePaste = useCallback((editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
-    const clipboardData = event.clipboardEvent?.clipboardData;
-    if (clipboardData && canBeUsedForImagesRef.current) {
-      const items = clipboardData.items;
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.indexOf('image') !== -1) {
-          const blob = item.getAsFile();
-          if (blob) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const img = new Image();
-              img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                  canvas.width = img.width;
-                  canvas.height = img.height;
-                  ctx.drawImage(img, 0, 0);
-                  const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
-                  setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
-                }
+  const handlePaste = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
+      const clipboardData = event.clipboardEvent?.clipboardData;
+      if (clipboardData && canBeUsedForImagesRef.current) {
+        const items = clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.indexOf('image') !== -1) {
+            const blob = item.getAsFile();
+            if (blob) {
+              const reader = new FileReader();
+              reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
+                    setBase64Images(prevImages => [...prevImages, jpegDataUrl]);
+                  }
+                };
+                img.src = e.target?.result as string;
               };
-              img.src = e.target?.result as string;
-            };
-            reader.readAsDataURL(blob);
+              reader.readAsDataURL(blob);
+            }
           }
         }
       }
-    }
-  }, [canBeUsedForImagesRef.current]);
+    },
+    [canBeUsedForImagesRef.current]
+  );
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
@@ -297,7 +300,9 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     if (initialPrompt) {
       editor.setValue(initialPrompt[0].text);
       // Check if initialPrompt contains any images and set them to base64Images
-      const imagePrompts = initialPrompt.filter((prompt): prompt is { type: "image"; data: string } => prompt.type === 'image');
+      const imagePrompts = initialPrompt.filter(
+        (prompt): prompt is { type: 'image'; data: string } => prompt.type === 'image'
+      );
       if (imagePrompts.length > 0) {
         const newBase64Images = imagePrompts.map(prompt => prompt.data);
         setBase64Images(newBase64Images);
@@ -441,7 +446,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
     });
 
-    editor.onDidPaste((e) => {
+    editor.onDidPaste(e => {
       handlePaste(editor, e);
     });
 
@@ -459,7 +464,9 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       const oldPromptMessage: PromptMessage = promptHistoryStack.get(index);
       const textContent = oldPromptMessage[0].text;
       setEditorValue(textContent);
-      const imagePrompts = oldPromptMessage.filter((prompt): prompt is { type: "image"; data: string } => prompt.type === 'image');
+      const imagePrompts = oldPromptMessage.filter(
+        (prompt): prompt is { type: 'image'; data: string } => prompt.type === 'image'
+      );
 
       if (imagePrompts.length > 0) {
         const newBase64Images = imagePrompts.map(prompt => prompt.data);
@@ -498,8 +505,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
     const currentPrompt = editorRef.current.getValue();
     const base64ImagesCopy = [...base64ImagesRef.current];
     const promptHistoryItem = [
-      { type: "text", text: currentPrompt },
-      ...base64ImagesCopy.map(image => ({ type: "image", data: image }))
+      { type: 'text', text: currentPrompt },
+      ...base64ImagesCopy.map(image => ({ type: 'image', data: image }))
     ] as PromptMessage;
 
     await onPromptHistoryUpdate(promptHistoryItem);
@@ -519,7 +526,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       const file = files[0];
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = e => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -529,7 +536,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
               canvas.height = img.height;
               ctx.drawImage(img, 0, 0);
               const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
-              setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
+              setBase64Images(prevImages => [...prevImages, jpegDataUrl]);
             }
           };
           img.src = e.target?.result as string;
@@ -549,11 +556,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         {base64Images.map((base64Image, index) => {
           const { maxWidth, maxHeight } = getMaxTooltipSize();
           return (
-            <Tooltip
-              key={index}
-              title={<img src={base64Image} alt="Preview" style={{ maxWidth, maxHeight }} />}
-              arrow
-            >
+            <Tooltip key={index} title={<img src={base64Image} alt="Preview" style={{ maxWidth, maxHeight }} />} arrow>
               <Box
                 sx={{
                   position: 'relative',
@@ -563,19 +566,12 @@ const InputComponent: React.FC<IInputComponentProps> = ({
                   '&:hover': {
                     transform: 'scale(1.05)',
                     '& .delete-icon': {
-                      opacity: 1,
+                      opacity: 1
                     }
                   }
                 }}
               >
-                <Chip
-                  label="Image"
-                  size="small"
-                  sx={{
-                    backgroundColor: 'var(--jp-layout-color2)',
-                    color: 'var(--jp-ui-font-color1)',
-                  }}
-                />
+                <ImagePreview base64Image={base64Image} />
                 <Box
                   className="delete-icon"
                   sx={{
@@ -594,10 +590,10 @@ const InputComponent: React.FC<IInputComponentProps> = ({
                     transition: 'all 0.2s ease-in-out',
                     border: '2px solid var(--jp-layout-color1)',
                     '&:hover': {
-                      backgroundColor: 'var(--jp-layout-color4)',
+                      backgroundColor: 'var(--jp-layout-color4)'
                     }
                   }}
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     removeImage(index);
                   }}
@@ -607,7 +603,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
                       color: 'var(--jp-ui-font-color1)',
                       fontSize: '16px',
                       fontWeight: 'bold',
-                      lineHeight: 1,
+                      lineHeight: 1
                     }}
                   >
                     ×

@@ -19,7 +19,7 @@ import { LabIcon } from '@jupyterlab/ui-components';
 import MistralClient from '@mistralai/mistralai';
 import { Editor, loader, Monaco } from '@monaco-editor/react';
 import UploadIcon from '@mui/icons-material/Upload';
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { OpenAI } from 'openai';
 import posthog from 'posthog-js';
