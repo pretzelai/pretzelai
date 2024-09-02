@@ -7,6 +7,7 @@ import { Box, IconButton, Modal, Tooltip } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CodeToolbar, CodeToolbarProps } from './code-blocks/code-toolbar';
+import { ImagePreview } from './ImagePreview';
 
 interface IImageIconProps {
   base64Image: string;
@@ -32,16 +33,16 @@ function ImageIcon({ base64Image }: IImageIconProps): JSX.Element {
           sx={{
             display: 'inline-flex',
             marginLeft: 0,
-            height: '16px',
-            width: '16px',
+            height: '40px',
+            width: '40px',
             cursor: 'pointer',
             '&:hover': {
-              opacity: 0.7,
-            },
+              opacity: 0.7
+            }
           }}
           onClick={handleOpenModal}
         >
-          <imageIcon.react width="16px" height="16px" />
+          <ImagePreview base64Image={base64Image} />
         </Box>
       </Tooltip>
       <Modal
@@ -61,7 +62,7 @@ function ImageIcon({ base64Image }: IImageIconProps): JSX.Element {
             p: 4,
             maxWidth: '90vw',
             maxHeight: '90vh',
-            overflow: 'auto',
+            overflow: 'auto'
           }}
         >
           <img
@@ -72,7 +73,7 @@ function ImageIcon({ base64Image }: IImageIconProps): JSX.Element {
               height: '100%',
               objectFit: 'contain',
               transform: `scale(${zoom})`,
-              transition: 'transform 0.2s',
+              transition: 'transform 0.2s'
             }}
           />
           <Box sx={{ position: 'absolute', top: 10, right: 10 }}>

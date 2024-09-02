@@ -38,6 +38,8 @@ import {
   readEmbeddings
 } from './utils';
 import { providersInfo } from './migrations/providerInfo';
+import { ImagePreview } from './components/ImagePreview';
+
 loader.config({ monaco }); // BUG FIX - WAS PICKING UP OLD VERSION OF MONACO FROM JSDELIVR
 
 const pretzelIcon = new LabIcon({
@@ -164,11 +166,11 @@ export function Chat({
   const [messages, setMessages] = useState(initialMessage);
   const [chatHistory, setChatHistory] = useState<IMessage[][]>([]);
   const [, setChatIndex] = useState(0);
-  const clearChatRef = useRef<() => void>(() => { });
+  const clearChatRef = useRef<() => void>(() => {});
   const chatHistoryRef = useRef<IMessage[][]>([]);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [referenceSource, setReferenceSource] = useState('');
-  const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => { });
+  const [stopGeneration, setStopGeneration] = useState<() => void>(() => () => {});
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const [editorValue, setEditorValue] = useState('');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -302,37 +304,40 @@ export function Chat({
     scrollToBottom();
   }, [messages]);
 
-  const handlePaste = useCallback((editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
-    const clipboardData = event.clipboardEvent?.clipboardData;
-    if (clipboardData && canBeUsedForImagesRef.current) {
-      const items = clipboardData.items;
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.indexOf('image') !== -1) {
-          const blob = item.getAsFile();
-          if (blob) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const img = new Image();
-              img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                  canvas.width = img.width;
-                  canvas.height = img.height;
-                  ctx.drawImage(img, 0, 0);
-                  const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
-                  setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
-                }
+  const handlePaste = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor, event: monaco.editor.IPasteEvent) => {
+      const clipboardData = event.clipboardEvent?.clipboardData;
+      if (clipboardData && canBeUsedForImagesRef.current) {
+        const items = clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.indexOf('image') !== -1) {
+            const blob = item.getAsFile();
+            if (blob) {
+              const reader = new FileReader();
+              reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
+                    setBase64Images(prevImages => [...prevImages, jpegDataUrl]);
+                  }
+                };
+                img.src = e.target?.result as string;
               };
-              img.src = e.target?.result as string;
-            };
-            reader.readAsDataURL(blob);
+              reader.readAsDataURL(blob);
+            }
           }
         }
       }
-    }
-  }, [canBeUsedForImagesRef]);
+    },
+    [canBeUsedForImagesRef]
+  );
 
   useEffect(() => {
     base64ImagesRef.current = base64Images;
@@ -358,15 +363,16 @@ export function Chat({
       id: String(messages.length + 1),
       // we need to use a Ref here because of the closure created by handleEditorDidMount
       // that meant that when we used shortcuts, the updates state was not accessed
-      content: base64ImagesRef.current.length > 0
-        ? [
-          { type: "text", text: inputMarkdown },
-          ...base64ImagesRef.current.map(base64Image => ({
-            type: "image",
-            data: base64Image
-          }))
-        ]
-        : inputMarkdown,
+      content:
+        base64ImagesRef.current.length > 0
+          ? [
+              { type: 'text', text: inputMarkdown },
+              ...base64ImagesRef.current.map(base64Image => ({
+                type: 'image',
+                data: base64Image
+              }))
+            ]
+          : inputMarkdown,
       role: 'user'
     };
 
@@ -435,20 +441,23 @@ export function Chat({
       return;
     }
     setIsAiGenerating(true);
-    posthog.capture('prompt_chat_without_context', { property: posthogPromptTelemetry ? editorValueFromEvent : 'no_telemetry' });
+    posthog.capture('prompt_chat_without_context', {
+      property: posthogPromptTelemetry ? editorValueFromEvent : 'no_telemetry'
+    });
     const inputMarkdown = editorValueFromEvent.replace(/\n/g, '  \n');
 
     const newMessage = {
       id: String(messages.length + 1),
-      content: base64ImagesRef.current.length > 0
-        ? [
-          { type: "text", text: inputMarkdown },
-          ...base64ImagesRef.current.map(base64Image => ({
-            type: "image",
-            data: base64Image
-          }))
-        ]
-        : inputMarkdown,
+      content:
+        base64ImagesRef.current.length > 0
+          ? [
+              { type: 'text', text: inputMarkdown },
+              ...base64ImagesRef.current.map(base64Image => ({
+                type: 'image',
+                data: base64Image
+              }))
+            ]
+          : inputMarkdown,
       role: 'user'
     };
 
@@ -596,7 +605,7 @@ export function Chat({
         globalState.isMonacoRegistered = true;
       }
 
-      editor.onDidPaste((e) => {
+      editor.onDidPaste(e => {
         handlePaste(editor, e);
       });
 
@@ -682,7 +691,7 @@ export function Chat({
       const file = files[0];
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = e => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -692,7 +701,7 @@ export function Chat({
               canvas.height = img.height;
               ctx.drawImage(img, 0, 0);
               const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG with 80% quality
-              setBase64Images((prevImages) => [...prevImages, jpegDataUrl]);
+              setBase64Images(prevImages => [...prevImages, jpegDataUrl]);
             }
           };
           img.src = e.target?.result as string;
@@ -750,15 +759,19 @@ export function Chat({
             )}
             <RendermimeMarkdown
               rmRegistry={rmRegistry}
-              markdownStr={message.role === 'user'
-                ? '***You:*** ' + (Array.isArray(message.content) ? message.content[0].text : message.content)
-                : '***AI:*** ' + (Array.isArray(message.content) ? message.content[0].text : message.content)
+              markdownStr={
+                message.role === 'user'
+                  ? '***You:*** ' + (Array.isArray(message.content) ? message.content[0].text : message.content)
+                  : '***AI:*** ' + (Array.isArray(message.content) ? message.content[0].text : message.content)
               }
               notebookTracker={notebookTracker}
               role={message.role}
-              images={Array.isArray(message.content)
-                ? (message.content as Array<any>).filter((item: any) => item.type === 'image').map((item: any) => item.data as string)
-                : []
+              images={
+                Array.isArray(message.content)
+                  ? (message.content as Array<any>)
+                      .filter((item: any) => item.type === 'image')
+                      .map((item: any) => item.data as string)
+                  : []
               }
             />
           </Box>
@@ -784,21 +797,14 @@ export function Chat({
                 '&:hover': {
                   transform: 'scale(1.05)',
                   '& .delete-icon': {
-                    opacity: 1,
+                    opacity: 1
                   }
                 }
               }}
               onMouseEnter={() => setHoveredImage(base64Image)}
               onMouseLeave={() => setHoveredImage(null)}
             >
-              <Chip
-                label="Image"
-                size="small"
-                sx={{
-                  backgroundColor: 'var(--jp-layout-color2)',
-                  color: 'var(--jp-ui-font-color1)',
-                }}
-              />
+              <ImagePreview base64Image={base64Image} />
               <Box
                 className="delete-icon"
                 sx={{
@@ -817,10 +823,10 @@ export function Chat({
                   transition: 'all 0.2s ease-in-out',
                   border: '2px solid var(--jp-layout-color1)',
                   '&:hover': {
-                    backgroundColor: 'var(--jp-layout-color4)',
+                    backgroundColor: 'var(--jp-layout-color4)'
                   }
                 }}
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   removeImage(index);
                 }}
@@ -830,7 +836,7 @@ export function Chat({
                     color: 'var(--jp-ui-font-color1)',
                     fontSize: '16px',
                     fontWeight: 'bold',
-                    lineHeight: 1,
+                    lineHeight: 1
                   }}
                 >
                   ×
@@ -910,7 +916,6 @@ export function Chat({
                   <br />
                   Submit without context: <strong>{isMac ? 'Option' : 'Alt'}+Enter</strong>
                 </div>
-
               </div>
               <div className="clear-button-container">
                 <button className="pretzelInputSubmitButton" onClick={clearChat} title="Clear (Esc)">
