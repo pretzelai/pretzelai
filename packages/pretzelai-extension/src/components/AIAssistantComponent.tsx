@@ -291,11 +291,16 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   }, [stream]);
 
   useEffect(() => {
-    if (props.notebookTracker.activeCell && diffView) {
+    if (!streamingDone && props.notebookTracker.activeCell && diffView) {
       const oldCodeLines = oldCode.split('\n');
       const newCodeLines = newCode.split('\n');
-      if (newCodeLines.length > 1 && oldCodeLines.length > 1) {
-        const diffCode = [...newCodeLines.slice(0, -1), '', ...oldCodeLines.slice(newCodeLines.length)].join('\n');
+      if (newCodeLines.length > 1) {
+        let diffCode = '';
+        if (newCodeLines.length < oldCodeLines.length) {
+          diffCode = [...newCodeLines.slice(0, -1), '', ...oldCodeLines.slice(newCodeLines.length)].join('\n');
+        } else {
+          diffCode = newCode.split('\n').slice(0, -1).join('\n');
+        }
         diffView.dispatch({
           changes: {
             from: 0,
