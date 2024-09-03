@@ -26,6 +26,8 @@ import { fixInlineCompletion } from './postprocessing';
 import Groq from 'groq-sdk';
 import { Signal } from '@lumino/signaling';
 
+const DEBOUNCE_TIME = 1000;
+
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(
     protected notebookTracker: INotebookTracker,
@@ -119,7 +121,6 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     return false;
   }
 
-  public isFetching: boolean = false;
   public isFetchingChanged = new Signal<this, boolean>(this);
 
   async fetch(
@@ -152,7 +153,6 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
-        this.isFetching = true;
         this.isFetchingChanged.emit(true);
 
         let prompt = this._prefixFromRequest(request);
@@ -166,6 +166,17 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
           stops.push('\n');
         }
 
+        // Don't trigger completion if empty line and first line of notebook
+        if (!prompt && !suffix) {
+          resolve({
+            items: []
+          });
+          this.isFetchingChanged.emit(false);
+          return;
+        }
+
+        // Hardcoded completion without AI for first line of notebook
+        // TODO: We can add more hardcoded imports for common libraries
         if (prompt.indexOf('\n') === -1 && !suffix) {
           if ('import pandas as pd'.startsWith(prompt)) {
             resolve({
@@ -175,10 +186,14 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
                 }
               ]
             });
-            return;
           }
-          prompt = `# python code for jupyter notebook\n\n${prompt}`;
+          // Spinner will not show because it emits false before the UI can react
+          this.isFetchingChanged.emit(false);
+          return;
         }
+
+        prompt = `# python code for jupyter notebook\n\n${prompt}`;
+
         try {
           let completion;
           if (copilotProvider === 'Pretzel AI') {
@@ -378,10 +393,9 @@ Fill in the blank to complete the code block. Your response should include only 
             items: []
           });
         } finally {
-          this.isFetching = false;
           this.isFetchingChanged.emit(false);
         }
-      }, 1000);
+      }, DEBOUNCE_TIME);
     });
   }
 }
