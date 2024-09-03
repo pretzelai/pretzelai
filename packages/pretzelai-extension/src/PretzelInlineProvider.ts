@@ -26,6 +26,8 @@ import { fixInlineCompletion } from './postprocessing';
 import Groq from 'groq-sdk';
 import { Signal } from '@lumino/signaling';
 
+const DEBOUNCE_TIME = 1000;
+
 export class PretzelInlineProvider implements IInlineCompletionProvider {
   constructor(
     protected notebookTracker: INotebookTracker,
@@ -45,6 +47,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
   readonly identifier = '@pretzelai/inline-completer';
   readonly name = 'Pretzel AI inline completion';
   private debounceTimer: any;
+  private abortController: AbortController | null = null;
 
   private _prefixFromRequest(request: CompletionHandler.IRequest): string {
     const currentCellIndex = this.notebookTracker?.currentWidget?.model!.sharedModel.cells.findIndex(
@@ -119,13 +122,20 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     return false;
   }
 
-  public isFetching: boolean = false;
   public isFetchingChanged = new Signal<this, boolean>(this);
 
   async fetch(
     request: CompletionHandler.IRequest,
     context: IInlineCompletionContext
   ): Promise<IInlineCompletionList<IInlineCompletionItem>> {
+    // Cancel previous fetch if it exists
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+
+    // Create new AbortController for this fetch
+    this.abortController = new AbortController();
+
     clearTimeout(this.debounceTimer);
     const settings = await this.settingRegistry.load(PLUGIN_ID);
     const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
@@ -152,7 +162,6 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
-        this.isFetching = true;
         this.isFetchingChanged.emit(true);
 
         let prompt = this._prefixFromRequest(request);
@@ -166,19 +175,32 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
           stops.push('\n');
         }
 
-        if (prompt.indexOf('\n') === -1 && !suffix) {
-          if ('import pandas as pd'.startsWith(prompt)) {
-            resolve({
-              items: [
-                {
-                  insertText: 'import pandas as pd'.slice(prompt.length)
-                }
-              ]
-            });
-            return;
-          }
-          prompt = `# python code for jupyter notebook\n\n${prompt}`;
+        // Don't trigger completion if empty line and first line of notebook
+        if (!prompt && !suffix) {
+          resolve({
+            items: []
+          });
+          this.isFetchingChanged.emit(false);
+          return;
         }
+
+        // Hardcoded completion without AI for first line of notebook
+        // TODO: We can add more hardcoded imports for common libraries
+        if (prompt.indexOf('\n') === -1 && !suffix && 'import pandas as pd'.startsWith(prompt)) {
+          resolve({
+            items: [
+              {
+                insertText: 'import pandas as pd'.slice(prompt.length)
+              }
+            ]
+          });
+          // Spinner will not show because it emits false before the UI can react
+          this.isFetchingChanged.emit(false);
+          return;
+        }
+
+        prompt = `# python code for jupyter notebook\n\n${prompt}`;
+
         try {
           let completion;
           if (copilotProvider === 'Pretzel AI') {
@@ -191,34 +213,38 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
               body: JSON.stringify({
                 prompt,
                 suffix,
-                // eslint-disable-next-line
                 max_tokens: 500,
                 stop: stops
-              })
+              }),
+              signal: this.abortController?.signal // Add abort signal to fetch
             });
             completion = (await fetchResponse.json()).completion;
           } else if (copilotProvider === 'OpenAI' && openAiApiKey) {
             const openai = new OpenAI({ apiKey: openAiApiKey, dangerouslyAllowBrowser: true });
-            const openaiResponse = await openai.chat.completions.create({
-              model: copilotModel,
-              stop: stops,
-              // eslint-disable-next-line
-              max_tokens: this._isMultiLine(prompt) ? 500 : 100,
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are a staff software engineer'
-                },
-                {
-                  role: 'user',
-                  content: `\`\`\`python
+            const openaiResponse = await openai.chat.completions.create(
+              {
+                model: copilotModel,
+                stop: stops,
+                max_tokens: this._isMultiLine(prompt) ? 500 : 100,
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a staff software engineer'
+                  },
+                  {
+                    role: 'user',
+                    content: `\`\`\`python
 ${prompt}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beggining of your response.`
-                }
-              ]
-            });
+                  }
+                ]
+              },
+              {
+                signal: this.abortController?.signal
+              }
+            );
             completion = openaiResponse.choices[0].message.content;
           } else if (copilotProvider === 'Mistral' && mistralApiKey) {
             // FIXME: Allow for newer model types
@@ -235,7 +261,6 @@ Fill in the blank to complete the code block. Your response should include only 
                   prompt,
                   suffix,
                   stop: stops,
-                  // eslint-disable-next-line
                   max_tokens: 500,
                   temperature: 0
                 })
@@ -314,7 +339,8 @@ Fill in the blank to complete the code block. Your response should include only 
                 model: copilotModel,
                 messages: messages,
                 stream: true
-              })
+              }),
+              signal: this.abortController?.signal
             });
             const reader = response.body!.getReader();
             const decoder = new TextDecoder('utf-8');
@@ -338,25 +364,30 @@ Fill in the blank to complete the code block. Your response should include only 
             completion = completionContent.trim();
           } else if (copilotProvider === 'Groq' && groqApiKey) {
             const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
-            const groqResponse = await groq.chat.completions.create({
-              model: copilotModel,
-              stop: stops,
-              max_tokens: this._isMultiLine(prompt) ? 500 : 100,
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are a staff software engineer'
-                },
-                {
-                  role: 'user',
-                  content: `\`\`\`python
+            const groqResponse = await groq.chat.completions.create(
+              {
+                model: copilotModel,
+                stop: stops,
+                max_tokens: this._isMultiLine(prompt) ? 500 : 100,
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a staff software engineer'
+                  },
+                  {
+                    role: 'user',
+                    content: `\`\`\`python
 ${prompt}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
-                }
-              ]
-            });
+                  }
+                ]
+              },
+              {
+                signal: this.abortController?.signal
+              }
+            );
             completion = groqResponse.choices[0].message.content;
           } else {
             completion = '';
@@ -373,15 +404,19 @@ Fill in the blank to complete the code block. Your response should include only 
             ]
           });
         } catch (error: any) {
-          console.error('Error:', JSON.stringify(error));
+          if (error.name === 'AbortError') {
+            console.log('Fetch aborted');
+          } else {
+            console.error('Error:', JSON.stringify(error));
+          }
           resolve({
             items: []
           });
         } finally {
-          this.isFetching = false;
           this.isFetchingChanged.emit(false);
+          this.abortController = null; // Reset the abort controller
         }
-      }, 1000);
+      }, DEBOUNCE_TIME);
     });
   }
 }
