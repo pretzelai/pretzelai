@@ -715,3 +715,7 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   width: 20px;
   height: 20px;
 }
+/* Hide the inline completer widget that shows on hover */
+.jp-InlineCompleter {
+  display: none;
+}
