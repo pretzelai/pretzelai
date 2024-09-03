@@ -123,7 +123,7 @@
     "codemirror": "~6.0.1",
     "groq-sdk": "^0.5.0",
     "lodash": "~4.17.21",
-    "monaco-editor": "^0.50.0",
+    "monaco-editor": "^0.51.0",
     "openai": "^4.38.0",
     "posthog-js": "^1.130.2",
     "react": "^18.2.0",

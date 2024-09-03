@@ -217,6 +217,10 @@
   background-color: var(--jp-layout-color1);
 }
 
+.pretzelInputField .monaco-editor .editorPlaceholder {
+  font-style: italic;
+}
+
 .chat-sidepanel {
   min-width: 20vw !important;
 }

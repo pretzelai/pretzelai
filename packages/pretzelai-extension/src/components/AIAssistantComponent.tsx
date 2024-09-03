@@ -198,7 +198,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
                   behavior: 'smooth'
                 });
               },
-              cellBottom > viewportHeight - bottomOffset ? 100 : 0 // wait for the cell to render
+              cellBottom > viewportHeight - bottomOffset ? 110 : 0 // wait for the cell to render
             );
           }
         }
