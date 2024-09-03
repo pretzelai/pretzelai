@@ -59,67 +59,6 @@ const keyCombination = isMac ? 'Ctrl+Cmd+B' : 'Ctrl+Alt+B';
 const historyPrevKeyCombination = isMac ? '⇧⌘<' : '⇧^<';
 const historyNextKeyCombination = isMac ? '⇧⌘>' : '⇧^>';
 
-class PlaceholderContentWidget {
-  static ID = 'editor.widget.placeholderHint';
-  private domNode: HTMLElement | null = null;
-  private editor: monaco.editor.IStandaloneCodeEditor;
-  private placeholder: string;
-
-  constructor(placeholder: string, editor: monaco.editor.IStandaloneCodeEditor) {
-    this.placeholder = placeholder;
-    this.editor = editor;
-    editor.onDidChangeModelContent(() => this.onDidChangeModelContent());
-    this.onDidChangeModelContent();
-  }
-
-  onDidChangeModelContent() {
-    if (this.editor.getValue() === '') {
-      this.editor.addContentWidget(this);
-    } else {
-      this.editor.removeContentWidget(this);
-    }
-  }
-
-  getId() {
-    return PlaceholderContentWidget.ID;
-  }
-
-  getDomNode() {
-    if (!this.domNode) {
-      this.domNode = document.createElement('div');
-      this.domNode.style.width = 'max-content';
-      this.domNode.style.fontStyle = 'italic';
-      this.domNode.style.color = 'gray';
-      this.domNode.style.pointerEvents = 'none';
-      this.domNode.style.fontSize = '0.75rem';
-
-      const lines = this.placeholder.split('\n');
-      lines.forEach((line, index) => {
-        const lineDiv = document.createElement('div');
-        lineDiv.textContent = line;
-        if (index > 0) {
-          lineDiv.style.marginTop = '4px';
-        }
-        this.domNode!.appendChild(lineDiv);
-      });
-
-      this.editor.applyFontInfo(this.domNode);
-    }
-    return this.domNode;
-  }
-
-  getPosition() {
-    return {
-      position: { lineNumber: 1, column: 1 },
-      preference: [monaco.editor.ContentWidgetPositionPreference.EXACT]
-    };
-  }
-
-  dispose() {
-    this.editor.removeContentWidget(this);
-  }
-}
-
 interface IChatProps {
   aiChatModelProvider: string;
   aiChatModelString: string;
@@ -174,7 +113,6 @@ export function Chat({
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const [editorValue, setEditorValue] = useState('');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
   const [base64Images, setBase64Images] = useState<string[]>([]);
   const base64ImagesRef = useRef<string[]>([]);
   const [hoveredImage, setHoveredImage] = useState<string | null>(null);
@@ -574,15 +512,6 @@ export function Chat({
       editorRef.current = editor;
       monaco.editor.setTheme(themeManager?.theme?.includes('Light') ? 'vs' : 'vs-dark');
 
-      // Add placeholder
-      const placeholder =
-        `Ask AI (toggle with: ${keyCombination}).\n` +
-        `Shift + Enter for newline. Esc to jump back to cell.\n` +
-        `${canBeUsedForImagesRef.current ? `Paste image from clipboard with ${isMac ? 'Cmd+V' : 'Ctrl+V'}.\n` : ''}` +
-        `Current cell and other relevant cells are available as context to the AI.`;
-
-      placeholderWidgetRef.current = new PlaceholderContentWidget(placeholder, editor);
-
       if (!globalState.isMonacoRegistered) {
         // Register the completion provider for Markdown
         monaco.languages.registerCompletionItemProvider('markdown', {
@@ -884,7 +813,12 @@ export function Chat({
                 hideCursorInOverviewRuler: true,
                 overviewRulerLanes: 0,
                 renderLineHighlight: 'none',
-                readOnly: isAiGenerating
+                readOnly: isAiGenerating,
+                placeholder:
+                  `Ask AI (toggle with: ${keyCombination}).\n` +
+                  `Shift + Enter for newline. Esc to jump back to cell.\n` +
+                  `${canBeUsedForImages ? `Paste image from clipboard with ${isMac ? 'Cmd+V' : 'Ctrl+V'}.\n` : ''}` +
+                  `Current cell and other relevant cells are available to the AI.`
               }}
             />
           </Box>

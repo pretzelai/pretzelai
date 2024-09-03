@@ -122,67 +122,6 @@ const PromptHistoryButton: React.FC<{
   );
 };
 
-class PlaceholderContentWidget {
-  static ID = 'editor.widget.placeholderHint';
-  private domNode: HTMLElement | null = null;
-  private editor: monaco.editor.IStandaloneCodeEditor;
-  private placeholder: string;
-
-  constructor(placeholder: string, editor: monaco.editor.IStandaloneCodeEditor) {
-    this.placeholder = placeholder;
-    this.editor = editor;
-    editor.onDidChangeModelContent(() => this.onDidChangeModelContent());
-    this.onDidChangeModelContent();
-  }
-
-  onDidChangeModelContent() {
-    if (this.editor.getValue() === '') {
-      this.editor.addContentWidget(this);
-    } else {
-      this.editor.removeContentWidget(this);
-    }
-  }
-
-  getId() {
-    return PlaceholderContentWidget.ID;
-  }
-
-  getDomNode() {
-    if (!this.domNode) {
-      this.domNode = document.createElement('div');
-      this.domNode.style.width = 'max-content';
-      this.domNode.style.fontStyle = 'italic';
-      this.domNode.style.color = 'gray';
-      this.domNode.style.pointerEvents = 'none';
-
-      const lines = this.placeholder.split('\n');
-      // Create a separate div for each line
-      lines.forEach((line, index) => {
-        const lineDiv = document.createElement('div');
-        lineDiv.textContent = line;
-        if (index > 0) {
-          lineDiv.style.marginTop = '4px'; // Add some spacing between lines
-        }
-        this.domNode!.appendChild(lineDiv);
-      });
-
-      this.editor.applyFontInfo(this.domNode);
-    }
-    return this.domNode;
-  }
-
-  getPosition() {
-    return {
-      position: { lineNumber: 1, column: 1 },
-      preference: [monaco.editor.ContentWidgetPositionPreference.EXACT]
-    };
-  }
-
-  dispose() {
-    this.editor.removeContentWidget(this);
-  }
-}
-
 const isMac = /Mac/i.test(navigator.userAgent);
 interface IInputComponentProps {
   isAIEnabled: boolean;
@@ -218,13 +157,13 @@ const InputComponent: React.FC<IInputComponentProps> = ({
   const [, setPromptHistoryIndex] = useState<number>(0);
   const editorRef = useRef<any>(null);
 
-  const placeholderWidgetRef = useRef<PlaceholderContentWidget | null>(null);
-
   const [base64Images, setBase64Images] = useState<string[]>([]);
   const base64ImagesRef = useRef<string[]>([]);
 
   const [canBeUsedForImages, setCanBeUsedForImages] = useState(false);
   const canBeUsedForImagesRef = useRef(false);
+
+  const [placeholder, setPlaceholder] = useState(isAIEnabled ? placeholderEnabled : placeholderDisabled);
 
   useEffect(() => {
     const currentSettingsVersion = pretzelSettingsJSON?.version;
@@ -241,17 +180,15 @@ const InputComponent: React.FC<IInputComponentProps> = ({
 
   // FIXME: Not sure if this will ever fire for isAIEnabled, placeholderEnabled, placeholderDisabled
   useEffect(() => {
-    const updatedPlaceholderEnabled = canBeUsedForImagesRef.current
-      ? `${placeholderEnabled} Paste image by pressing ${isMac ? 'Cmd + V' : 'Ctrl + V'}.`
-      : placeholderEnabled;
-    if (editorRef.current && placeholderWidgetRef.current) {
-      placeholderWidgetRef.current.dispose();
-      placeholderWidgetRef.current = new PlaceholderContentWidget(
-        isAIEnabled ? updatedPlaceholderEnabled : placeholderDisabled,
-        editorRef.current
-      );
-    }
-  }, [isAIEnabled, placeholderEnabled, placeholderDisabled, canBeUsedForImagesRef.current]);
+    const updatedPlaceholder = canBeUsedForImages
+      ? `${isAIEnabled ? placeholderEnabled : placeholderDisabled}\nPaste image by pressing ${
+          isMac ? 'Cmd + V' : 'Ctrl + V'
+        }.`
+      : isAIEnabled
+      ? placeholderEnabled
+      : placeholderDisabled;
+    setPlaceholder(updatedPlaceholder);
+  }, [isAIEnabled, placeholderEnabled, placeholderDisabled, canBeUsedForImages]);
 
   useEffect(() => {
     base64ImagesRef.current = base64Images;
@@ -314,14 +251,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
         editor.setPosition({ lineNumber: lastLineNumber, column: lastLineContent.length + 1 });
       }
     }
-
-    const updatedPlaceholderEnabled = canBeUsedForImagesRef.current
-      ? `${placeholderEnabled} Paste image by pressing ${isMac ? 'Cmd + V' : 'Ctrl + V'}.`
-      : placeholderEnabled;
-    placeholderWidgetRef.current = new PlaceholderContentWidget(
-      isAIEnabled ? updatedPlaceholderEnabled : placeholderDisabled,
-      editor
-    );
 
     monaco.editor.setTheme(themeManager?.theme?.includes('Light') ? 'vs' : 'vs-dark');
 
@@ -643,7 +572,8 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             hideCursorInOverviewRuler: true,
             overviewRulerLanes: 0,
             renderLineHighlight: 'none',
-            readOnly: !isAIEnabled
+            readOnly: !isAIEnabled,
+            placeholder: placeholder
           }}
         />
       </div>
