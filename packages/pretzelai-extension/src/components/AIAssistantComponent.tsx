@@ -71,9 +71,10 @@ function applyDiffToEditor(
     newView.dom.classList.add('pretzel-new-code-generation');
   }
 
+  // add a streaming-now class to the new view
+  newView.dom.classList.add('streaming-now');
   // Append the new view to the same parent as the original editor
   editor.host.appendChild(newView.dom);
-
   return newView;
 }
 
@@ -250,6 +251,8 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   useEffect(() => {
     if (streamingDone && diffView) {
+      // remove the streaming-now class
+      diffView.dom.classList.remove('streaming-now');
       const fixedCode = fixCode(newCode);
       diffView.dispatch({
         changes: {
@@ -297,7 +300,11 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       if (newCodeLines.length > 1) {
         let diffCode = '';
         if (newCodeLines.length < oldCodeLines.length) {
-          diffCode = [...newCodeLines.slice(0, -1), '', ...oldCodeLines.slice(newCodeLines.length)].join('\n');
+          diffCode = [
+            ...newCodeLines.slice(0, -1),
+            oldCodeLines[newCodeLines.length - 1] + '\u200B',
+            ...oldCodeLines.slice(newCodeLines.length)
+          ].join('\n');
         } else {
           diffCode = newCode.split('\n').slice(0, -1).join('\n');
         }
@@ -308,6 +315,11 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
             insert: diffCode
           }
         });
+        // add a class to the last changed line
+        const changedLines = diffView.dom.querySelectorAll('.cm-changedLine');
+        if (changedLines.length > 0) {
+          changedLines[changedLines.length - 1].previousElementSibling?.classList.add('hidden-diff');
+        }
       }
     }
   }, [newCode]);
