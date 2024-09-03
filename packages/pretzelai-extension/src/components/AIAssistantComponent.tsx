@@ -72,8 +72,11 @@ function applyDiffToEditor(
   }
 
   // Append the new view to the same parent as the original editor
+  // add streaming class to the new view
+  newView.dom.classList.add('streaming');
+  // apply the last class to cm-deletedChunk
+  newView.dom.querySelector('.cm-deletedChunk')?.classList.add('last');
   editor.host.appendChild(newView.dom);
-
   return newView;
 }
 
@@ -260,30 +263,16 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     if (stream) {
       const accumulate = async () => {
         try {
-          // Add streaming class when streaming starts
-          const mergeBElement = props.notebookTracker.activeCell?.editor?.host?.querySelector('.cm-merge-b');
-          if (mergeBElement) {
-            mergeBElement.classList.add('streaming');
-          }
           for await (const chunk of stream) {
             const newContent = chunk.choices[0]?.delta?.content || '';
             setNewCode(prevCode => prevCode + newContent);
           }
           setStreamingDone(true);
           setStatusElementText('');
-          // Remove streaming class when streaming is done
-          if (mergeBElement) {
-            mergeBElement.classList.remove('streaming');
-          }
         } catch (error) {
           console.error('Error processing stream:', error);
           setStreamingDone(true);
           setStatusElementText('');
-          // Remove streaming class in case of error
-          const mergeBElement = props.notebookTracker.activeCell?.editor?.host?.querySelector('.cm-merge-b');
-          if (mergeBElement) {
-            mergeBElement.classList.remove('streaming');
-          }
         }
       };
       accumulate();
@@ -307,11 +296,16 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         });
         setLastProcessedLines(completeLines);
       }
+      const deletedChunks = props.notebookTracker.activeCell?.node.querySelectorAll('.cm-deletedChunk');
+      // add a class to the last deleted chunk
+      if (deletedChunks && deletedChunks.length > 0) {
+        deletedChunks[deletedChunks.length - 1].classList.add('last');
+      }
     }
-    const deletedChunks = props.notebookTracker.activeCell?.node.querySelectorAll('.cm-deletedChunk');
-    // add a class to the last deleted chunk
-    if (deletedChunks && deletedChunks.length > 0) {
-      deletedChunks[deletedChunks.length - 1].classList.add('last');
+
+    if (streamingDone) {
+      // remove the streaming class from the diff view
+      diffView?.dom.classList.remove('streaming');
     }
   }, [newCode, streamingDone]);
 
