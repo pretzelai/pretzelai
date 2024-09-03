@@ -492,6 +492,14 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   line-height: var(--jp-code-line-height);
 }
 
+.cm-editor.cm-merge-b.streaming-now .cm-changedLine .cm-specialChar {
+  display: none;
+}
+
+.cm-editor.cm-merge-b.streaming-now .hidden-diff {
+  display: none;
+}
+
 /* Light mode styles */
 body:not(.jp-mod-dark) .cm-editor.cm-merge-b .cm-deletedChunk {
   background-color: rgba(255, 0, 0, 0.1);
@@ -503,6 +511,15 @@ body:not(.jp-mod-dark) .cm-editor.cm-merge-b .cm-deletedText {
 
 body:not(.jp-mod-dark) .cm-editor.cm-merge-b .cm-changedLine {
   background-color: rgba(0, 255, 0, 0.1);
+}
+
+.cm-editor.streaming-now .cm-content .cm-line.cm-changedLine:not(:has(~ .cm-line.cm-changedLine)),
+.cm-editor.streaming-now .cm-content .cm-line.cm-changedLine:not(:has(~ .cm-line.cm-changedLine)) .cm-insertedLine {
+  background-color: rgba(127, 128, 128, 0.2) !important;
+}
+
+.cm-editor.streaming-now .cm-content .cm-line.cm-changedLine:not(:has(~ .cm-line.cm-changedLine)) ~ .cm-line {
+  background-color: rgba(127, 128, 128, 0.1) !important;
 }
 
 body:not(.jp-mod-dark) .cm-editor.cm-merge-b .cm-insertedLine {

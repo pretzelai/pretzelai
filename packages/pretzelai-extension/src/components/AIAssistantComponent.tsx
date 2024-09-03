@@ -71,9 +71,10 @@ function applyDiffToEditor(
     newView.dom.classList.add('pretzel-new-code-generation');
   }
 
+  // add a streaming-now class to the new view
+  newView.dom.classList.add('streaming-now');
   // Append the new view to the same parent as the original editor
   editor.host.appendChild(newView.dom);
-
   return newView;
 }
 
@@ -118,6 +119,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   const [diffView, setDiffView] = useState<EditorView | null>(null);
   const [newCode, setNewCode] = useState<string>('');
+  const [oldCode, setOldCode] = useState<string>('');
   const [streamingDone, setStreamingDone] = useState<boolean>(false);
 
   const buttonsRef = React.useRef<HTMLDivElement>(null);
@@ -249,6 +251,8 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   useEffect(() => {
     if (streamingDone && diffView) {
+      // remove the streaming-now class
+      diffView.dom.classList.remove('streaming-now');
       const fixedCode = fixCode(newCode);
       diffView.dispatch({
         changes: {
@@ -290,14 +294,33 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   }, [stream]);
 
   useEffect(() => {
-    if (props.notebookTracker.activeCell && diffView) {
-      diffView.dispatch({
-        changes: {
-          from: 0,
-          to: diffView.state.doc.length,
-          insert: newCode
+    if (!streamingDone && props.notebookTracker.activeCell && diffView) {
+      const oldCodeLines = oldCode.split('\n');
+      const newCodeLines = newCode.split('\n');
+      if (newCodeLines.length > 1) {
+        let diffCode = '';
+        if (newCodeLines.length < oldCodeLines.length) {
+          diffCode = [
+            ...newCodeLines.slice(0, -1),
+            oldCodeLines[newCodeLines.length - 1] + '\u200B',
+            ...oldCodeLines.slice(newCodeLines.length)
+          ].join('\n');
+        } else {
+          diffCode = newCode.split('\n').slice(0, -1).join('\n');
         }
-      });
+        diffView.dispatch({
+          changes: {
+            from: 0,
+            to: diffView.state.doc.length,
+            insert: diffCode
+          }
+        });
+        // add a class to the last changed line
+        const changedLines = diffView.dom.querySelectorAll('.cm-changedLine');
+        if (changedLines.length > 0) {
+          changedLines[changedLines.length - 1].previousElementSibling?.classList.add('hidden-diff');
+        }
+      }
     }
   }, [newCode]);
 
@@ -321,6 +344,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       props.aiChatModelProvider
     );
     let oldCode = props.notebookTracker.activeCell!.model.sharedModel.source;
+    setOldCode(oldCode);
 
     try {
       const stream = await generateAIStream({
@@ -352,7 +376,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       const activeCell = props.notebookTracker.activeCell;
       if (activeCell) {
         const editor = activeCell.editor as CodeMirrorEditor;
-        const initialDiffView = applyDiffToEditor(editor, oldCode, '', props.app, false);
+        const initialDiffView = applyDiffToEditor(editor, oldCode, oldCode, props.app, false);
         setDiffView(initialDiffView);
       }
 
@@ -378,6 +402,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
       setShowStatusElement(true);
       setStatusElementText('Calculating embeddings...');
       let oldCode = activeCell!.model.sharedModel.source;
+      setOldCode(oldCode);
 
       let oldCodeForPrompt = activeCell!.model.sharedModel.source;
       const isInject = userInput.toLowerCase().startsWith('inject') || userInput.toLowerCase().startsWith('ij');
@@ -420,7 +445,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         });
 
         const editor = activeCell!.editor as CodeMirrorEditor;
-        const initialDiffView = applyDiffToEditor(editor, oldCode, '', props.app, oldCode.trim() === '');
+        const initialDiffView = applyDiffToEditor(editor, oldCode, oldCode, props.app, oldCode.trim() === '');
         setDiffView(initialDiffView);
 
         setStream(stream);
@@ -460,7 +485,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           handleSubmit={handleSubmit}
           handleRemove={props.handleRemove}
           promptHistoryStack={props.promptHistoryStack}
-          setInputView={() => { }}
+          setInputView={() => {}}
           initialPrompt={initialPrompt}
           activeCell={props.notebookTracker.activeCell!}
           placeholderEnabled={props.placeholderEnabled}
