@@ -781,16 +781,16 @@ export function Chat({
               alignItems: 'center',
               padding: '6px',
               border: '1px solid var(--jp-border-color1)',
-              background: 'var(--vscode-editor-background)'
+              background: 'var(--vscode-editor-background)',
+              height: '100px',
+              overflow: 'hidden'
             }}
           >
             <Editor
-              height="100px"
               defaultLanguage="markdown"
               value={editorValue}
               onChange={handleEditorChange}
               onMount={handleEditorDidMount}
-              theme={document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark'}
               options={{
                 minimap: { enabled: false },
                 suggestOnTriggerCharacters: true,
@@ -814,11 +814,12 @@ export function Chat({
                 overviewRulerLanes: 0,
                 renderLineHighlight: 'none',
                 readOnly: isAiGenerating,
+                scrollBeyondLastLine: false,
                 placeholder:
                   `Ask AI (toggle with: ${keyCombination}).\n` +
                   `Shift + Enter for newline. Esc to jump back to cell.\n` +
                   `${canBeUsedForImages ? `Paste image from clipboard with ${isMac ? 'Cmd+V' : 'Ctrl+V'}.\n` : ''}` +
-                  `Current cell and other relevant cells are available to the AI.`
+                  `Code from current cell and other relevant cells\nare available to the AI.`
               }}
             />
           </Box>

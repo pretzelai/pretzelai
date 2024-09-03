@@ -252,8 +252,6 @@ const InputComponent: React.FC<IInputComponentProps> = ({
       }
     }
 
-    monaco.editor.setTheme(themeManager?.theme?.includes('Light') ? 'vs' : 'vs-dark');
-
     if (!globalState.isMonacoRegistered) {
       // Register the completion provider for Markdown
       monaco.languages.registerCompletionItemProvider('markdown', {
@@ -543,10 +541,10 @@ const InputComponent: React.FC<IInputComponentProps> = ({
           );
         })}
       </Box>
-      <div className="pretzelInputField">
+      <div className="pretzelInputField" style={{ height: '110px', overflow: 'hidden' }}>
         <Editor
-          height="100px"
           defaultLanguage="markdown"
+          theme={document.body.getAttribute('data-jp-theme-light') === 'true' ? 'vs' : 'vs-dark'}
           value={editorValue}
           onChange={handleEditorChange}
           onMount={handleEditorDidMount}
@@ -573,6 +571,7 @@ const InputComponent: React.FC<IInputComponentProps> = ({
             overviewRulerLanes: 0,
             renderLineHighlight: 'none',
             readOnly: !isAIEnabled,
+            scrollBeyondLastLine: false,
             placeholder: placeholder
           }}
         />
