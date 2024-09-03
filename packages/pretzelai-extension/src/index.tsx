@@ -497,7 +497,8 @@ const extension: JupyterFrontEndPlugin<void> = {
             const outputs = codeCellModel.outputs as OutputAreaModel;
             const errorOutput = findErrorOutput(outputs);
             if (errorOutput) {
-              const outputElement = cell.node.querySelector('.jp-RenderedText.jp-mod-trusted.jp-OutputArea-output');
+              const outputElements = cell.node.querySelectorAll('.jp-RenderedText.jp-mod-trusted.jp-OutputArea-output');
+              const outputElement = outputElements[outputElements.length - 1];
               if (outputElement) {
                 addFixErrorButton(outputElement as HTMLElement, codeCellModel);
               }
