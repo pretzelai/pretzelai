@@ -482,7 +482,7 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   }
 }
 
-.cm-editor.cm-merge-b .cm-scroller {
+/* .cm-editor.cm-merge-b .cm-scroller {
   background-color: transparent;
 }
 
@@ -490,9 +490,14 @@ body[data-jp-theme-light='false'] .cm-editor.ͼ1.ͼ2.ͼo.pretzel-new-code-genera
   font-family: var(--jp-code-font-family);
   font-size: var(--jp-code-font-size);
   line-height: var(--jp-code-line-height);
-}
+} */
 
 /* Light mode styles */
+
+/* body:not(.jp-mod-dark) .cm-editor.cm-merge-b.streaming .cm-deletedChunk.last {
+  background-color: rgba(127, 128, 128, 0.1) !important;
+}
+
 body:not(.jp-mod-dark) .cm-editor.cm-merge-b .cm-deletedChunk {
   background-color: rgba(255, 0, 0, 0.1);
 }
@@ -511,10 +516,10 @@ body:not(.jp-mod-dark) .cm-editor.cm-merge-b .cm-insertedLine {
 
 body:not(.jp-mod-dark) .cm-editor.cm-merge-b .cm-changedText {
   background-color: rgba(0, 255, 0, 0.3);
-}
+} */
 
 /* Dark mode styles */
-body.jp-mod-dark .cm-editor.cm-merge-b .cm-deletedChunk {
+/* body.jp-mod-dark .cm-editor.cm-merge-b .cm-deletedChunk {
   background-color: rgba(255, 0, 0, 0.2);
 }
 
@@ -532,28 +537,28 @@ body.jp-mod-dark .cm-editor.cm-merge-b .cm-insertedLine {
 
 body.jp-mod-dark .cm-editor.cm-merge-b .cm-changedText {
   background-color: rgba(0, 255, 0, 0.35);
-}
+} */
 
 /* Remove text decoration, strikethrough, and underline for both light and dark modes */
-.cm-editor.cm-merge-b .cm-deletedText,
+/* .cm-editor.cm-merge-b .cm-deletedText,
 .cm-editor.cm-merge-b del,
 .cm-editor.cm-merge-b .cm-changedText {
   text-decoration: none !important;
   background-image: none !important;
-}
+} */
 
 /* Override the underline style */
-.ͼ2.cm-merge-a .cm-changedText,
+/* .ͼ2.cm-merge-a .cm-changedText,
 .ͼ2 .cm-deletedChunk .cm-deletedText,
 .cm-editor.cm-merge-b .cm-changedText,
 .cm-editor.cm-merge-b .cm-deletedChunk .cm-deletedText {
   background: none !important;
-}
+} */
 
 /* Ensure the editor background is transparent */
-.cm-editor.cm-merge-b {
+/* .cm-editor.cm-merge-b {
   background-color: transparent !important;
-}
+} */
 
 .pretzelParentContainerAI > div:not(.fixed) {
   transition: all 0.3s ease;

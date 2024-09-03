@@ -123,6 +123,8 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   const buttonsRef = React.useRef<HTMLDivElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
+  const [lastProcessedLines, setLastProcessedLines] = useState<string[]>([]);
+
   useEffect(() => {
     const componentHeight = 144;
     const bottomOffset = 30;
@@ -248,21 +250,6 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
   }, []);
 
   useEffect(() => {
-    if (streamingDone && diffView) {
-      const fixedCode = fixCode(newCode);
-      diffView.dispatch({
-        changes: {
-          from: 0,
-          to: diffView.state.doc.length,
-          insert: fixedCode
-        }
-      });
-      setNewCode(fixedCode);
-      setShowStatusElement(false);
-    }
-  }, [streamingDone]);
-
-  useEffect(() => {
     if (streamingDone && diffView && buttonsRef.current) {
       // Scroll the buttons into view, but align to the nearest edge
       buttonsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -273,16 +260,30 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
     if (stream) {
       const accumulate = async () => {
         try {
+          // Add streaming class when streaming starts
+          const mergeBElement = props.notebookTracker.activeCell?.editor?.host?.querySelector('.cm-merge-b');
+          if (mergeBElement) {
+            mergeBElement.classList.add('streaming');
+          }
           for await (const chunk of stream) {
             const newContent = chunk.choices[0]?.delta?.content || '';
             setNewCode(prevCode => prevCode + newContent);
           }
           setStreamingDone(true);
           setStatusElementText('');
+          // Remove streaming class when streaming is done
+          if (mergeBElement) {
+            mergeBElement.classList.remove('streaming');
+          }
         } catch (error) {
           console.error('Error processing stream:', error);
           setStreamingDone(true);
           setStatusElementText('');
+          // Remove streaming class in case of error
+          const mergeBElement = props.notebookTracker.activeCell?.editor?.host?.querySelector('.cm-merge-b');
+          if (mergeBElement) {
+            mergeBElement.classList.remove('streaming');
+          }
         }
       };
       accumulate();
@@ -291,15 +292,28 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
 
   useEffect(() => {
     if (props.notebookTracker.activeCell && diffView) {
-      diffView.dispatch({
-        changes: {
-          from: 0,
-          to: diffView.state.doc.length,
-          insert: newCode
-        }
-      });
+      const newLines = newCode.split('\n');
+      const completeLines = streamingDone ? newLines : newLines.slice(0, -1);
+
+      if (completeLines.length > lastProcessedLines.length) {
+        const linesToAdd = completeLines.slice(lastProcessedLines.length);
+        const insertText = linesToAdd.join('\n') + (streamingDone ? '' : '\n');
+
+        diffView.dispatch({
+          changes: {
+            from: diffView.state.doc.length,
+            insert: insertText
+          }
+        });
+        setLastProcessedLines(completeLines);
+      }
     }
-  }, [newCode]);
+    const deletedChunks = props.notebookTracker.activeCell?.node.querySelectorAll('.cm-deletedChunk');
+    // add a class to the last deleted chunk
+    if (deletedChunks && deletedChunks.length > 0) {
+      deletedChunks[deletedChunks.length - 1].classList.add('last');
+    }
+  }, [newCode, streamingDone]);
 
   useEffect(() => {
     if (props.notebookTracker.activeCell?.model.getMetadata('isPromptEdit')) {
@@ -460,7 +474,7 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           handleSubmit={handleSubmit}
           handleRemove={props.handleRemove}
           promptHistoryStack={props.promptHistoryStack}
-          setInputView={() => { }}
+          setInputView={() => {}}
           initialPrompt={initialPrompt}
           activeCell={props.notebookTracker.activeCell!}
           placeholderEnabled={props.placeholderEnabled}
