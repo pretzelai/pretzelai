@@ -177,16 +177,14 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
 
         // Hardcoded completion without AI for first line of notebook
         // TODO: We can add more hardcoded imports for common libraries
-        if (prompt.indexOf('\n') === -1 && !suffix) {
-          if ('import pandas as pd'.startsWith(prompt)) {
-            resolve({
-              items: [
-                {
-                  insertText: 'import pandas as pd'.slice(prompt.length)
-                }
-              ]
-            });
-          }
+        if (prompt.indexOf('\n') === -1 && !suffix && 'import pandas as pd'.startsWith(prompt)) {
+          resolve({
+            items: [
+              {
+                insertText: 'import pandas as pd'.slice(prompt.length)
+              }
+            ]
+          });
           // Spinner will not show because it emits false before the UI can react
           this.isFetchingChanged.emit(false);
           return;
