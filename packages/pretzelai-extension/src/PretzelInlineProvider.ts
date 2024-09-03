@@ -221,25 +221,30 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
             completion = (await fetchResponse.json()).completion;
           } else if (copilotProvider === 'OpenAI' && openAiApiKey) {
             const openai = new OpenAI({ apiKey: openAiApiKey, dangerouslyAllowBrowser: true });
-            const openaiResponse = await openai.chat.completions.create({
-              model: copilotModel,
-              stop: stops,
-              max_tokens: this._isMultiLine(prompt) ? 500 : 100,
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are a staff software engineer'
-                },
-                {
-                  role: 'user',
-                  content: `\`\`\`python
+            const openaiResponse = await openai.chat.completions.create(
+              {
+                model: copilotModel,
+                stop: stops,
+                max_tokens: this._isMultiLine(prompt) ? 500 : 100,
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a staff software engineer'
+                  },
+                  {
+                    role: 'user',
+                    content: `\`\`\`python
 ${prompt}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beggining of your response.`
-                }
-              ]
-            });
+                  }
+                ]
+              },
+              {
+                signal: this.abortController?.signal
+              }
+            );
             completion = openaiResponse.choices[0].message.content;
           } else if (copilotProvider === 'Mistral' && mistralApiKey) {
             // FIXME: Allow for newer model types
@@ -334,7 +339,8 @@ Fill in the blank to complete the code block. Your response should include only 
                 model: copilotModel,
                 messages: messages,
                 stream: true
-              })
+              }),
+              signal: this.abortController?.signal
             });
             const reader = response.body!.getReader();
             const decoder = new TextDecoder('utf-8');
@@ -358,25 +364,30 @@ Fill in the blank to complete the code block. Your response should include only 
             completion = completionContent.trim();
           } else if (copilotProvider === 'Groq' && groqApiKey) {
             const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
-            const groqResponse = await groq.chat.completions.create({
-              model: copilotModel,
-              stop: stops,
-              max_tokens: this._isMultiLine(prompt) ? 500 : 100,
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are a staff software engineer'
-                },
-                {
-                  role: 'user',
-                  content: `\`\`\`python
+            const groqResponse = await groq.chat.completions.create(
+              {
+                model: copilotModel,
+                stop: stops,
+                max_tokens: this._isMultiLine(prompt) ? 500 : 100,
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a staff software engineer'
+                  },
+                  {
+                    role: 'user',
+                    content: `\`\`\`python
 ${prompt}[BLANK]${suffix}
 \`\`\`
 
 Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
-                }
-              ]
-            });
+                  }
+                ]
+              },
+              {
+                signal: this.abortController?.signal
+              }
+            );
             completion = groqResponse.choices[0].message.content;
           } else {
             completion = '';
