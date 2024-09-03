@@ -47,6 +47,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
   readonly identifier = '@pretzelai/inline-completer';
   readonly name = 'Pretzel AI inline completion';
   private debounceTimer: any;
+  private abortController: AbortController | null = null;
 
   private _prefixFromRequest(request: CompletionHandler.IRequest): string {
     const currentCellIndex = this.notebookTracker?.currentWidget?.model!.sharedModel.cells.findIndex(
@@ -127,6 +128,14 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     request: CompletionHandler.IRequest,
     context: IInlineCompletionContext
   ): Promise<IInlineCompletionList<IInlineCompletionItem>> {
+    // Cancel previous fetch if it exists
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+
+    // Create new AbortController for this fetch
+    this.abortController = new AbortController();
+
     clearTimeout(this.debounceTimer);
     const settings = await this.settingRegistry.load(PLUGIN_ID);
     const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
@@ -204,10 +213,10 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
               body: JSON.stringify({
                 prompt,
                 suffix,
-                // eslint-disable-next-line
                 max_tokens: 500,
                 stop: stops
-              })
+              }),
+              signal: this.abortController?.signal // Add abort signal to fetch
             });
             completion = (await fetchResponse.json()).completion;
           } else if (copilotProvider === 'OpenAI' && openAiApiKey) {
@@ -215,7 +224,6 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
             const openaiResponse = await openai.chat.completions.create({
               model: copilotModel,
               stop: stops,
-              // eslint-disable-next-line
               max_tokens: this._isMultiLine(prompt) ? 500 : 100,
               messages: [
                 {
@@ -248,7 +256,6 @@ Fill in the blank to complete the code block. Your response should include only 
                   prompt,
                   suffix,
                   stop: stops,
-                  // eslint-disable-next-line
                   max_tokens: 500,
                   temperature: 0
                 })
@@ -386,12 +393,17 @@ Fill in the blank to complete the code block. Your response should include only 
             ]
           });
         } catch (error: any) {
-          console.error('Error:', JSON.stringify(error));
+          if (error.name === 'AbortError') {
+            console.log('Fetch aborted');
+          } else {
+            console.error('Error:', JSON.stringify(error));
+          }
           resolve({
             items: []
           });
         } finally {
           this.isFetchingChanged.emit(false);
+          this.abortController = null; // Reset the abort controller
         }
       }, DEBOUNCE_TIME);
     });
