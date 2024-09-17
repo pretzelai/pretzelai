@@ -285,3 +285,56 @@ export const openaiEmbeddings = async (
     } as OpenAIEmbeddings;
   }
 };
+
+export const getInlinePrompt = (prompt: string, suffix: string) => `Here are some examples of Python code completion:
+
+Example 1:
+Input:
+def calculate_area(radius):
+    return 3.14 * [BLANK]
+
+Output:
+radius ** 2
+
+Example 2:
+Input:
+for i in range(10):
+    if i % 2 == 0:
+        [BLANK]
+
+Output:
+print(i)
+
+Example 3:
+Input:
+try:
+    result = 10 / 0
+except [BLANK]:
+    print("Division by zero!")
+
+Output:
+ZeroDivisionError
+
+Example 4:
+Input:
+import random
+
+numbers = [1, 2, 3, 4, 5]
+random.[BLANK]
+
+Output:
+shuffle(numbers)
+
+Example 5:
+Input:
+def quick_sort(arr):
+    # exp
+
+Output:
+lanation:
+
+Now, complete the following Python code:
+
+${prompt}[BLANK]${suffix}
+
+Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`;
