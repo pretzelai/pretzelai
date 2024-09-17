@@ -25,6 +25,7 @@ import MistralClient from '@mistralai/mistralai';
 import { fixInlineCompletion } from './postprocessing';
 import Groq from 'groq-sdk';
 import { Signal } from '@lumino/signaling';
+import { getInlinePrompt } from './prompt';
 
 const DEBOUNCE_TIME = 1000;
 
@@ -233,11 +234,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
                   },
                   {
                     role: 'user',
-                    content: `\`\`\`python
-${prompt}[BLANK]${suffix}
-\`\`\`
-
-Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beggining of your response.`
+                    content: getInlinePrompt(prompt, suffix)
                   }
                 ]
               },
@@ -278,11 +275,7 @@ Fill in the blank to complete the code block. Your response should include only 
                   },
                   {
                     role: 'user',
-                    content: `\`\`\`python
-${prompt}[BLANK]${suffix}
-\`\`\`
-
-Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+                    content: getInlinePrompt(prompt, suffix)
                   }
                 ],
                 temperature: 0.7,
@@ -294,23 +287,13 @@ Fill in the blank to complete the code block. Your response should include only 
             }
           } else if (copilotProvider === 'Azure' && azureApiKey && azureBaseUrl && azureDeploymentName) {
             const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
-            const result = await client.getCompletions(azureDeploymentName, [
-              `\`\`\`python
-${prompt}[BLANK]${suffix}
-\`\`\`
-
-Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
-            ]);
+            const result = await client.getCompletions(azureDeploymentName, [getInlinePrompt(prompt, suffix)]);
             completion = result.choices[0].text;
           } else if (copilotProvider === 'Anthropic' && anthropicApiKey) {
             const messages = [
               {
                 role: 'user',
-                content: `\`\`\`python
-${prompt}[BLANK]${suffix}
-\`\`\`
-
-Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+                content: getInlinePrompt(prompt, suffix)
               }
             ];
             const stream = await streamAnthropicCompletion(anthropicApiKey, messages, copilotModel, 500);
@@ -323,11 +306,7 @@ Fill in the blank to complete the code block. Your response should include only 
             const messages = [
               {
                 role: 'user',
-                content: `\`\`\`python
-${prompt}[BLANK]${suffix}
-\`\`\`
-
-Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+                content: getInlinePrompt(prompt, suffix)
               }
             ];
             const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
@@ -376,11 +355,7 @@ Fill in the blank to complete the code block. Your response should include only 
                   },
                   {
                     role: 'user',
-                    content: `\`\`\`python
-${prompt}[BLANK]${suffix}
-\`\`\`
-
-Fill in the blank to complete the code block. Your response should include only the code to replace [BLANK], without surrounding backticks. Do not return a linebreak at the beginning of your response.`
+                    content: getInlinePrompt(prompt, suffix)
                   }
                 ]
               },
