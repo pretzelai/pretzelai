@@ -15,6 +15,7 @@
     ·
     <a href="mailto:founders@withpretzel.com" target="_blank">Contact</a>
   </p>
+
 </p>
 
 <p align="center">
