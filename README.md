@@ -116,7 +116,7 @@ Failed to build installable wheels for some pyproject.toml based projects (pyste
 
 That means the installation failed to install the dependency `PyStemmer`. This usually happens because you don't have the right build tools installed. To fix this:
 
-- **On Windows**: Install Miscrosoft build tools from [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/). Click on the _Download Build Tools_ button and then install it.
+- **On Windows**: Install Microsoft build tools from [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/). Click on the _Download Build Tools_ button and then install it.
 - **On Ubuntu (and Debian flavoured systems)**: Install the required build tools by running the following command in your terminal:
   ```
   sudo apt-get update && sudo apt-get install build-essential python3-dev
