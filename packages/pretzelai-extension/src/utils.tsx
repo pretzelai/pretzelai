@@ -26,6 +26,50 @@ import { globalState } from './globalState';
 
 export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
+export interface StreamChunk {
+  choices: Array<{
+    delta: {
+      content: string;
+    };
+  }>;
+}
+
+export interface AIProviderConfig {
+  openAiApiKey?: string;
+  openAiBaseUrl?: string;
+  azureBaseUrl?: string;
+  azureApiKey?: string;
+  azureDeploymentName?: string;
+  deploymentId?: string;
+  mistralApiKey?: string;
+  mistralModel?: string;
+  anthropicApiKey?: string;
+  ollamaBaseUrl?: string;
+  groqApiKey?: string;
+}
+
+export interface EmbeddingResponse {
+  data: Array<{
+    embedding: number[];
+  }>;
+}
+
+export interface OllamaModel {
+  model: string;
+  name: string;
+  modified_at: string;
+  size: number;
+}
+
+export interface OllamaTagsResponse {
+  models: OllamaModel[];
+}
+
+export interface CellData {
+  id: string;
+  source: string;
+}
+
 export async function calculateHash(input: string) {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
@@ -42,6 +86,7 @@ export const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
   return dotProduct / (magnitudeA * magnitudeB);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isSetsEqual = (xs: Set<any>, ys: Set<any>) => xs.size === ys.size && [...xs].every(x => ys.has(x));
 
 export const getSelectedCode = (notebookTracker: INotebookTracker) => {
@@ -235,7 +280,7 @@ export const PRETZEL_FOLDER = '.pretzel';
 
 export async function createAndSaveEmbeddings(
   existingEmbeddingsJSON: Embedding[],
-  cells: any[],
+  cells: CellData[],
   path: string,
   app: JupyterFrontEnd,
   aiClient: OpenAI | OpenAIClient | MistralClient | null,
@@ -261,6 +306,7 @@ export async function createAndSaveEmbeddings(
               });
             } catch (error) {
               console.error('Error generating embedding:', error);
+              await showErrorDialog('Error generating embedding', error instanceof Error ? error.message : String(error));
             }
           } else {
             newEmbeddingsArray.push(embeddings[index]);
@@ -277,6 +323,7 @@ export async function createAndSaveEmbeddings(
             });
           } catch (error) {
             console.error('Error generating embedding:', error);
+            await showErrorDialog('Error generating embedding', error instanceof Error ? error.message : String(error));
           }
         }
       })();
@@ -302,7 +349,8 @@ export async function getEmbeddings(
   notebookTracker: INotebookTracker,
   app: JupyterFrontEnd,
   aiClient: OpenAI | OpenAIClient | MistralClient | null,
-  aiChatModelProvider: string
+  aiChatModelProvider: string,
+  pendingTimeouts?: Set<ReturnType<typeof setTimeout>>
 ): Promise<Embedding[]> {
   const notebook = notebookTracker.currentWidget;
   let embeddings: Embedding[] = [];
@@ -313,15 +361,27 @@ export async function getEmbeddings(
     const embeddingsPath = currentDir + '/' + PRETZEL_FOLDER + '/' + notebookName + '_embeddings.json';
     const newDirPath = currentDir + '/' + PRETZEL_FOLDER;
 
-    // check if file exists via ServerConnection
     const requestUrl = URLExt.join(app.serviceManager.serverSettings.baseUrl, 'api/contents', embeddingsPath);
-    const response = await ServerConnection.makeRequest(
-      requestUrl,
-      { method: 'GET', headers: { 'Content-Type': 'application/json' } },
-      app.serviceManager.serverSettings
-    );
+    let response: Response;
+    try {
+      response = await ServerConnection.makeRequest(
+        requestUrl,
+        { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+        app.serviceManager.serverSettings
+      );
+    } catch (error) {
+      console.error('Error checking embeddings file:', error);
+      return embeddings;
+    }
+
     if (response.ok) {
-      const file = await app.serviceManager.contents.get(embeddingsPath);
+      let file;
+      try {
+        file = await app.serviceManager.contents.get(embeddingsPath);
+      } catch (error) {
+        console.error('Error getting embeddings file:', error);
+        return embeddings;
+      }
       try {
         const existingEmbeddingsJSON = JSON.parse(file.content);
         embeddings = await createAndSaveEmbeddings(
@@ -334,9 +394,9 @@ export async function getEmbeddings(
         );
       } catch (error) {
         console.error('Error parsing embeddings JSON:', error);
+        await showErrorDialog('Error parsing embeddings', error instanceof Error ? error.message : String(error));
       }
     } else {
-      // create directory. if already exists, this code does nothing
       const requestUrl = URLExt.join(
         app.serviceManager.serverSettings.baseUrl,
         'api/contents',
@@ -348,11 +408,10 @@ export async function getEmbeddings(
         headers: { 'Content-Type': 'application/json' }
       };
 
-      // create embeddings file which will be used in the next call of this function
       try {
-        const response = await ServerConnection.makeRequest(requestUrl, init, app.serviceManager.serverSettings);
-        if (!response.ok) {
-          throw new Error(`Error creating directory: ${response}`);
+        const dirResponse = await ServerConnection.makeRequest(requestUrl, init, app.serviceManager.serverSettings);
+        if (!dirResponse.ok) {
+          throw new Error(`Error creating directory: ${dirResponse.status} ${dirResponse.statusText}`);
         }
         await app.serviceManager.contents.save(embeddingsPath, {
           type: 'file',
@@ -361,10 +420,15 @@ export async function getEmbeddings(
         });
       } catch (error) {
         console.error('Error creating embeddings:', error);
+        await showErrorDialog('Error creating embeddings directory', error instanceof Error ? error.message : String(error));
       }
     }
   } else {
-    setTimeout(() => getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider), 1000);
+    const retryTimeout = setTimeout(
+      () => getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider, pendingTimeouts),
+      1000
+    );
+    pendingTimeouts?.add(retryTimeout);
   }
   return embeddings;
 }
@@ -376,7 +440,11 @@ export const readEmbeddings = async (
   aiChatModelProvider: string
 ): Promise<Embedding[]> => {
   const notebook = notebookTracker.currentWidget;
-  const currentNotebookPath = notebook!.context.path;
+  if (!notebook?.context?.path) {
+    console.warn('No active notebook found for reading embeddings');
+    return [];
+  }
+  const currentNotebookPath = notebook.context.path;
   const notebookName = currentNotebookPath.split('/').pop()!.replace('.ipynb', '');
   const currentDir = currentNotebookPath.substring(0, currentNotebookPath.lastIndexOf('/'));
   const embeddingsPath = currentDir + '/' + PRETZEL_FOLDER + '/' + notebookName + '_embeddings.json';
@@ -384,8 +452,14 @@ export const readEmbeddings = async (
     const file = await app.serviceManager.contents.get(embeddingsPath);
     return JSON.parse(file.content);
   } catch (error) {
-    await getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
-    return await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+    console.error('Error reading embeddings, attempting to regenerate:', error);
+    try {
+      await getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+      return await readEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+    } catch (regenerateError) {
+      console.error('Error regenerating embeddings:', regenerateError);
+      return [];
+    }
   }
 };
 
@@ -401,14 +475,21 @@ export const getTopSimilarities = async (
   let response;
   try {
     response = await openaiEmbeddings(userInput, aiChatModelProvider, aiClient);
-  } catch (error: any) {
-    // Catching OpenAI errors here since this function is called for all prompts
-    showErrorDialog(`${aiChatModelProvider}: Error connecting`, error?.error?.message || JSON.stringify(error));
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const apiErrorMessage = (error as any)?.error?.message || errorMessage;
+    await showErrorDialog(`${aiChatModelProvider}: Error connecting`, apiErrorMessage);
     throw error;
   }
-  const userInputEmbedding = response.data[0].embedding; // same API for openai and azure
+  if (!response?.data?.[0]?.embedding) {
+    const errorMsg = 'Invalid embedding response from AI provider';
+    await showErrorDialog(`${aiChatModelProvider}: Error`, errorMsg);
+    throw new Error(errorMsg);
+  }
+  const userInputEmbedding = response.data[0].embedding;
   const similarities = embeddings
-    .filter(embedding => embedding.id !== cellId) // Exclude current cell's embedding
+    .filter(embedding => embedding.id !== cellId)
     .map((embedding, index) => ({
       value: cosineSimilarity(embedding.embedding, userInputEmbedding),
       index
@@ -435,24 +516,17 @@ const setupStream = async ({
   anthropicApiKey,
   ollamaBaseUrl,
   groqApiKey
-}: {
+}: AIProviderConfig & {
   aiChatModelProvider: string;
   aiChatModelString: string;
-  openAiApiKey?: string;
-  openAiBaseUrl?: string;
   prompt: string;
   base64Images: string[];
-  azureBaseUrl?: string;
-  azureApiKey?: string;
-  deploymentId?: string;
-  mistralApiKey?: string;
-  mistralModel?: string;
-  anthropicApiKey?: string;
-  ollamaBaseUrl?: string;
-  groqApiKey?: string;
-}): Promise<AsyncIterable<any>> => {
+}): Promise<AsyncIterable<StreamChunk>> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let stream: AsyncIterable<any> | null = null;
-  let content: string | any[] = prompt; // FIXME: any is pretty complex here, leaving it for now
+  // Note: content type varies by provider - OpenAI uses image_url, Anthropic uses image with source
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let content: string | any[] = prompt;
   if (base64Images.length > 0) {
     if (aiChatModelProvider === 'OpenAI' || aiChatModelProvider === 'Pretzel AI') {
       content = [

@@ -332,7 +332,8 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     const initializePromptHistory = async () => {
       if (!notebookTracker.currentWidget?.model) {
-        setTimeout(initializePromptHistory, 1000);
+        const initTimeout = setTimeout(initializePromptHistory, 1000);
+        pendingTimeouts.add(initTimeout);
         return;
       }
       const savedHistory = await loadPromptHistory(app, notebookTracker);
@@ -403,7 +404,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     loadAIClient(); // first time load, later settings will trigger this
 
     notebookTracker.currentChanged.connect(() => {
-      getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+      getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider, pendingTimeouts);
       // try {
       //   let isConnected = false;
       //   if (pretzelSettingsJSON) {
@@ -426,9 +427,11 @@ const extension: JupyterFrontEndPlugin<void> = {
     app.serviceManager.contents.fileChanged.connect((sender, change) => {
       if (change.type === 'rename') {
         // wait for the file to be renamed before creating embeddings file
-        setTimeout(() => {
+        const renameTimeout = setTimeout(() => {
           getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
+          pendingTimeouts.delete(renameTimeout);
         }, 2000);
+        pendingTimeouts.add(renameTimeout);
       }
     });
 
@@ -453,7 +456,17 @@ const extension: JupyterFrontEndPlugin<void> = {
       debouncedUpdateVariables();
     });
 
-    let debounceTimeout: NodeJS.Timeout | null = null;
+    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+    const pendingTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
+
+    const cleanupTimeouts = () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = null;
+      }
+      pendingTimeouts.forEach(timeout => clearTimeout(timeout));
+      pendingTimeouts.clear();
+    };
 
     notebookTracker.activeCellChanged.connect((sender, cell) => {
       if (cell) {

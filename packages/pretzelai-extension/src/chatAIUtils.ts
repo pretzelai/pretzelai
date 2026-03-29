@@ -18,6 +18,65 @@ import { processVariables } from './utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { Dispatch, SetStateAction } from 'react';
 
+export interface TextContent {
+  type: 'text';
+  text: string;
+}
+
+export interface ImageContent {
+  type: 'image';
+  data: string;
+}
+
+export interface ImageUrlContent {
+  type: 'image_url';
+  image_url: { url: string };
+}
+
+export interface AnthropicImageContent {
+  type: 'image';
+  source: {
+    type: 'base64';
+    media_type: string;
+    data: string;
+  };
+}
+
+export type MessageContent = string | (TextContent | ImageContent)[];
+
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: MessageContent;
+}
+
+export interface ProcessedMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string | (TextContent | ImageUrlContent | AnthropicImageContent)[];
+}
+
+export interface ChatAIStreamParams {
+  aiChatModelProvider: string;
+  aiChatModelString: string;
+  openAiApiKey?: string;
+  openAiBaseUrl?: string;
+  azureBaseUrl?: string;
+  azureApiKey?: string;
+  deploymentId?: string;
+  mistralApiKey?: string;
+  anthropicApiKey?: string;
+  ollamaBaseUrl?: string;
+  groqApiKey?: string;
+  renderChat: (message: string) => void;
+  messages: ChatMessage[];
+  topSimilarities: string[];
+  activeCellCode?: string;
+  selectedCode?: string;
+  setReferenceSource: Dispatch<SetStateAction<string>>;
+  setIsAiGenerating: (isGenerating: boolean) => void;
+  signal: AbortSignal;
+  notebookTracker: INotebookTracker | null;
+}
+
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
 
@@ -73,24 +132,24 @@ ${topSimilarities.join('\n```\n```python\n')}
   return output;
 };
 
-const processMessages = (messages: any[], provider: string, model: string): any[] => {
-  const processedMessages: any[] = [];
+const processMessages = (messages: ChatMessage[], provider: string, model: string): ProcessedMessage[] => {
+  const processedMessages: ProcessedMessage[] = [];
 
   for (const message of messages) {
     if (!Array.isArray(message.content)) {
-      processedMessages.push(message);
+      processedMessages.push(message as ProcessedMessage);
       continue;
     }
 
     if (provider !== 'OpenAI' && provider !== 'Anthropic' && provider !== 'Pretzel AI') {
       // If the provider doesn't support images, only keep the text content
-      const textContent = message.content.find(item => item.type === 'text')?.text || '';
+      const textContent = message.content.find((item): item is TextContent => item.type === 'text')?.text || '';
       processedMessages.push({ ...message, content: textContent });
       continue;
     }
 
     // Process messages for image-supporting models
-    let processedContent: any[] = [];
+    const processedContent: (TextContent | ImageUrlContent | AnthropicImageContent)[] = [];
     for (const item of message.content) {
       if (item.type === 'text') {
         processedContent.push({ type: 'text', text: item.text });
@@ -140,28 +199,7 @@ export const chatAIStream = async ({
   setIsAiGenerating,
   signal,
   notebookTracker
-}: {
-  aiChatModelProvider: string;
-  aiChatModelString: string;
-  openAiApiKey?: string;
-  openAiBaseUrl?: string;
-  azureBaseUrl?: string;
-  azureApiKey?: string;
-  deploymentId?: string;
-  mistralApiKey?: string;
-  anthropicApiKey?: string;
-  ollamaBaseUrl?: string;
-  groqApiKey?: string;
-  renderChat: (message: string) => void;
-  messages: any[]; // types are too complex
-  topSimilarities: string[];
-  activeCellCode?: string;
-  selectedCode?: string;
-  setReferenceSource: Dispatch<SetStateAction<string>>;
-  setIsAiGenerating: (isGenerating: boolean) => void;
-  signal: AbortSignal;
-  notebookTracker: INotebookTracker | null;
-}): Promise<void> => {
+}: ChatAIStreamParams): Promise<void> => {
   const lastMessageContent = messages[messages.length - 1].content;
 
   // FIXME: This should be handled at each provider level, this is a workaround
@@ -172,7 +210,9 @@ export const chatAIStream = async ({
   }
 
   // Process the last message to add context
-  const lastMessageText = Array.isArray(lastMessageContent) ? lastMessageContent[0].text : lastMessageContent;
+  const lastMessageText = Array.isArray(lastMessageContent)
+    ? lastMessageContent.find((item): item is TextContent => item.type === 'text')?.text || ''
+    : lastMessageContent;
   const lastMessageTextWithInjection = await generateChatPrompt(
     lastMessageText,
     setReferenceSource,
@@ -182,9 +222,9 @@ export const chatAIStream = async ({
     selectedCode
   );
   const updatedLastMessageContent = Array.isArray(lastMessageContent)
-    ? [{ type: 'text', text: lastMessageTextWithInjection }, ...lastMessageContent.slice(1)]
+    ? ([{ type: 'text', text: lastMessageTextWithInjection }, ...lastMessageContent.slice(1)] as MessageContent)
     : lastMessageTextWithInjection;
-  const updatedMessages = [...messages.slice(0, -1), { role: 'user', content: updatedLastMessageContent }];
+  const updatedMessages = [...messages.slice(0, -1), { role: 'user' as const, content: updatedLastMessageContent }];
   const processedMessages = processMessages(updatedMessages, aiChatModelProvider, aiChatModelString);
 
   if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && messages) {
