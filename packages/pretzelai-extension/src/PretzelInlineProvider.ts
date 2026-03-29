@@ -26,6 +26,8 @@ import { fixInlineCompletion } from './postprocessing';
 import Groq from 'groq-sdk';
 import { Signal } from '@lumino/signaling';
 import { getInlinePrompt } from './prompt';
+import { showErrorDialog } from './components/ErrorDialog';
+import { ProviderSettings } from './types';
 
 const DEBOUNCE_TIME = 1000;
 
@@ -47,7 +49,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
   }
   readonly identifier = '@pretzelai/inline-completer';
   readonly name = 'Pretzel AI inline completion';
-  private debounceTimer: any;
+  private debounceTimer: NodeJS.Timeout | null = null;
   private abortController: AbortController | null = null;
 
   private _prefixFromRequest(request: CompletionHandler.IRequest): string {
@@ -137,9 +139,20 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     // Create new AbortController for this fetch
     this.abortController = new AbortController();
 
-    clearTimeout(this.debounceTimer);
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
     const settings = await this.settingRegistry.load(PLUGIN_ID);
-    const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
+    const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as {
+      features?: {
+        inlineCompletion?: {
+          enabled?: boolean;
+          modelProvider?: string;
+          modelString?: string;
+        };
+      };
+      providers?: Record<string, ProviderSettings>;
+    };
     const inlineCopilotSettings = pretzelSettingsJSON.features?.inlineCompletion || {};
     const isEnabled = inlineCopilotSettings.enabled ?? false;
     if (!isEnabled) {
@@ -149,17 +162,17 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     const copilotModel = inlineCopilotSettings.modelString || 'pretzelai'; // FIXME: use this in code
     const providers = pretzelSettingsJSON.providers || {};
     const mistralSettings = providers['Mistral']?.apiSettings || {};
-    const mistralApiKey = mistralSettings?.apiKey?.value || '';
+    const mistralApiKey = String(mistralSettings?.apiKey?.value || '');
     const openAiSettings = providers['OpenAI']?.apiSettings || {};
-    const openAiApiKey = openAiSettings?.apiKey?.value || '';
+    const openAiApiKey = String(openAiSettings?.apiKey?.value || '');
     const azureSettings = providers['Azure']?.apiSettings || {};
-    const azureApiKey = azureSettings?.apiKey?.value || '';
-    const azureBaseUrl = azureSettings?.baseUrl?.value || '';
-    const azureDeploymentName = azureSettings?.deploymentName?.value || '';
+    const azureApiKey = String(azureSettings?.apiKey?.value || '');
+    const azureBaseUrl = String(azureSettings?.baseUrl?.value || '');
+    const azureDeploymentName = String(azureSettings?.deploymentName?.value || '');
     const anthropicSettings = providers['Anthropic']?.apiSettings || {};
-    const anthropicApiKey = anthropicSettings?.apiKey?.value || '';
-    const ollamaBaseUrl = providers['Ollama']?.apiSettings?.baseUrl?.value || '';
-    const groqApiKey = providers['Groq']?.apiSettings?.apiKey?.value || '';
+    const anthropicApiKey = String(anthropicSettings?.apiKey?.value || '');
+    const ollamaBaseUrl = String(providers['Ollama']?.apiSettings?.baseUrl?.value || '');
+    const groqApiKey = String(providers['Groq']?.apiSettings?.apiKey?.value || '');
 
     return new Promise(resolve => {
       this.debounceTimer = setTimeout(async () => {
@@ -260,7 +273,8 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
                   stop: stops,
                   max_tokens: 500,
                   temperature: 0
-                })
+                }),
+                signal: this.abortController?.signal
               });
               // Note: Response parsing might not work as expected due to 'no-cors' mode, which can lead to an opaque response.
               completion = (await data.json()).choices[0].message.content;
@@ -287,7 +301,9 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
             }
           } else if (copilotProvider === 'Azure' && azureApiKey && azureBaseUrl && azureDeploymentName) {
             const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
-            const result = await client.getCompletions(azureDeploymentName, [getInlinePrompt(prompt, suffix)]);
+            const result = await client.getCompletions(azureDeploymentName, [getInlinePrompt(prompt, suffix)], {
+              abortSignal: this.abortController?.signal
+            });
             completion = result.choices[0].text;
           } else if (copilotProvider === 'Anthropic' && anthropicApiKey) {
             const messages = [
@@ -378,11 +394,13 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
               }
             ]
           });
-        } catch (error: any) {
-          if (error.name === 'AbortError') {
+        } catch (error: unknown) {
+          if (error instanceof Error && error.name === 'AbortError') {
             console.log('Fetch aborted');
           } else {
-            console.error('Error:', JSON.stringify(error));
+            const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+            console.error('Error:', errorMessage);
+            showErrorDialog('Inline Completion Error', errorMessage);
           }
           resolve({
             items: []
