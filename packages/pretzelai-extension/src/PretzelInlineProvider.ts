@@ -16,7 +16,7 @@ import {
 } from '@jupyterlab/completer';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { PLUGIN_ID, streamAnthropicCompletion } from './utils';
+import { PLUGIN_ID, streamAnthropicCompletion, AnthropicMessage } from './utils';
 import OpenAI from 'openai';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import posthog from 'posthog-js';
@@ -47,8 +47,22 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
   }
   readonly identifier = '@pretzelai/inline-completer';
   readonly name = 'Pretzel AI inline completion';
-  private debounceTimer: any;
+  private debounceTimer: NodeJS.Timeout | null = null;
   private abortController: AbortController | null = null;
+
+  /**
+   * Dispose method to clean up resources when the provider is destroyed
+   */
+  dispose(): void {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    this.debounceTimer = null;
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+    this.abortController = null;
+  }
 
   private _prefixFromRequest(request: CompletionHandler.IRequest): string {
     const currentCellIndex = this.notebookTracker?.currentWidget?.model!.sharedModel.cells.findIndex(
@@ -137,7 +151,9 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     // Create new AbortController for this fetch
     this.abortController = new AbortController();
 
-    clearTimeout(this.debounceTimer);
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
     const settings = await this.settingRegistry.load(PLUGIN_ID);
     const pretzelSettingsJSON = settings.get('pretzelSettingsJSON').composite as any;
     const inlineCopilotSettings = pretzelSettingsJSON.features?.inlineCompletion || {};
@@ -260,7 +276,8 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
                   stop: stops,
                   max_tokens: 500,
                   temperature: 0
-                })
+                }),
+                signal: this.abortController?.signal
               });
               // Note: Response parsing might not work as expected due to 'no-cors' mode, which can lead to an opaque response.
               completion = (await data.json()).choices[0].message.content;
@@ -283,22 +300,35 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
                 maxTokens: 500,
                 safePrompt: false
               });
-              completion = mistralResponse.choices[0].message.content;
+              // Check if aborted after request completes
+              if (this.abortController?.signal.aborted) {
+                completion = '';
+              } else {
+                completion = mistralResponse.choices[0].message.content;
+              }
             }
           } else if (copilotProvider === 'Azure' && azureApiKey && azureBaseUrl && azureDeploymentName) {
             const client = new OpenAIClient(azureBaseUrl, new AzureKeyCredential(azureApiKey));
             const result = await client.getCompletions(azureDeploymentName, [getInlinePrompt(prompt, suffix)]);
-            completion = result.choices[0].text;
+            // Check if aborted after request completes
+            if (this.abortController?.signal.aborted) {
+              completion = '';
+            } else {
+              completion = result.choices[0].text;
+            }
           } else if (copilotProvider === 'Anthropic' && anthropicApiKey) {
-            const messages = [
+            const messages: AnthropicMessage[] = [
               {
                 role: 'user',
                 content: getInlinePrompt(prompt, suffix)
               }
             ];
-            const stream = await streamAnthropicCompletion(anthropicApiKey, messages, copilotModel, 500);
+            const stream = await streamAnthropicCompletion(anthropicApiKey, messages, copilotModel, 500, this.abortController?.signal);
             let completionContent = '';
             for await (const chunk of stream) {
+              if (this.abortController?.signal.aborted) {
+                break;
+              }
               completionContent += chunk.choices[0].delta.content;
             }
             completion = completionContent.trim();

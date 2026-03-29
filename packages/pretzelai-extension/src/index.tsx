@@ -95,6 +95,25 @@ const extension: JupyterFrontEndPlugin<void> = {
     themeManager: IThemeManager,
     restorer: ILayoutRestorer | null
   ) => {
+    // Track all timeouts for cleanup
+    const timeouts: NodeJS.Timeout[] = [];
+    const registerTimeout = (timeout: NodeJS.Timeout) => {
+      timeouts.push(timeout);
+      return timeout;
+    };
+    const clearAllTimeouts = () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+      timeouts.length = 0;
+    };
+
+    // Register cleanup on app disposal
+    const cleanup = () => {
+      clearAllTimeouts();
+      provider.dispose();
+    };
+    // Add cleanup handler when page is unloaded
+    window.addEventListener('beforeunload', cleanup);
+
     const provider = new PretzelInlineProvider(notebookTracker, settingRegistry, app);
     providerManager.registerInlineProvider(provider);
 
@@ -330,9 +349,11 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     }
 
+    let initializePromptHistoryTimeout: NodeJS.Timeout | null = null;
+
     const initializePromptHistory = async () => {
       if (!notebookTracker.currentWidget?.model) {
-        setTimeout(initializePromptHistory, 1000);
+        initializePromptHistoryTimeout = registerTimeout(setTimeout(initializePromptHistory, 1000));
         return;
       }
       const savedHistory = await loadPromptHistory(app, notebookTracker);
@@ -426,9 +447,9 @@ const extension: JupyterFrontEndPlugin<void> = {
     app.serviceManager.contents.fileChanged.connect((sender, change) => {
       if (change.type === 'rename') {
         // wait for the file to be renamed before creating embeddings file
-        setTimeout(() => {
+        registerTimeout(setTimeout(() => {
           getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
-        }, 2000);
+        }, 2000));
       }
     });
 
@@ -453,17 +474,16 @@ const extension: JupyterFrontEndPlugin<void> = {
       debouncedUpdateVariables();
     });
 
-    let debounceTimeout: NodeJS.Timeout | null = null;
-
     notebookTracker.activeCellChanged.connect((sender, cell) => {
       if (cell) {
+        let debounceTimeout: NodeJS.Timeout | null = null;
         cell.model.contentChanged.connect(() => {
           if (debounceTimeout) {
             clearTimeout(debounceTimeout);
           }
-          debounceTimeout = setTimeout(() => {
+          debounceTimeout = registerTimeout(setTimeout(() => {
             getEmbeddings(notebookTracker, app, aiClient, aiChatModelProvider);
-          }, 1000);
+          }, 1000));
         });
       }
     });

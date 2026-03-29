@@ -14,9 +14,46 @@ import MistralClient, { Message } from '@mistralai/mistralai';
 import { streamAnthropicCompletion } from './utils';
 import Groq from 'groq-sdk';
 import { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
-import { processVariables } from './utils';
+import { processVariables, AnthropicMessage } from './utils';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { Dispatch, SetStateAction } from 'react';
+
+// Type definitions for AI message content
+interface TextContent {
+  type: 'text';
+  text: string;
+}
+
+interface ImageContent {
+  type: 'image';
+  data: string;
+}
+
+interface ImageUrlContent {
+  type: 'image_url';
+  image_url: { url: string };
+}
+
+interface AnthropicImageContent {
+  type: 'image';
+  source: {
+    type: 'base64';
+    media_type: string;
+    data: string;
+  };
+}
+
+type MessageContent = string | TextContent | ImageContent | ImageUrlContent | AnthropicImageContent;
+
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string | MessageContent[];
+}
+
+interface ProcessedMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string | (TextContent | ImageUrlContent | AnthropicImageContent)[];
+}
 
 export const CHAT_SYSTEM_MESSAGE =
   'You are a helpful assistant. Your name is Pretzel. You are an expert in Juypter Notebooks, Data Science, and Data Analysis. You always output markdown. All Python code MUST BE in a FENCED CODE BLOCK with language-specific highlighting. ';
@@ -73,41 +110,44 @@ ${topSimilarities.join('\n```\n```python\n')}
   return output;
 };
 
-const processMessages = (messages: any[], provider: string, model: string): any[] => {
-  const processedMessages: any[] = [];
+const processMessages = (messages: ChatMessage[], provider: string, model: string): ProcessedMessage[] => {
+  const processedMessages: ProcessedMessage[] = [];
 
   for (const message of messages) {
     if (!Array.isArray(message.content)) {
-      processedMessages.push(message);
+      processedMessages.push(message as ProcessedMessage);
       continue;
     }
 
     if (provider !== 'OpenAI' && provider !== 'Anthropic' && provider !== 'Pretzel AI') {
       // If the provider doesn't support images, only keep the text content
-      const textContent = message.content.find(item => item.type === 'text')?.text || '';
-      processedMessages.push({ ...message, content: textContent });
+      const textContent = (message.content as Array<TextContent | ImageContent>).find(
+        (item): item is TextContent => item.type === 'text'
+      );
+      processedMessages.push({ ...message, content: textContent?.text || '' });
       continue;
     }
 
     // Process messages for image-supporting models
-    let processedContent: any[] = [];
-    for (const item of message.content) {
+    const processedContent: (TextContent | ImageUrlContent | AnthropicImageContent)[] = [];
+    for (const item of message.content as Array<TextContent | ImageContent>) {
       if (item.type === 'text') {
         processedContent.push({ type: 'text', text: item.text });
       } else if (item.type === 'image') {
+        const imageItem = item as ImageContent;
         if (provider === 'Anthropic') {
           processedContent.push({
             type: 'image',
             source: {
               type: 'base64',
-              media_type: item.data.split(',')[0].split(':')[1].split(';')[0],
-              data: item.data.split(',')[1]
+              media_type: imageItem.data.split(',')[0].split(':')[1].split(';')[0],
+              data: imageItem.data.split(',')[1]
             }
           });
         } else if (provider === 'OpenAI' || provider === 'Pretzel AI') {
           processedContent.push({
             type: 'image_url',
-            image_url: { url: item.data }
+            image_url: { url: imageItem.data }
           });
         } else {
           throw new Error('Invalid provider');
@@ -153,7 +193,7 @@ export const chatAIStream = async ({
   ollamaBaseUrl?: string;
   groqApiKey?: string;
   renderChat: (message: string) => void;
-  messages: any[]; // types are too complex
+  messages: ChatMessage[];
   topSimilarities: string[];
   activeCellCode?: string;
   selectedCode?: string;
@@ -172,7 +212,9 @@ export const chatAIStream = async ({
   }
 
   // Process the last message to add context
-  const lastMessageText = Array.isArray(lastMessageContent) ? lastMessageContent[0].text : lastMessageContent;
+  const lastMessageText = Array.isArray(lastMessageContent)
+    ? (lastMessageContent as TextContent[])[0]?.text || ''
+    : (lastMessageContent as string);
   const lastMessageTextWithInjection = await generateChatPrompt(
     lastMessageText,
     setReferenceSource,
@@ -181,10 +223,13 @@ export const chatAIStream = async ({
     activeCellCode,
     selectedCode
   );
-  const updatedLastMessageContent = Array.isArray(lastMessageContent)
-    ? [{ type: 'text', text: lastMessageTextWithInjection }, ...lastMessageContent.slice(1)]
+  const updatedLastMessageContent: string | MessageContent[] = Array.isArray(lastMessageContent)
+    ? [{ type: 'text', text: lastMessageTextWithInjection }, ...(lastMessageContent as MessageContent[]).slice(1)]
     : lastMessageTextWithInjection;
-  const updatedMessages = [...messages.slice(0, -1), { role: 'user', content: updatedLastMessageContent }];
+  const updatedMessages: ChatMessage[] = [
+    ...messages.slice(0, -1),
+    { role: 'user', content: updatedLastMessageContent }
+  ];
   const processedMessages = processMessages(updatedMessages, aiChatModelProvider, aiChatModelString);
 
   if (aiChatModelProvider === 'OpenAI' && openAiApiKey && aiChatModelString && messages) {
@@ -277,7 +322,11 @@ export const chatAIStream = async ({
     setIsAiGenerating(false);
   } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && messages) {
     const filteredMessages = processedMessages.filter((msg, index) => index !== 1);
-    const stream = await streamAnthropicCompletion(anthropicApiKey, filteredMessages, aiChatModelString);
+    const stream = await streamAnthropicCompletion(
+      anthropicApiKey,
+      filteredMessages as AnthropicMessage[],
+      aiChatModelString
+    );
 
     for await (const chunk of stream) {
       if (chunk.choices[0]?.delta?.content) {

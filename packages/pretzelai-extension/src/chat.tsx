@@ -130,10 +130,20 @@ export function Chat({
     canBeUsedForImagesRef.current = canBeUsedForImages;
   }, [canBeUsedForImages]);
 
+  const fetchChatHistoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (fetchChatHistoryTimeoutRef.current) {
+        clearTimeout(fetchChatHistoryTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const fetchChatHistory = async () => {
     const notebook = notebookTracker?.currentWidget;
     if (!notebook?.model) {
-      setTimeout(fetchChatHistory, 1000);
+      fetchChatHistoryTimeoutRef.current = setTimeout(fetchChatHistory, 1000);
       return;
     }
     if (notebook?.model && !isAiGenerating) {

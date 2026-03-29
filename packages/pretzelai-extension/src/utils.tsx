@@ -24,6 +24,43 @@ import { IKernelConnection } from '@jupyterlab/services/src/kernel/kernel';
 import * as monaco from 'monaco-editor';
 import { globalState } from './globalState';
 
+// Type definitions for notebook cells
+interface ISharedCell {
+  id: string;
+  source: string;
+  cell_type: string;
+}
+
+interface FileContent {
+  name: string;
+  path: string;
+  type: string;
+}
+
+interface FileListResponse {
+  content: FileContent[];
+}
+
+// Type definitions for stream chunks and content items
+interface StreamChunk {
+  choices: Array<{
+    delta: {
+      content: string;
+    };
+  }>;
+}
+
+interface ContentItem {
+  type: string;
+  text?: string;
+  image_url?: { url: string };
+  source?: {
+    type: string;
+    media_type: string;
+    data: string;
+  };
+}
+
 export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
 export async function calculateHash(input: string) {
@@ -235,7 +272,7 @@ export const PRETZEL_FOLDER = '.pretzel';
 
 export async function createAndSaveEmbeddings(
   existingEmbeddingsJSON: Embedding[],
-  cells: any[],
+  cells: ISharedCell[],
   path: string,
   app: JupyterFrontEnd,
   aiClient: OpenAI | OpenAIClient | MistralClient | null,
@@ -259,8 +296,11 @@ export async function createAndSaveEmbeddings(
                 hash,
                 embedding: response.data[0].embedding
               });
-            } catch (error) {
-              console.error('Error generating embedding:', error);
+            } catch (error: any) {
+              showErrorDialog(
+                'Error Generating Embedding',
+                error?.message || 'Failed to generate embedding for cell content. Please check your AI provider settings.'
+              );
             }
           } else {
             newEmbeddingsArray.push(embeddings[index]);
@@ -275,8 +315,11 @@ export async function createAndSaveEmbeddings(
               hash,
               embedding: response.data[0].embedding
             });
-          } catch (error) {
-            console.error('Error generating embedding:', error);
+          } catch (error: any) {
+            showErrorDialog(
+              'Error Generating Embedding',
+              error?.message || 'Failed to generate embedding for cell content. Please check your AI provider settings.'
+            );
           }
         }
       })();
@@ -332,8 +375,11 @@ export async function getEmbeddings(
           aiClient,
           aiChatModelProvider
         );
-      } catch (error) {
-        console.error('Error parsing embeddings JSON:', error);
+      } catch (error: any) {
+        showErrorDialog(
+          'Error Loading Embeddings',
+          error?.message || 'Failed to parse embeddings data. The embeddings file may be corrupted.'
+        );
       }
     } else {
       // create directory. if already exists, this code does nothing
@@ -359,8 +405,11 @@ export async function getEmbeddings(
           format: 'text',
           content: JSON.stringify([])
         });
-      } catch (error) {
-        console.error('Error creating embeddings:', error);
+      } catch (error: any) {
+        showErrorDialog(
+          'Error Creating Embeddings',
+          error?.message || 'Failed to create embeddings directory or file. Please check your permissions.'
+        );
       }
     }
   } else {
@@ -452,7 +501,8 @@ const setupStream = async ({
   groqApiKey?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
-  let content: string | any[] = prompt; // FIXME: any is pretty complex here, leaving it for now
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let content: string | any[] = prompt;
   if (base64Images.length > 0) {
     if (aiChatModelProvider === 'OpenAI' || aiChatModelProvider === 'Pretzel AI') {
       content = [
@@ -546,7 +596,7 @@ const setupStream = async ({
       }
     };
   } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey && aiChatModelString && content) {
-    const messages = [{ role: 'user', content: content }];
+    const messages: AnthropicMessage[] = [{ role: 'user', content: content as string | Array<{ type: string; text?: string; source?: unknown }> }];
     const stream = await streamAnthropicCompletion(anthropicApiKey, messages, aiChatModelString);
 
     return stream;
@@ -760,8 +810,8 @@ export async function deleteExistingEmbeddings(app: JupyterFrontEnd, notebookTra
 
   try {
     // List all files in the directory
-    const fileList = await app.serviceManager.contents.get(embeddingsDir, { content: true });
-    const embeddingsFiles = fileList.content.filter((file: any) => file.name.endsWith('_embeddings.json'));
+    const fileList = (await app.serviceManager.contents.get(embeddingsDir, { content: true })) as FileListResponse;
+    const embeddingsFiles = fileList.content.filter((file: FileContent) => file.name.endsWith('_embeddings.json'));
 
     // Delete each embeddings file
     for (const file of embeddingsFiles) {
@@ -778,11 +828,17 @@ export async function getCookie(name: string): Promise<string> {
   return r ? r[1] : '';
 }
 
+export interface AnthropicMessage {
+  role: 'user' | 'assistant';
+  content: string | Array<{ type: string; text?: string; source?: unknown }>;
+}
+
 export async function streamAnthropicCompletion(
   apiKey: string,
-  messages: any[],
+  messages: AnthropicMessage[],
   model: string = 'claude-3-5-sonnet-20240620',
-  maxTokens: number = 4096
+  maxTokens: number = 4096,
+  signal?: AbortSignal
 ): Promise<AsyncIterable<any>> {
   const xsrfToken = await getCookie('_xsrf');
   const baseUrl = ServerConnection.makeSettings().baseUrl;
@@ -799,7 +855,8 @@ export async function streamAnthropicCompletion(
       messages: messages,
       max_tokens: maxTokens,
       model: model
-    })
+    }),
+    signal
   });
 
   const reader = response.body!.getReader();
@@ -905,8 +962,11 @@ export async function savePromptHistory(
         format: 'text',
         content: JSON.stringify(existingPromptHistory)
       });
-    } catch (error) {
-      console.error('Error parsing embeddings JSON:', error);
+    } catch (error: any) {
+      showErrorDialog(
+        'Error Saving Prompt History',
+        error?.message || 'Failed to save prompt history. The history file may be corrupted.'
+      );
       // something is broken with the file, update it with the new prompt history
       await app.serviceManager.contents.save(promptHistoryPath, {
         type: 'file',
@@ -950,12 +1010,18 @@ export async function savePromptHistory(
               [notebookName]: promptHistoryStack.stackWithoutSentinels
             })
           });
-        } catch (error) {
-          console.error('Error saving prompt history:', error);
+        } catch (error: any) {
+          showErrorDialog(
+            'Error Saving Prompt History',
+            error?.message || 'Failed to save prompt history. Please check your file permissions.'
+          );
         }
       } // end of else
-    } catch (error) {
-      console.error('Error creating directory:', error);
+    } catch (error: any) {
+      showErrorDialog(
+        'Error Creating Directory',
+        error?.message || 'Failed to create prompt history directory. Please check your file permissions.'
+      );
     }
   }
 }
@@ -976,11 +1042,17 @@ export async function loadPromptHistory(
     const file = await app.serviceManager.contents.get(promptHistoryPath);
     const allPromptHistory = JSON.parse(file.content);
     return allPromptHistory[notebookName] || [];
-  } catch (error) {
+  } catch (error: any) {
     // file does not exist or the JSON is malformed
     // we do nothing here - the user will see an empty prompt history
     // the file will be created/updated on the next save
-    console.error('Error loading prompt history:', error);
+    // Only show error dialog for actual errors, not for missing files
+    if (error?.message && !error.message.includes('Not Found')) {
+      showErrorDialog(
+        'Error Loading Prompt History',
+        error?.message || 'Failed to load prompt history. The history file may be corrupted.'
+      );
+    }
     return [];
   }
 }
