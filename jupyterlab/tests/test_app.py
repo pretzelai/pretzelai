@@ -230,3 +230,25 @@ class RootedServerApp(ServerApp):
         os.chmod(readonly_filepath, S_IRUSR | S_IRGRP | S_IROTH)
         atexit.register(lambda: shutil.rmtree(root_dir, True))
         return root_dir
+
+
+def test_allow_hidden_survives_contents_manager_replacement(jp_serverapp, make_lab_app):
+    """Hidden file access must survive contents manager replacement.
+
+    Extensions that wrap the contents manager (e.g. Jupytext) replace the
+    manager instance after ``LabApp.initialize()`` has run. The replacement
+    instance must still allow hidden files, otherwise Pretzel's chat state
+    stored under ``.pretzel`` becomes inaccessible (see pretzelai#113).
+    """
+    app = make_lab_app()
+    app._link_jupyter_server_extension(jp_serverapp)
+    app.initialize()
+
+    serverapp = app.serverapp
+    assert serverapp.contents_manager.allow_hidden is True
+
+    # Simulate a wrapping extension creating a fresh manager instance after
+    # LabApp.initialize(), like Jupytext's server extension does.
+    manager_class = type(serverapp.contents_manager)
+    replacement = manager_class(parent=serverapp, log=serverapp.log)
+    assert replacement.allow_hidden is True
