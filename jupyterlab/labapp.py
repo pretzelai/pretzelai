@@ -925,6 +925,10 @@ class LabApp(NotebookConfigShimMixin, LabServerApp):
         """Subclass because the ExtensionApp.initialize() method does not take arguments"""
         super().initialize()
         # to be able to make hidden folders
+        # Also set the value in the server config so that any contents manager
+        # created afterwards (e.g. a wrapping manager from an extension like
+        # Jupytext) keeps access to hidden files. See pretzelai#113.
+        self.serverapp.config.ContentsManager.allow_hidden = True
         self.serverapp.contents_manager.allow_hidden = True
         if self.collaborative:
             try:
