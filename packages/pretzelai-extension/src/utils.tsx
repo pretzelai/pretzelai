@@ -23,6 +23,7 @@ import Groq from 'groq-sdk';
 import { IKernelConnection } from '@jupyterlab/services/src/kernel/kernel';
 import * as monaco from 'monaco-editor';
 import { globalState } from './globalState';
+import { OllamaMode, streamOllamaChat } from './ollama';
 
 export const PLUGIN_ID = '@jupyterlab/pretzelai-extension:plugin';
 
@@ -434,6 +435,8 @@ const setupStream = async ({
   mistralModel,
   anthropicApiKey,
   ollamaBaseUrl,
+  ollamaMode,
+  ollamaApiKey,
   groqApiKey
 }: {
   aiChatModelProvider: string;
@@ -449,6 +452,8 @@ const setupStream = async ({
   mistralModel?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
+  ollamaMode?: OllamaMode;
+  ollamaApiKey?: string;
   groqApiKey?: string;
 }): Promise<AsyncIterable<any>> => {
   let stream: AsyncIterable<any> | null = null;
@@ -551,37 +556,16 @@ const setupStream = async ({
 
     return stream;
   } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl && aiChatModelString && content) {
-    const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: aiChatModelString,
-        messages: [{ role: 'user', content: content }],
-        stream: true
-      })
-    });
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let isReading = true;
+    const ollamaStream = await streamOllamaChat(
+      { mode: ollamaMode || 'local', baseUrl: ollamaBaseUrl, apiKey: ollamaApiKey || '' },
+      aiChatModelString,
+      [{ role: 'user', content: content }]
+    );
 
     stream = {
       async *[Symbol.asyncIterator]() {
-        while (isReading) {
-          const { done, value } = await reader.read();
-          if (done) {
-            isReading = false;
-          } else {
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (line.trim() !== '') {
-                const jsonResponse = JSON.parse(line);
-                yield { choices: [{ delta: { content: jsonResponse.message?.content || '' } }] };
-              }
-            }
-          }
+        for await (const chunk of ollamaStream) {
+          yield { choices: [{ delta: { content: chunk } }] };
         }
       }
     };
@@ -629,6 +613,8 @@ export const generateAIStream = async ({
   mistralModel,
   anthropicApiKey,
   ollamaBaseUrl,
+  ollamaMode,
+  ollamaApiKey,
   groqApiKey,
   isInject
 }: {
@@ -653,6 +639,8 @@ export const generateAIStream = async ({
   mistralModel: string;
   anthropicApiKey: string;
   ollamaBaseUrl: string;
+  ollamaMode: OllamaMode;
+  ollamaApiKey: string;
   groqApiKey: string;
   isInject: boolean;
 }): Promise<AsyncIterable<any>> => {
@@ -697,6 +685,8 @@ export const generateAIStream = async ({
     mistralModel,
     anthropicApiKey,
     ollamaBaseUrl,
+    ollamaMode,
+    ollamaApiKey,
     groqApiKey
   });
 };

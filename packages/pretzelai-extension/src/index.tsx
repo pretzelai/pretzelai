@@ -50,6 +50,7 @@ import { globalState } from './globalState';
 import { debounce } from 'lodash';
 import { PretzelSettings } from './components/PretzelSettings';
 import { isPretzelAIHostedVersion } from './utils';
+import { getOllamaConnection, ollamaFetch, OllamaMode } from './ollama';
 
 function initializePosthog(cookiesEnabled: boolean, fullTelemetry: boolean) {
   if (isPretzelAIHostedVersion && fullTelemetry) {
@@ -160,6 +161,8 @@ const extension: JupyterFrontEndPlugin<void> = {
     let anthropicApiKey = '';
 
     let ollamaBaseUrl = '';
+    let ollamaMode: OllamaMode = 'local';
+    let ollamaApiKey = '';
 
     let groqApiKey = '';
 
@@ -194,7 +197,7 @@ const extension: JupyterFrontEndPlugin<void> = {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Anthropic' && anthropicApiKey) {
         isAIEnabled = true;
-      } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl) {
+      } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl && (ollamaMode === 'local' || ollamaApiKey)) {
         isAIEnabled = true;
       } else if (aiChatModelProvider === 'Pretzel AI') {
         isAIEnabled = true;
@@ -232,10 +235,11 @@ const extension: JupyterFrontEndPlugin<void> = {
           return;
         }
 
-        const baseUrl = ollamaProvider.apiSettings.baseUrl.value || 'http://localhost:11434';
+        const connection = getOllamaConnection(ollamaProvider);
+        const baseUrl = connection.baseUrl;
 
         try {
-          const response = await fetch(`${baseUrl}/api/tags`);
+          const response = await ollamaFetch(connection, 'tags');
           if (!response.ok) {
             console.log(
               `Ollama not found at ${baseUrl}. If you have Ollama running, please change the URL in Pretzel AI Settings.`
@@ -305,7 +309,10 @@ const extension: JupyterFrontEndPlugin<void> = {
           anthropicApiKey = anthropicProvider.apiSettings.apiKey.value;
 
           // Ollama settings
-          ollamaBaseUrl = providers['Ollama'].apiSettings.baseUrl.value;
+          const ollamaConnection = getOllamaConnection(providers['Ollama']);
+          ollamaBaseUrl = ollamaConnection.baseUrl;
+          ollamaMode = ollamaConnection.mode;
+          ollamaApiKey = ollamaConnection.apiKey;
 
           // Groq settings
           const groqProvider = providers['Groq'];
@@ -632,6 +639,8 @@ const extension: JupyterFrontEndPlugin<void> = {
           mistralModel={mistralModel}
           anthropicApiKey={anthropicApiKey}
           ollamaBaseUrl={ollamaBaseUrl}
+          ollamaMode={ollamaMode}
+          ollamaApiKey={ollamaApiKey}
           groqApiKey={groqApiKey}
           commands={commands}
           traceback={traceback}
@@ -703,6 +712,8 @@ const extension: JupyterFrontEndPlugin<void> = {
               mistralModel={mistralModel}
               anthropicApiKey={anthropicApiKey}
               ollamaBaseUrl={ollamaBaseUrl}
+              ollamaMode={ollamaMode}
+              ollamaApiKey={ollamaApiKey}
               groqApiKey={groqApiKey}
               commands={commands}
               traceback={''}
@@ -739,6 +750,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         mistralApiKey,
         anthropicApiKey,
         ollamaBaseUrl,
+        ollamaMode,
+        ollamaApiKey,
         groqApiKey,
         notebookTracker,
         app,

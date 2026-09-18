@@ -29,6 +29,7 @@ import { highlightSpecialChars } from '@codemirror/view';
 import { jupyterTheme } from '@jupyterlab/codemirror';
 import { debounce } from 'lodash';
 import { getDefaultSettings } from '../migrations/defaultSettings';
+import { OllamaMode } from '../ollama';
 
 function applyDiffToEditor(
   editor: CodeMirrorEditor,
@@ -90,6 +91,8 @@ interface IAIAssistantComponentProps {
   mistralModel: string;
   anthropicApiKey: string;
   ollamaBaseUrl: string;
+  ollamaMode: OllamaMode;
+  ollamaApiKey: string;
   groqApiKey: string;
   commands: CommandRegistry;
   traceback: string;
@@ -369,6 +372,8 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
         mistralModel: props.mistralModel,
         anthropicApiKey: props.anthropicApiKey,
         ollamaBaseUrl: props.ollamaBaseUrl,
+        ollamaMode: props.ollamaMode,
+        ollamaApiKey: props.ollamaApiKey,
         groqApiKey: props.groqApiKey,
         isInject: false
       });
@@ -440,6 +445,8 @@ export const AIAssistantComponent: React.FC<IAIAssistantComponentProps> = props 
           mistralModel: props.mistralModel,
           anthropicApiKey: props.anthropicApiKey,
           ollamaBaseUrl: props.ollamaBaseUrl,
+          ollamaMode: props.ollamaMode,
+          ollamaApiKey: props.ollamaApiKey,
           groqApiKey: props.groqApiKey,
           isInject: isInject
         });

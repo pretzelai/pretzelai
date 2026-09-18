@@ -25,6 +25,8 @@ import {
   Stack,
   Switch,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -41,6 +43,7 @@ import Groq from 'groq-sdk';
 import { ServerConnection } from '@jupyterlab/services';
 import { URLExt } from '@jupyterlab/coreutils';
 import { isPretzelAIHostedVersion } from '../utils';
+import { getOllamaConnection, IOllamaConnection, ollamaFetch } from '../ollama';
 
 const AI_SERVICES_ORDER = ['OpenAI', 'Anthropic', 'Mistral', 'Groq', 'Ollama', 'Azure'];
 
@@ -253,14 +256,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     }
   }, [JSON.stringify(tempSettings?.providers?.Ollama?.models), tempSettings]);
 
-  useEffect(() => {
-    const ollamaBaseUrl = tempSettings?.providers?.Ollama?.apiSettings?.baseUrl?.value;
-    const ollamaEnabled = tempSettings?.providers?.Ollama?.enabled;
-    if (ollamaBaseUrl && ollamaEnabled) {
-      fetchOllamaModels(ollamaBaseUrl);
-    }
-  }, [tempSettings?.providers?.Ollama?.enabled]);
-
   const handleRestoreDefaults = async () => {
     const currentVersion = tempSettings!.version;
     const defaultSettings = getDefaultSettings(currentVersion) as PretzelSettingsType;
@@ -383,12 +378,12 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       )}
     </FormControl>
   );
-  const fetchOllamaModels = useCallback(async (baseUrl: string) => {
+  const fetchOllamaModels = useCallback(async (connection: IOllamaConnection) => {
+    const updatedOllamaModels = {};
     try {
-      const response = await fetch(`${baseUrl}/api/tags`);
+      const response = await ollamaFetch(connection, 'tags');
       if (response.ok) {
         const data = await response.json();
-        const updatedOllamaModels = {};
         data.models.forEach(model => {
           updatedOllamaModels[model.name] = {
             name: model.name,
@@ -396,29 +391,39 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
             showSetting: true
           };
         });
-        setTempSettings(prevSettings => {
-          if (prevSettings) {
-            return {
-              ...prevSettings,
-              providers: {
-                ...prevSettings.providers,
-                Ollama: {
-                  ...prevSettings.providers.Ollama,
-                  models: updatedOllamaModels
-                }
-              }
-            };
-          } else {
-            return prevSettings;
-          }
-        });
       }
     } catch (error) {
       console.error('Error fetching Ollama models:', error);
     }
+    // Replace the list even if the fetch failed, so models from a previous URL or mode aren't offered
+    setTempSettings(prevSettings => {
+      if (prevSettings) {
+        return {
+          ...prevSettings,
+          providers: {
+            ...prevSettings.providers,
+            Ollama: {
+              ...prevSettings.providers.Ollama,
+              models: updatedOllamaModels
+            }
+          }
+        };
+      } else {
+        return prevSettings;
+      }
+    });
   }, []);
 
   const debouncedFetchOllamaModels = useMemo(() => debounce(fetchOllamaModels, 500), [fetchOllamaModels]);
+
+  // Refresh the Ollama model list when Ollama is enabled or its mode, URL or API key changes
+  const ollamaEnabled = tempSettings?.providers?.Ollama?.enabled;
+  const ollamaConnection = getOllamaConnection(tempSettings?.providers?.Ollama);
+  useEffect(() => {
+    if (ollamaEnabled) {
+      debouncedFetchOllamaModels(ollamaConnection);
+    }
+  }, [ollamaEnabled, ollamaConnection.mode, ollamaConnection.baseUrl, ollamaConnection.apiKey]);
 
   const handleChange = useCallback((path: string, value: any) => {
     setTempSettings(prevSettings => {
@@ -441,14 +446,6 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
       }
     });
   }, []);
-
-  const handleOllamaUrlChange = useCallback(
-    (value: string) => {
-      handleChange('providers.Ollama.apiSettings.baseUrl.value', value);
-      debouncedFetchOllamaModels(value);
-    },
-    [handleChange, debouncedFetchOllamaModels]
-  );
 
   const handleSave = async () => {
     const isValid = await validateSettings();
@@ -594,26 +591,31 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     const validateOllama = async () => {
       const ollamaProvider = tempSettings!.providers.Ollama;
       if (ollamaProvider?.enabled) {
-        const baseUrl = ollamaProvider?.apiSettings?.baseUrl?.value;
-        if (!baseUrl) {
-          errors['providers.Ollama.apiSettings.baseUrl'] = 'Ollama base URL is required';
+        const connection = getOllamaConnection(ollamaProvider);
+        const urlKey = connection.mode === 'cloud' ? 'cloudBaseUrl' : 'baseUrl';
+        if (!ollamaProvider.apiSettings?.[urlKey]?.value) {
+          errors[`providers.Ollama.apiSettings.${urlKey}`] = 'Ollama base URL is required';
+        } else if (connection.mode === 'cloud' && !connection.apiKey) {
+          errors['providers.Ollama.apiSettings.apiKey'] = 'Ollama API key is required for Ollama Cloud';
         } else {
           try {
-            const response = await fetch(`${baseUrl}/api/tags`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
+            // In cloud mode /api/me checks the API key; locally /api/tags checks that Ollama is running
+            let response = await ollamaFetch(connection, connection.mode === 'cloud' ? 'me' : 'tags');
+            if (response.status === 404 && connection.mode === 'cloud') {
+              // Ollama servers other than ollama.com don't have /api/me, so just check they're reachable
+              response = await ollamaFetch(connection, 'tags');
+            }
 
-            if (response.status !== 200) {
+            if (response.status === 401) {
+              errors['providers.Ollama.apiSettings.apiKey'] = 'Invalid Ollama API key';
+            } else if (response.status !== 200) {
               errors[
-                'providers.Ollama.apiSettings.baseUrl'
+                `providers.Ollama.apiSettings.${urlKey}`
               ] = `Unexpected response from Ollama API: ${response.status}`;
             }
           } catch (error) {
             console.error('Error validating Ollama API:', error);
-            errors['providers.Ollama.apiSettings.baseUrl'] =
+            errors[`providers.Ollama.apiSettings.${urlKey}`] =
               'Error validating Ollama API. Please check your internet connection and the provided base URL.';
           }
         }
@@ -725,38 +727,72 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
         </CompactGrid>
         {provider.enabled && provider.showSettings && (
           <Box sx={{ mt: 2 }}>
-            {Object.entries(provider.apiSettings).map(([key, setting]: [string, any], index) => (
-              <CompactGrid container spacing={1} alignItems="center" key={key} sx={{ mb: 2 }}>
-                <Grid item xs={6}>
-                  <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
-                    {providerInfo.apiSettings?.[key]?.displayName || key}
-                    {providerInfo.apiSettings?.[key]?.description && (
-                      <Tooltip title={providerInfo.apiSettings[key].description} placement="right">
-                        <InfoIconStyled />
-                      </Tooltip>
+            {Object.entries(provider.apiSettings)
+              .filter(([key]) => {
+                // Some settings only apply in one mode, e.g. the Ollama API key is only needed for Ollama Cloud
+                const showInMode = providerInfo.apiSettings?.[key]?.showInMode;
+                return !showInMode || showInMode === provider.apiSettings.mode?.value;
+              })
+              .map(([key, setting]: [string, any]) => (
+                <CompactGrid container spacing={1} alignItems="center" key={key} sx={{ mb: 2 }}>
+                  <Grid item xs={6}>
+                    <InputLabel sx={{ color: 'var(--jp-ui-font-color1)', fontSize: '0.875rem' }}>
+                      {providerInfo.apiSettings?.[key]?.displayName || key}
+                      {providerInfo.apiSettings?.[key]?.description && (
+                        <Tooltip title={providerInfo.apiSettings[key].description} placement="right">
+                          <InfoIconStyled />
+                        </Tooltip>
+                      )}
+                    </InputLabel>
+                  </Grid>
+                  <Grid item xs={6}>
+                    {providerInfo.apiSettings?.[key]?.options ? (
+                      <ToggleButtonGroup
+                        exclusive
+                        size="small"
+                        value={setting.value}
+                        onChange={(e, value) => {
+                          if (value) {
+                            handleChange(`providers.${providerName}.apiSettings.${key}.value`, value);
+                          }
+                        }}
+                      >
+                        {Object.entries(providerInfo.apiSettings[key].options).map(([value, label]) => (
+                          <ToggleButton
+                            key={value}
+                            value={value}
+                            sx={{
+                              px: 2,
+                              textTransform: 'none',
+                              color: 'var(--jp-ui-font-color1)',
+                              borderColor: 'var(--jp-border-color1)',
+                              '&.Mui-selected, &.Mui-selected:hover': {
+                                backgroundColor: 'var(--jp-brand-color1)',
+                                color: 'var(--jp-ui-inverse-font-color0)'
+                              }
+                            }}
+                          >
+                            {label as string}
+                          </ToggleButton>
+                        ))}
+                      </ToggleButtonGroup>
+                    ) : (
+                      <CompactTextField
+                        fullWidth
+                        variant="outlined"
+                        size="small"
+                        type="text"
+                        value={setting.value}
+                        onChange={e =>
+                          handleChange(`providers.${providerName}.apiSettings.${key}.value`, e.target.value)
+                        }
+                        error={!!validationErrors[`providers.${providerName}.apiSettings.${key}`]}
+                        helperText={validationErrors[`providers.${providerName}.apiSettings.${key}`]}
+                      />
                     )}
-                  </InputLabel>
-                </Grid>
-                <Grid item xs={6}>
-                  <CompactTextField
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    type="text"
-                    value={setting.value}
-                    onChange={e => {
-                      if (providerName === 'Ollama' && key === 'baseUrl') {
-                        handleOllamaUrlChange(e.target.value);
-                      } else {
-                        handleChange(`providers.${providerName}.apiSettings.${key}.value`, e.target.value);
-                      }
-                    }}
-                    error={!!validationErrors[`providers.${providerName}.apiSettings.${key}`]}
-                    helperText={validationErrors[`providers.${providerName}.apiSettings.${key}`]}
-                  />
-                </Grid>
-              </CompactGrid>
-            ))}
+                  </Grid>
+                </CompactGrid>
+              ))}
           </Box>
         )}
       </Box>

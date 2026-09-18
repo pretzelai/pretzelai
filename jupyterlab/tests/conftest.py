@@ -11,6 +11,7 @@ from jupyterlab.handlers.announcements import (
     check_update_handler_path,
     news_handler_path,
 )
+from jupyterlab.handlers.ollama_handler import OllamaProxyHandler, ollama_proxy_handler_path
 
 
 @pytest.fixture
@@ -41,6 +42,7 @@ def labserverapp(jp_serverapp, make_labserver_extension_app):
                     "news_url": "https://dummy.io/feed.xml",
                 },
             ),
+            (ollama_proxy_handler_path, OllamaProxyHandler),
         ]
     )
     app.initialize()

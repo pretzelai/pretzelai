@@ -26,6 +26,7 @@ import { fixInlineCompletion } from './postprocessing';
 import Groq from 'groq-sdk';
 import { Signal } from '@lumino/signaling';
 import { getInlinePrompt } from './prompt';
+import { getOllamaConnection, streamOllamaChat } from './ollama';
 
 const DEBOUNCE_TIME = 1000;
 
@@ -158,7 +159,7 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
     const azureDeploymentName = azureSettings?.deploymentName?.value || '';
     const anthropicSettings = providers['Anthropic']?.apiSettings || {};
     const anthropicApiKey = anthropicSettings?.apiKey?.value || '';
-    const ollamaBaseUrl = providers['Ollama']?.apiSettings?.baseUrl?.value || '';
+    const ollamaConnection = getOllamaConnection(providers['Ollama']);
     const groqApiKey = providers['Groq']?.apiSettings?.apiKey?.value || '';
 
     return new Promise(resolve => {
@@ -302,43 +303,23 @@ export class PretzelInlineProvider implements IInlineCompletionProvider {
               completionContent += chunk.choices[0].delta.content;
             }
             completion = completionContent.trim();
-          } else if (copilotProvider === 'Ollama' && ollamaBaseUrl) {
+          } else if (copilotProvider === 'Ollama' && (ollamaConnection.mode === 'local' || ollamaConnection.apiKey)) {
             const messages = [
               {
                 role: 'user',
                 content: getInlinePrompt(prompt, suffix)
               }
             ];
-            const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: copilotModel,
-                messages: messages,
-                stream: true
-              }),
-              signal: this.abortController?.signal
-            });
-            const reader = response.body!.getReader();
-            const decoder = new TextDecoder('utf-8');
-            let isReading = true;
+            const stream = await streamOllamaChat(
+              ollamaConnection,
+              copilotModel,
+              messages,
+              this.abortController?.signal,
+              { stop: stops, num_predict: this._isMultiLine(prompt) ? 500 : 100 }
+            );
             let completionContent = '';
-            while (isReading) {
-              const { done, value } = await reader.read();
-              if (done) {
-                isReading = false;
-              } else {
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-                for (const line of lines) {
-                  if (line.trim() !== '') {
-                    const jsonResponse = JSON.parse(line);
-                    completionContent += jsonResponse.message?.content || '';
-                  }
-                }
-              }
+            for await (const chunk of stream) {
+              completionContent += chunk;
             }
             completion = completionContent.trim();
           } else if (copilotProvider === 'Groq' && groqApiKey) {

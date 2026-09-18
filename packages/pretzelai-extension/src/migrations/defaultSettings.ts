@@ -10,6 +10,7 @@
 
 import { returnDefaults_1_1 } from './migrate_1_0_to_1_1';
 import { returnDefaults_1_2 } from './migrate_1_1_to_1_2';
+import { returnDefaults_1_3 } from './migrate_1_2_to_1_3';
 
 export const getDefaultSettings = (version: string) => {
   switch (version) {
@@ -17,10 +18,12 @@ export const getDefaultSettings = (version: string) => {
       return returnDefaults_1_1();
     case '1.2':
       return returnDefaults_1_2();
+    case '1.3':
+      return returnDefaults_1_3();
     // Add more cases for future versions
     default:
-      return returnDefaults_1_2(); // Fallback to the latest version
+      return returnDefaults_1_3(); // Fallback to the latest version
   }
 };
 
-export type PretzelSettingsType = ReturnType<typeof returnDefaults_1_2>;
+export type PretzelSettingsType = ReturnType<typeof returnDefaults_1_3>;

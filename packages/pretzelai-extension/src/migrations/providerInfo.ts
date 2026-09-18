@@ -171,12 +171,30 @@ export const providersInfo = {
   },
   Ollama: {
     displayName: 'Ollama',
-    description: 'Run open-source AI models locally.',
+    description:
+      'Run open-source AI models locally with Ollama, or on Ollama Cloud if your computer is not powerful enough to run them.',
     models: {} as ProviderInfoOllamaModels,
     apiSettings: {
+      mode: {
+        displayName: 'Run Models',
+        description:
+          'Local: use the models installed in your own Ollama. Cloud: use models hosted on Ollama Cloud with an API key.',
+        options: { local: 'Local', cloud: 'Cloud' }
+      },
       baseUrl: {
         displayName: 'Base URL',
-        description: 'The base URL for your Ollama instance'
+        description: 'The base URL for your Ollama instance',
+        showInMode: 'local'
+      },
+      cloudBaseUrl: {
+        displayName: 'Cloud URL',
+        description: 'The URL of Ollama Cloud. Only change this to use another Ollama server that requires an API key.',
+        showInMode: 'cloud'
+      },
+      apiKey: {
+        displayName: 'API Key',
+        description: 'Your Ollama API key. You can create one at https://ollama.com/settings/keys',
+        showInMode: 'cloud'
       }
     }
   },

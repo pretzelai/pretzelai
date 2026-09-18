@@ -10,6 +10,7 @@
 
 import { migrate_1_0_to_1_1 } from './migrate_1_0_to_1_1';
 import { migrate_1_1_to_1_2 } from './migrate_1_1_to_1_2';
+import { migrate_1_2_to_1_3 } from './migrate_1_2_to_1_3';
 
 interface IMigrationFunction {
   (settings: any): Promise<any>;
@@ -17,7 +18,8 @@ interface IMigrationFunction {
 
 const migrations: { [key: string]: IMigrationFunction } = {
   '1.0_to_1.1': migrate_1_0_to_1_1,
-  '1.1_to_1.2': migrate_1_1_to_1_2
+  '1.1_to_1.2': migrate_1_1_to_1_2,
+  '1.2_to_1.3': migrate_1_2_to_1_3
   // Add more migrations here as needed
 };
 

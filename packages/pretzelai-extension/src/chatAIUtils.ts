@@ -12,6 +12,7 @@ import { OpenAI } from 'openai';
 import { ChatCompletionMessage } from 'openai/resources';
 import MistralClient, { Message } from '@mistralai/mistralai';
 import { streamAnthropicCompletion } from './utils';
+import { OllamaMode, streamOllamaChat } from './ollama';
 import Groq from 'groq-sdk';
 import { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
 import { processVariables } from './utils';
@@ -130,6 +131,8 @@ export const chatAIStream = async ({
   mistralApiKey,
   anthropicApiKey,
   ollamaBaseUrl,
+  ollamaMode,
+  ollamaApiKey,
   groqApiKey,
   renderChat,
   messages,
@@ -151,6 +154,8 @@ export const chatAIStream = async ({
   mistralApiKey?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
+  ollamaMode?: OllamaMode;
+  ollamaApiKey?: string;
   groqApiKey?: string;
   renderChat: (message: string) => void;
   messages: any[]; // types are too complex
@@ -286,39 +291,24 @@ export const chatAIStream = async ({
     }
     setReferenceSource('');
     setIsAiGenerating(false);
-  } else if (aiChatModelProvider === 'Ollama') {
-    const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: aiChatModelString,
-        messages: processedMessages,
-        stream: true
-      }),
-      signal
-    });
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let isReading = true;
-    while (isReading) {
-      const { done, value } = await reader.read();
-      if (done) {
-        isReading = false;
-        setReferenceSource('');
-        setIsAiGenerating(false);
-      } else {
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.trim() !== '') {
-            const jsonResponse = JSON.parse(line);
-            renderChat(jsonResponse.message?.content || '');
-          }
-        }
+  } else if (aiChatModelProvider === 'Ollama' && ollamaBaseUrl) {
+    try {
+      const stream = await streamOllamaChat(
+        { mode: ollamaMode || 'local', baseUrl: ollamaBaseUrl, apiKey: ollamaApiKey || '' },
+        aiChatModelString,
+        processedMessages,
+        signal
+      );
+      for await (const chunk of stream) {
+        renderChat(chunk);
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        renderChat(`ERROR: ${error.message}`);
       }
     }
+    setReferenceSource('');
+    setIsAiGenerating(false);
   } else if (aiChatModelProvider === 'Groq' && aiChatModelString && messages) {
     const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
     const stream = await groq.chat.completions.create({

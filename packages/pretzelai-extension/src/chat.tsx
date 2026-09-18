@@ -39,6 +39,7 @@ import {
 } from './utils';
 import { providersInfo } from './migrations/providerInfo';
 import { ImagePreview } from './components/ImagePreview';
+import { OllamaMode } from './ollama';
 
 loader.config({ monaco }); // BUG FIX - WAS PICKING UP OLD VERSION OF MONACO FROM JSDELIVR
 
@@ -70,6 +71,8 @@ interface IChatProps {
   mistralApiKey?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
+  ollamaMode?: OllamaMode;
+  ollamaApiKey?: string;
   groqApiKey?: string;
   notebookTracker: INotebookTracker | null;
   app: JupyterFrontEnd;
@@ -92,6 +95,8 @@ export function Chat({
   mistralApiKey,
   anthropicApiKey,
   ollamaBaseUrl,
+  ollamaMode,
+  ollamaApiKey,
   groqApiKey,
   notebookTracker,
   app,
@@ -354,6 +359,8 @@ export function Chat({
           mistralApiKey,
           anthropicApiKey,
           ollamaBaseUrl,
+          ollamaMode,
+          ollamaApiKey,
           groqApiKey,
           renderChat,
           messages: formattedMessages,
@@ -429,6 +436,8 @@ export function Chat({
           mistralApiKey,
           anthropicApiKey,
           ollamaBaseUrl,
+          ollamaMode,
+          ollamaApiKey,
           groqApiKey,
           renderChat,
           messages: formattedMessages,

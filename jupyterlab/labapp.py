@@ -59,6 +59,7 @@ from .handlers.extension_manager_handler import (
     ExtensionHandler,
     extensions_handler_path,
 )
+from .handlers.ollama_handler import OllamaProxyHandler, ollama_proxy_handler_path
 from .handlers.plugin_manager_handler import PluginHandler, plugins_handler_path
 
 DEV_NOTE = """You're running JupyterLab from source.
@@ -896,6 +897,9 @@ class LabApp(NotebookConfigShimMixin, LabServerApp):
                     ),
                 ]
             )
+
+        # Pretzel AI: proxy for Ollama servers that don't allow browser requests (Ollama Cloud)
+        handlers.append((ollama_proxy_handler_path, OllamaProxyHandler))
 
         # If running under JupyterHub, add more metadata.
         if "hub_prefix" in self.serverapp.tornado_settings:
