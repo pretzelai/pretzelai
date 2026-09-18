@@ -45,6 +45,7 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { migrateSettings } from './migrations/migrations';
 import { PretzelSettingsType } from './migrations/defaultSettings';
+import { showErrorDialog } from './components/ErrorDialog';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { globalState } from './globalState';
 import { debounce } from 'lodash';
@@ -726,6 +727,24 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
     });
 
+    // Model picked in the chat: saved as the AI Chat model, as if picked in Pretzel AI Settings
+    async function setChatModel(provider: string, model: string) {
+      try {
+        const settings = await settingRegistry.load(PLUGIN_ID);
+        const current = settings.get('pretzelSettingsJSON').composite as PretzelSettingsType;
+        await settings.set('pretzelSettingsJSON', {
+          ...current,
+          features: {
+            ...current.features,
+            aiChat: { ...current.features.aiChat, modelProvider: provider, modelString: model }
+          }
+        });
+      } catch (error: any) {
+        console.error('Error switching the chat model:', error);
+        showErrorDialog('Could not switch the chat model', error?.message || String(error));
+      }
+    }
+
     // Function to create and add the side panel
     function createAndAddSidePanel(expandPanel = false) {
       const newSidePanel = createChat({
@@ -747,7 +766,8 @@ const extension: JupyterFrontEndPlugin<void> = {
         codeMatchThreshold,
         posthogPromptTelemetry,
         themeManager,
-        pretzelSettingsJSON
+        pretzelSettingsJSON,
+        onChatModelChange: setChatModel
       });
       newSidePanel.id = 'pretzelai-chat-panel';
       newSidePanel.node.classList.add('chat-sidepanel');
@@ -835,6 +855,12 @@ const extension: JupyterFrontEndPlugin<void> = {
     commands.addCommand(pretzelSettingsCommand, {
       label: 'Pretzel AI Settings',
       execute: () => {
+        // Show the Settings tab if it's already open (e.g. from the chat's model list), instead of a second one
+        const openSettings = Array.from(app.shell.widgets('main')).find(widget => widget.id === 'pretzelai-settings');
+        if (openSettings) {
+          app.shell.activateById(openSettings.id);
+          return;
+        }
         const widget = ReactWidget.create(<PretzelSettings settingRegistry={settingRegistry} />);
         widget.id = 'pretzelai-settings';
         widget.title.label = 'Pretzel AI Settings';

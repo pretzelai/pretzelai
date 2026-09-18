@@ -32,7 +32,8 @@ function createErrorDialog(errorTitle: string, errorDescription: string) {
     hasClose: true
   });
 
-  dialog.launch();
+  // The Close button disposes the dialog, which rejects this promise: nothing to do then
+  dialog.launch().catch(() => undefined);
 }
 
 export function showErrorDialog(errorTitle: string, errorDescription: string) {

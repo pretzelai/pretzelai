@@ -15,6 +15,7 @@ import { streamAnthropicCompletion } from './utils';
 import Groq from 'groq-sdk';
 import { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions';
 import { processVariables } from './utils';
+import { httpError } from './chatErrors';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -240,6 +241,9 @@ export const chatAIStream = async ({
       }),
       signal
     });
+    if (!response.ok) {
+      throw await httpError(response);
+    }
     const reader = response!.body!.getReader();
     const decoder = new TextDecoder('utf-8');
     let isReading = true;

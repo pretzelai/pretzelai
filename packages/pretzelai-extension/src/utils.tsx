@@ -18,6 +18,7 @@ import OpenAI from 'openai';
 import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import posthog from 'posthog-js';
 import { showErrorDialog } from './components/ErrorDialog';
+import { httpError } from './chatErrors';
 import MistralClient from '@mistralai/mistralai';
 import Groq from 'groq-sdk';
 import { IKernelConnection } from '@jupyterlab/services/src/kernel/kernel';
@@ -801,6 +802,9 @@ export async function streamAnthropicCompletion(
       model: model
     })
   });
+  if (!response.ok) {
+    throw await httpError(response);
+  }
 
   const reader = response.body!.getReader();
   const decoder = new TextDecoder();

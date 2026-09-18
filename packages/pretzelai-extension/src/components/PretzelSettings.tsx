@@ -224,6 +224,27 @@ export const PretzelSettings: React.FC<IPretzelSettingsProps> = ({ settingRegist
     loadSettings();
   }, [settingRegistry]);
 
+  useEffect(() => {
+    // The chat model can also be picked in the chat panel: show the new choice here too
+    const onSettingsChanged = async (_: ISettingRegistry, plugin: string) => {
+      if (plugin !== PLUGIN_ID) {
+        return;
+      }
+      const saved = (await settingRegistry.load(PLUGIN_ID)).get('pretzelSettingsJSON').composite as any;
+      const { modelProvider, modelString } = saved.features.aiChat;
+      setSelectedModels(prev => ({ ...prev, aiChat: { provider: modelProvider, model: modelString } }));
+      setTempSettings(prev =>
+        prev
+          ? { ...prev, features: { ...prev.features, aiChat: { ...prev.features.aiChat, modelProvider, modelString } } }
+          : prev
+      );
+    };
+    settingRegistry.pluginChanged.connect(onSettingsChanged);
+    return () => {
+      settingRegistry.pluginChanged.disconnect(onSettingsChanged);
+    };
+  }, [settingRegistry]);
+
   const updateOllamaProviderInfo = () => {
     const ollamaInfo = providersInfo['Ollama'];
     if (ollamaInfo && tempSettings && tempSettings.providers?.Ollama?.enabled) {
