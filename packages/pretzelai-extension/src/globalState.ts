@@ -10,7 +10,10 @@
 export const globalState: {
   availableVariables: string[];
   isMonacoRegistered: boolean;
+  // The chat that was open when the chat panel was last rebuilt (saving settings rebuilds it), to carry on with it
+  openChat: { messages: any[]; chatIndex: number; draft: string } | null;
 } = {
   availableVariables: [],
-  isMonacoRegistered: false
+  isMonacoRegistered: false,
+  openChat: null
 };
